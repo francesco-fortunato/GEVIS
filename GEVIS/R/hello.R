@@ -73,9 +73,130 @@ pca <- function(data, dataC, dataN) {
 
   # Get gene names
   gene_names <- rownames(scores_var)
-  print(gene_names)
+  # print(gene_names)
 
   # Return a list containing scores_df and scores_var
   return(list(scores_df = scores_df, scores_var = scores_var))
 }
 
+enrichment <- function (data,direction){
+  library(forcats)
+  library(stringr)
+  library(enrichR)
+
+  top_term <- 10
+  thr_pval <- 0.05
+  dbs <- c("DisGeNET","GO_Molecular_Function_2021", "GO_Biological_Process_2021", "KEGG_2021_Human", "TRANSFAC_and_JASPAR_PWMs")
+
+  list <- split(data$gene,data$direction)
+
+  df <- lapply(list, function(x){
+    enrichr(x, dbs)
+  })
+
+
+
+  DisGeNET <- df[[direction]]$DisGeNET
+  DisGeNET <- DisGeNET[DisGeNET$Adjusted.P.value < thr_pval, ]
+  DisGeNET <- DisGeNET[order(DisGeNET$Adjusted.P.value, decreasing = F),]
+
+  DisGeNET$Gene_count <- sapply(DisGeNET$Genes, function(x){
+    tmp <- unlist(strsplit(x, split = ";"))
+    count <- length(tmp)
+  })
+
+  DisGeNET$Gene_ratio <- unlist(lapply(DisGeNET$Overlap, function(x){
+
+    total <- as.numeric(strsplit(x,"/")[[1]][2])
+    count <- as.numeric(strsplit(x,"/")[[1]][1])
+
+    Gene_ratio <- count/total
+
+  } ))
+
+  if(length(top_term) != 0 & top_term <= nrow(DisGeNET)){
+    annotation_top <- DisGeNET[1:top_term,]
+  }else{
+    annotation_top <- DisGeNET
+  }
+
+
+
+  BP <- df[[direction]]$GO_Biological_Process_2021
+  BP$Term <- gsub("\\s*\\(GO:\\d+\\)$", "", BP$Term)
+  BP <- BP[BP$Adjusted.P.value < thr_pval, ]
+  BP <- BP[order(BP$Adjusted.P.value, decreasing = F),]
+
+  BP$Gene_count <- sapply(BP$Genes, function(x){
+    tmp <- unlist(strsplit(x, split = ";"))
+    count <- length(tmp)
+  })
+
+  BP$Gene_ratio <- unlist(lapply(BP$Overlap, function(x){
+
+    total <- as.numeric(strsplit(x,"/")[[1]][2])
+    count <- as.numeric(strsplit(x,"/")[[1]][1])
+
+    Gene_ratio <- count/total
+
+  } ))
+
+  if(length(top_term) != 0 & top_term <= nrow(BP)){
+    annotation_top1 <- BP[1:top_term,]
+  }else{
+    annotation_top1 <- BP
+  }
+
+  MF <- df[[direction]]$GO_Molecular_Function_2021
+  MF$Term <- gsub("\\s*\\(GO:\\d+\\)$", "", MF$Term)
+  MF <- MF[MF$Adjusted.P.value < thr_pval, ]
+  MF <- MF[order(MF$Adjusted.P.value, decreasing = F),]
+
+  MF$Gene_count <- sapply(MF$Genes, function(x){
+    tmp <- unlist(strsplit(x, split = ";"))
+    count <- length(tmp)
+  })
+
+  MF$Gene_ratio <- unlist(lapply(MF$Overlap, function(x){
+
+    total <- as.numeric(strsplit(x,"/")[[1]][2])
+    count <- as.numeric(strsplit(x,"/")[[1]][1])
+
+    Gene_ratio <- count/total
+
+  } ))
+
+  if(length(top_term) != 0 & top_term <= nrow(MF)){
+    annotation_top2 <- MF[1:top_term,]
+  }else{
+    annotation_top2 <- MF
+  }
+
+  KEGG <- df[[direction]]$KEGG_2021_Human
+  KEGG$Term <- gsub("\\s*\\(KEGG:\\d+\\)$", "", KEGG$Term)
+  KEGG <- KEGG[KEGG$Adjusted.P.value < thr_pval, ]
+  KEGG <- KEGG[order(KEGG$Adjusted.P.value, decreasing = F),]
+
+  KEGG$Gene_count <- sapply(KEGG$Genes, function(x){
+    tmp <- unlist(strsplit(x, split = ";"))
+    count <- length(tmp)
+  })
+
+  KEGG$Gene_ratio <- unlist(lapply(KEGG$Overlap, function(x){
+
+    total <- as.numeric(strsplit(x,"/")[[1]][2])
+    count <- as.numeric(strsplit(x,"/")[[1]][1])
+
+    Gene_ratio <- count/total
+
+  } ))
+
+  if(length(top_term) != 0 & top_term <= nrow(KEGG)){
+    annotation_top3 <- KEGG[1:top_term,]
+  }else{
+    annotation_top3 <- KEGG
+  }
+
+  return(list(annotation_top = annotation_top, annotation_top1 = annotation_top1, annotation_top2= annotation_top2,annotation_top3= annotation_top3))
+
+}
