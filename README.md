@@ -33,8 +33,9 @@ This project implements a dashboard for conducting a differential gene expressio
     ```
     npm install
     ```
-5. Open a new terminal and launch a Docker container named "mybox" with the OpenCPU/RStudio image using the command:
+5. Open a new terminal, pull the opencpu/rstudio image and launch a Docker container named "mybox" with the OpenCPU/RStudio image using the command:
     ```
+    docker pull opencpu/rstudio
     docker run --name mybox -t -p 80:80 opencpu/rstudio
     ```
 6. Open another terminal window, then execute the following commands:
