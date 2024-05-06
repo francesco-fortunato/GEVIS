@@ -46,7 +46,7 @@ This project implements a dashboard for conducting a differential gene expressio
     apt-get install cmake
     ```
 7. Access RStudio by visiting localhost/rstudio/ (login credentials: username - opencpu, password - opencpu).
-8. Create a package, calling it "GEVIS", and paste inside the hello.R function the content of the file that you will find [here](GEVIS/R/hello.R). To build the project, press Ctrl+Shift+B.
+8. Create a package, calling it "GEVIS", and paste inside the hello.R function the content of the file that you will find [here](GEVIS/R/hello.R). On the right lower panel, select all the library used (BiocManager, EnrichR, GEOQuery). To build the project, press Ctrl+Shift+B.
 9. Back in the terminal from step 4, run the command:
     ```
     node ./server.js
