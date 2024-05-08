@@ -326,6 +326,118 @@
 </head>
 
 <body>
+    <div id="overlay"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 1000; display: none;">
+        <div
+            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 20px; border-radius: 5px;">
+            <h2>Do you want to load your dataset or try example?</h2>
+            <button id="loadDatasetBtn">Load Dataset</button>
+            <button id="tryExampleBtn">Try Example</button>
+        </div>
+    </div>
+    <div id="loadDatasetOverlay"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 1001; display: none;">
+        <div
+            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 20px; border-radius: 5px;">
+            <h2>Load raw RNA-Seq CSV file</h2>
+            <input type="file" id="fileInput">
+            <button id="loadCsvBtn">Load Dataset</button>
+        </div>
+    </div>
+
+    <div id="displayCsvOverlay"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 1002; display: none;">
+        <div
+            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 20px; border-radius: 5px;">
+            <h2>CSV Data (First 10 columns)</h2>
+            <table id="csvTable"></table>
+            <p>Total Columns: <span id="totalColumns"></span></p>
+            <p>Total Rows: <span id="totalRows"></span> (Header included)</p>
+        </div>
+    </div>
+
+
+
+    <!-- Add your other HTML content here -->
+
+    <script>
+        // Function to show the overlay and modal
+        function showOverlay() {
+            document.getElementById("overlay").style.display = "block";
+        }
+
+        // Function to hide the overlay and modal
+        function hideOverlay() {
+            document.getElementById("overlay").style.display = "none";
+        }
+
+        // Function to show the CSV file loading overlay
+        function showLoadCsvOverlay() {
+            document.getElementById("loadDatasetOverlay").style.display = "block";
+        }
+
+        // Function to hide the CSV file loading overlay
+        function hideLoadCsvOverlay() {
+            document.getElementById("loadDatasetOverlay").style.display = "none";
+        }
+
+        function showDisplayCsvOverlay(data, totalColumns) {
+            document.getElementById("displayCsvOverlay").style.display = "block";
+            // Display the first 10 columns of the CSV data in a table
+            var table = "<thead><tr>";
+            var displayedColumns = Math.min(10, Object.keys(data[0]).length);
+            Object.keys(data[0]).slice(0, displayedColumns).forEach(function (key) {
+                table += "<th>" + key + "</th>";
+            });
+            table += "</tr></thead><tbody>";
+            for (var i = 0; i < 20; i++) {
+                table += "<tr>";
+                Object.values(data[i]).slice(0, displayedColumns).forEach(function (value) {
+                    table += "<td>" + value + "</td>";
+                });
+                table += "</tr>";
+            }
+            table += "</tbody>";
+            document.getElementById("csvTable").innerHTML = table;
+            document.getElementById("totalColumns").textContent = totalColumns;
+            document.getElementById("totalRows").textContent = data.length;
+        }
+
+        // Event listener for the "Load Csv" button
+        document.getElementById("loadCsvBtn").addEventListener("click", function () {
+            var fileInput = document.getElementById("fileInput");
+            var file = fileInput.files[0];
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                var contents = e.target.result;
+                // Parse the CSV data
+                var lines = contents.split('\n');
+                var data = [];
+                var headers = lines[0].split(',');
+                for (var i = 1; i < lines.length; i++) {
+                    var obj = {};
+                    var currentline = lines[i].split(',');
+                    for (var j = 0; j < headers.length; j++) {
+                        obj[headers[j]] = currentline[j];
+                    }
+                    data.push(obj);
+                }
+                // Show the CSV data
+                hideLoadCsvOverlay();
+                showDisplayCsvOverlay(data, headers.length);
+            };
+            reader.readAsText(file);
+        });
+
+        // Event listener for the "Load Dataset" button
+        document.getElementById("loadDatasetBtn").addEventListener("click", function () {
+            hideOverlay();
+            showLoadCsvOverlay();
+        });
+
+    </script>
+
+
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <a class="navbar-brand" href="#" style="color:white">GEVis - GeneExpressionVIS</a>
         <button class="btn btn-secondary" id="openModalBtn">Get Enrichment</button>
@@ -622,6 +734,8 @@
 
         let selectedVariable = "case"
 
+        showOverlay()
+
 
         // Get the modal element
         var modal = document.getElementById("myModal");
@@ -858,350 +972,362 @@
                 "A" + [rx1, r, 0, 0, s1, 0, r];
         }
 
+        document.getElementById("loadingOverlay").style.display = "none";
 
-        // Read the contents of the .txt file
-        Promise.all([fetchJSON('dataC_log.json'), fetchJSON('dataN_log.json'), fetchJSON('data_log.json'), fetchMeta('metadata.json')])
-            .then(([dataC, dataN, data, meta]) => {
-                dataC_original = dataC
-                dataN_original = dataN
-                data_original = data
-                metadata = meta
-                fetch('variation_lung.txt')
-                    .then(response => response.text())
-                    .then(text => {
-                        // Parse the data
-                        const rows = text.split('\n');
-                        variation_data = rows.slice(1).map(row => {
-                            const [gene, variation] = row.trim().split('\t');
-                            return parseFloat(variation);
-                        });
-                        const row_length = rows.length - 1
-                        initial_num_genes = row_length
-                        variation_data_copy = (variation_data);
-                        console.log("numero di geni iniziali prima di qualsiasi filtro " + row_length)
-
-                        thr_prc = ss.quantile(variation_data, prc_IQR);
-                        updateHistogram(variation_data);
-
-                        const ind = variation_data_copy.reduce((result, entry, index) => {
-
-                            if (entry < thr_prc) {
-                                result.push(index);
-                            }
-                            return result;
-                        }, []);
-
-                        if (ind.length > 0) {
-
-                            // Remove entries corresponding to ind from dataN
-                            data_copy1 = data_original.filter((entry, index) => !ind.includes(index));
-
-                            // Remove entries corresponding to ind from dataC
-                            dataC_copy1 = dataC_original.filter((entry, index) => !ind.includes(index));
-
-                            // Remove entries corresponding to ind from data
-                            dataN_copy1 = dataN_original.filter((entry, index) => !ind.includes(index));
-
-                            // Remove entries corresponding to ind from genes
-                            //genes = genes.filter((entry, index) => !ind.includes(index));
-
-                            // Remove entries corresponding to ind from logFC
-                            //parsedLogFC = parsedLogFC.filter((entry, index) => !ind.includes(index));
-
-                        }
-
-                        dataN_copy = dataN_copy1
-                        dataC_copy = dataC_copy1
-                        data_copy = data_copy1
-                        console.log("geni tolti dal primo filtering del IQR", ind.length)
-
-                        // Update the gene count display
-                        // const geneCountDiv = document.getElementById('geneCount');
-                        // geneCountDiv.innerHTML = `Initial number of genes: ${initial_num_genes}<br>Number of genes after filtering: ${data_copy.length}`;
-
-                        first_filter_number_genes = data_copy.length
-
-                        parsedLogFC_origin1 = calculateLogFC(dataC_original, dataN_original)
-                        parsedLogFC_origin = calculateLogFC(dataC_copy, dataN_copy);
-                        parsedLogFC = parsedLogFC_origin
-
-                        //  console.log("first parsed origin after",parsedLogFC_origin.length)
-                        //  console.log("first data orign afterN ",dataN_copy.length)
-                        //  console.log("first data orign afterC ",dataC_copy.length)
-
-                        averageExpressions10C = calculateAverageLog10Expressions(dataC_copy);
-                        averageExpressions10N = calculateAverageLog10Expressions(dataN_copy);
+        document.getElementById("loadDatasetBtn").addEventListener("click", function () {
+            hideOverlay();
+            // Add your code to load the dataset here
+        });
 
 
-                        fetch('genes_and_pval_adj.json')
-                            .then(response => response.json())
-                            .then(data => {
-                                p_val_adj = data
+        document.getElementById("tryExampleBtn").addEventListener("click", function () {
+            hideOverlay();
+            document.getElementById("loadingOverlay").style.display = "block";
 
-                                // Calculate the quantile
-                                log_thr_fc = Math.log2(1.1);
-                                //console.log(log_thr_fc)
-                                const ind = parsedLogFC_origin.reduce((result, entry, index) => {
+            Promise.all([fetchJSON('dataC_log.json'), fetchJSON('dataN_log.json'), fetchJSON('data_log.json'), fetchMeta('metadata.json')])
+                .then(([dataC, dataN, data, meta]) => {
+                    dataC_original = dataC
+                    dataN_original = dataN
+                    data_original = data
+                    metadata = meta
+                    fetch('variation_lung.txt')
+                        .then(response => response.text())
+                        .then(text => {
+                            // Parse the data
+                            const rows = text.split('\n');
+                            variation_data = rows.slice(1).map(row => {
+                                const [gene, variation] = row.trim().split('\t');
+                                return parseFloat(variation);
+                            });
+                            const row_length = rows.length - 1
+                            initial_num_genes = row_length
+                            variation_data_copy = (variation_data);
+                            console.log("numero di geni iniziali prima di qualsiasi filtro " + row_length)
 
-                                    if (Math.abs(entry.logFC) < Math.log2(thr_fc)) {
-                                        result.push(index);
+                            thr_prc = ss.quantile(variation_data, prc_IQR);
+                            updateHistogram(variation_data);
 
-                                    }
-                                    return result;
-                                }, []);
-                                console.log("geni tolti dal primo filtering del LOGFC", ind.length)
+                            const ind = variation_data_copy.reduce((result, entry, index) => {
 
-                                // console.log("parsed log before ",parsedLogFC.length)
-                                // console.log("data copy beforeC ",dataC_copy.length)
-                                // console.log("data copy beforeN ",dataN_copy.length)
-
-                                // console.log("parsed log origin ",parsedLogFC_origin.length)
-                                /////////////////////// 
-
-                                //DIMENSIONE DI PARSED E DATAC,DATAN SONO UGUALI , GIUSTAMENTE
-
-                                //////////////////////
-                                // console.log(parsedLogFC_origin)
-                                // console.log(data_copy)
-                                if (ind.length > 0) {
-
-                                    // Remove entries corresponding to ind from dataN
-                                    dataC_copy = dataC_copy1.filter((entry, index) => !ind.includes(index));
-
-                                    // Remove entries corresponding to ind from dataN
-                                    dataN_copy = dataN_copy1.filter((entry, index) => !ind.includes(index));
-
-                                    data_copy = data_copy1.filter((entry, index) => !ind.includes(index));
-
-                                    parsedLogFC = parsedLogFC_origin.filter((entry, index) => !ind.includes(index));
+                                if (entry < thr_prc) {
+                                    result.push(index);
                                 }
+                                return result;
+                            }, []);
 
-                                //////// DATI FILTRATI DAL PRIMO FOLD-CHANGE//////////////////
-                                // console.log(parsedLogFC)
-                                // console.log(data_copy)
+                            if (ind.length > 0) {
 
-                                updateLogFCHistogram(parsedLogFC_origin)
+                                // Remove entries corresponding to ind from dataN
+                                data_copy1 = data_original.filter((entry, index) => !ind.includes(index));
 
-                                var req = ocpu.call("hello", {
-                                    data: data_copy
-                                }, function (session) {
-                                    var filteredDataURL = session.loc + "/R/.val/json";
-                                    //console.log(session);
-                                    // Fetch the filtered data from the URL
-                                    fetch(filteredDataURL)
-                                        .then(response => response.json())
-                                        .then(data => {
-                                            old_p_adj = data
-                                            const ind = old_p_adj.reduce((result, entry, index) => {
+                                // Remove entries corresponding to ind from dataC
+                                dataC_copy1 = dataC_original.filter((entry, index) => !ind.includes(index));
 
-                                                if (entry.pval_adj > threshold) {
-                                                    result.push(index);
-                                                }
-                                                return result;
-                                            }, []);
+                                // Remove entries corresponding to ind from data
+                                dataN_copy1 = dataN_original.filter((entry, index) => !ind.includes(index));
 
+                                // Remove entries corresponding to ind from genes
+                                //genes = genes.filter((entry, index) => !ind.includes(index));
 
-                                            console.log("geni tolti dal primo filtering del pval", ind.length)
+                                // Remove entries corresponding to ind from logFC
+                                //parsedLogFC = parsedLogFC.filter((entry, index) => !ind.includes(index));
 
-                                            if (ind.length > 0) {
+                            }
 
-                                                //console.log(parsedLogFC.length)
+                            dataN_copy = dataN_copy1
+                            dataC_copy = dataC_copy1
+                            data_copy = data_copy1
+                            console.log("geni tolti dal primo filtering del IQR", ind.length)
 
-                                                // Remove entries corresponding to ind from dataN
+                            // Update the gene count display
+                            // const geneCountDiv = document.getElementById('geneCount');
+                            // geneCountDiv.innerHTML = `Initial number of genes: ${initial_num_genes}<br>Number of genes after filtering: ${data_copy.length}`;
 
-                                                // Remove entries corresponding to ind from dataN
-                                                dataC_copy_pval = dataC_copy.filter((entry, index) => !ind.includes(index));
+                            first_filter_number_genes = data_copy.length
 
-                                                // Remove entries corresponding to ind from dataN
-                                                dataN_copy_pval = dataN_copy.filter((entry, index) => !ind.includes(index));
+                            parsedLogFC_origin1 = calculateLogFC(dataC_original, dataN_original)
+                            parsedLogFC_origin = calculateLogFC(dataC_copy, dataN_copy);
+                            parsedLogFC = parsedLogFC_origin
 
+                            //  console.log("first parsed origin after",parsedLogFC_origin.length)
+                            //  console.log("first data orign afterN ",dataN_copy.length)
+                            //  console.log("first data orign afterC ",dataC_copy.length)
 
-                                                data_copy_pval = data_copy.filter((entry, index) => !ind.includes(index));
-
-                                                console.log("geni rimamenti dal primo filtering", data_copy.length)
-                                                // Remove entries corresponding to ind from logFC
-                                                parsedLogFC = parsedLogFC.filter((entry, index) => !ind.includes(index));
-
-                                                parsedLogFC_pval = parsedLogFC
-                                                updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
-
-                                                console.log("Promise: al box gli passo parsedlogFC", parsedLogFC.length)
-
-                                                var sortedLogFC = parsedLogFC.slice().sort((a, b) => b.logFC - a.logFC);
-
-                                                var mostUpregulatedGene = sortedLogFC[0];
-                                                var secondMostUpregulatedGene = sortedLogFC[1];
-
-                                                var mostDownregulatedGene = sortedLogFC[sortedLogFC.length - 1];
-                                                var secondMostDownregulatedGene = sortedLogFC[sortedLogFC.length - 2];
-
-                                                var mostUpregulatedGeneName = mostUpregulatedGene.Gene
-                                                //var secondMostUpregulatedGeneName = secondMostUpregulatedGene.Gene
-                                                var mostDownregulatedGeneName = mostDownregulatedGene.Gene
-                                                //var secondMostDownregulatedGeneName = secondMostDownregulatedGene.Gene
+                            averageExpressions10C = calculateAverageLog10Expressions(dataC_copy);
+                            averageExpressions10N = calculateAverageLog10Expressions(dataN_copy);
 
 
-                                                genes = [mostUpregulatedGeneName, mostDownregulatedGeneName]
+                            fetch('genes_and_pval_adj.json')
+                                .then(response => response.json())
+                                .then(data => {
+                                    p_val_adj = data
 
-                                                selectedGeneData.push(mostUpregulatedGeneName)
-                                                selectedGeneData.push(mostDownregulatedGeneName)
+                                    // Calculate the quantile
+                                    log_thr_fc = Math.log2(1.1);
+                                    //console.log(log_thr_fc)
+                                    const ind = parsedLogFC_origin.reduce((result, entry, index) => {
 
+                                        if (Math.abs(entry.logFC) < Math.log2(thr_fc)) {
+                                            result.push(index);
 
+                                        }
+                                        return result;
+                                    }, []);
+                                    console.log("geni tolti dal primo filtering del LOGFC", ind.length)
 
-                                                updateParallel(selectedGeneData, data_copy_pval, dataC_copy_pval, dataN_copy, first_dims)
+                                    // console.log("parsed log before ",parsedLogFC.length)
+                                    // console.log("data copy beforeC ",dataC_copy.length)
+                                    // console.log("data copy beforeN ",dataN_copy.length)
 
-                                                updateBoxPlot(mostUpregulatedGeneName, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
+                                    // console.log("parsed log origin ",parsedLogFC_origin.length)
+                                    /////////////////////// 
 
-                                                updateCounter()
+                                    //DIMENSIONE DI PARSED E DATAC,DATAN SONO UGUALI , GIUSTAMENTE
 
-                                                scatter.selectAll("circle")
-                                                    .filter(circleData => circleData.gene === mostUpregulatedGeneName || circleData.gene === mostDownregulatedGeneName)
-                                                    .style("fill", d => {
-                                                        // Check if logFC is greater than or equal to the threshold
-                                                        return "green";
+                                    //////////////////////
+                                    // console.log(parsedLogFC_origin)
+                                    // console.log(data_copy)
+                                    if (ind.length > 0) {
 
-                                                    })
-                                                    .classed('pulse', true);
+                                        // Remove entries corresponding to ind from dataN
+                                        dataC_copy = dataC_copy1.filter((entry, index) => !ind.includes(index));
 
+                                        // Remove entries corresponding to ind from dataN
+                                        dataN_copy = dataN_copy1.filter((entry, index) => !ind.includes(index));
 
-                                                document.getElementById("checkbox").style.visibility = "visible";
-                                                document.getElementById("radiobox").style.visibility = "visible";
+                                        data_copy = data_copy1.filter((entry, index) => !ind.includes(index));
 
+                                        parsedLogFC = parsedLogFC_origin.filter((entry, index) => !ind.includes(index));
+                                    }
 
-                                            }
-                                            console.log(dataN_copy.length)
-                                            var pc1Values = [];
-                                            var pc2Values = [];
-                                            var groupValues = [];
-                                            var req = ocpu.call("pca", {
-                                                data: data_copy_pval,
-                                                dataN: dataN_copy_pval,
-                                                dataC: dataC_copy_pval
-                                            }, function (session) {
-                                                var filteredDataURL = session.loc + "/R/.val/json";
-                                                //console.log(session);
-                                                // Fetch the filtered data from the URL
-                                                fetch(filteredDataURL)
-                                                    .then(response => response.json())
-                                                    .then(data => {
-                                                        json = data
-                                                        console.log(filteredDataURL)
-                                                        console.log(json)
+                                    //////// DATI FILTRATI DAL PRIMO FOLD-CHANGE//////////////////
+                                    // console.log(parsedLogFC)
+                                    // console.log(data_copy)
 
-                                                        var pc1Key = "PC1";
-                                                        var pc2Key = "PC2";
-                                                        var groupKey = "Group";
+                                    updateLogFCHistogram(parsedLogFC_origin)
 
-                                                        // Arrays to store PC1 and PC2 values
+                                    var req = ocpu.call("hello", {
+                                        data: data_copy
+                                    }, function (session) {
+                                        var filteredDataURL = session.loc + "/R/.val/json";
+                                        //console.log(session);
+                                        // Fetch the filtered data from the URL
+                                        fetch(filteredDataURL)
+                                            .then(response => response.json())
+                                            .then(data => {
+                                                old_p_adj = data
+                                                const ind = old_p_adj.reduce((result, entry, index) => {
 
-
-                                                        // Iterate over each object in the JSON array
-                                                        json.scores_df.forEach(function (obj) {
-                                                            // Push PC1, PC2, and Group values to the arrays
-                                                            pc1Values.push(obj[pc1Key]);
-                                                            pc2Values.push(obj[pc2Key]);
-                                                            groupValues.push(obj[groupKey]);
-                                                        });
-                                                        // console.log(pc1Values)
-
-                                                        pca_data = [];
-
-                                                        // Iterate over each object in the JSON array
-                                                        json.scores_df.forEach(function (obj) {
-                                                            // Retrieve additional data from metadata based on _row
-                                                            var gsm = obj._row;
-                                                            var group = obj.Group;
-
-                                                            // Retrieve smokerclass, stage, pc1, and pc2 from metadata
-                                                            var smokerclass = metadata['Cigarette Smoking Status:ch1'][metadata.geo_accession.indexOf(gsm)];
-                                                            var stage = metadata['Stage:ch1'][metadata.geo_accession.indexOf(gsm)];
-                                                            var pc1 = obj.PC1;
-                                                            var pc2 = obj.PC2;
-
-                                                            // Create an object with the required fields
-                                                            var newObj = {
-                                                                GSM: gsm,
-                                                                group: group,
-                                                                smokerclass: smokerclass,
-                                                                stage: stage,
-                                                                pc1: pc1,
-                                                                pc2: pc2
-                                                            };
-
-                                                            // Push the new object to the newData array
-                                                            pca_data.push(newObj);
+                                                    if (entry.pval_adj > threshold) {
+                                                        result.push(index);
+                                                    }
+                                                    return result;
+                                                }, []);
 
 
-                                                        });
-                                                        heatmap_data = []
-                                                        json.scores_var.forEach(function (obj) {
-                                                            // Push PC1, PC2, and Group values to the arrays
-                                                            var gene = obj._row
-                                                            var pc1 = obj.PC1
-                                                            var pc2 = obj.PC2
-                                                            var pc3 = obj.PC3
-                                                            var pc4 = obj.PC4
-                                                            var pc5 = obj.PC5
-                                                            var pc6 = obj.PC6
+                                                console.log("geni tolti dal primo filtering del pval", ind.length)
 
-                                                            var newObj = {
-                                                                gene: gene,
-                                                                pc1: pc1,
-                                                                pc2: pc2,
-                                                                pc3: pc3,
-                                                                pc4: pc4,
-                                                                pc5: pc5,
-                                                                pc6: pc6
-                                                            };
-                                                            heatmap_data.push(newObj);
+                                                if (ind.length > 0) {
+
+                                                    //console.log(parsedLogFC.length)
+
+                                                    // Remove entries corresponding to ind from dataN
+
+                                                    // Remove entries corresponding to ind from dataN
+                                                    dataC_copy_pval = dataC_copy.filter((entry, index) => !ind.includes(index));
+
+                                                    // Remove entries corresponding to ind from dataN
+                                                    dataN_copy_pval = dataN_copy.filter((entry, index) => !ind.includes(index));
+
+
+                                                    data_copy_pval = data_copy.filter((entry, index) => !ind.includes(index));
+
+                                                    console.log("geni rimamenti dal primo filtering", data_copy.length)
+                                                    // Remove entries corresponding to ind from logFC
+                                                    parsedLogFC = parsedLogFC.filter((entry, index) => !ind.includes(index));
+
+                                                    parsedLogFC_pval = parsedLogFC
+                                                    updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
+
+                                                    console.log("Promise: al box gli passo parsedlogFC", parsedLogFC.length)
+
+                                                    var sortedLogFC = parsedLogFC.slice().sort((a, b) => b.logFC - a.logFC);
+
+                                                    var mostUpregulatedGene = sortedLogFC[0];
+                                                    var secondMostUpregulatedGene = sortedLogFC[1];
+
+                                                    var mostDownregulatedGene = sortedLogFC[sortedLogFC.length - 1];
+                                                    var secondMostDownregulatedGene = sortedLogFC[sortedLogFC.length - 2];
+
+                                                    var mostUpregulatedGeneName = mostUpregulatedGene.Gene
+                                                    //var secondMostUpregulatedGeneName = secondMostUpregulatedGene.Gene
+                                                    var mostDownregulatedGeneName = mostDownregulatedGene.Gene
+                                                    //var secondMostDownregulatedGeneName = secondMostDownregulatedGene.Gene
+
+
+                                                    genes = [mostUpregulatedGeneName, mostDownregulatedGeneName]
+
+                                                    selectedGeneData.push(mostUpregulatedGeneName)
+                                                    selectedGeneData.push(mostDownregulatedGeneName)
+
+
+
+                                                    updateParallel(selectedGeneData, data_copy_pval, dataC_copy_pval, dataN_copy, first_dims)
+
+                                                    updateBoxPlot(mostUpregulatedGeneName, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
+
+                                                    updateCounter()
+
+                                                    scatter.selectAll("circle")
+                                                        .filter(circleData => circleData.gene === mostUpregulatedGeneName || circleData.gene === mostDownregulatedGeneName)
+                                                        .style("fill", d => {
+                                                            // Check if logFC is greater than or equal to the threshold
+                                                            return "green";
+
                                                         })
-                                                        // Display the newData array
-                                                        //console.log(pca_data);
+                                                        .classed('pulse', true);
 
 
-                                                        pca(pca_data);
-                                                        heatmap(heatmap_data);
-
-                                                    })
+                                                    document.getElementById("checkbox").style.visibility = "visible";
+                                                    document.getElementById("radiobox").style.visibility = "visible";
 
 
+                                                }
+                                                console.log(dataN_copy.length)
+                                                var pc1Values = [];
+                                                var pc2Values = [];
+                                                var groupValues = [];
+                                                var req = ocpu.call("pca", {
+                                                    data: data_copy_pval,
+                                                    dataN: dataN_copy_pval,
+                                                    dataC: dataC_copy_pval
+                                                }, function (session) {
+                                                    var filteredDataURL = session.loc + "/R/.val/json";
+                                                    //console.log(session);
+                                                    // Fetch the filtered data from the URL
+                                                    fetch(filteredDataURL)
+                                                        .then(response => response.json())
+                                                        .then(data => {
+                                                            json = data
+                                                            console.log(filteredDataURL)
+                                                            console.log(json)
+
+                                                            var pc1Key = "PC1";
+                                                            var pc2Key = "PC2";
+                                                            var groupKey = "Group";
+
+                                                            // Arrays to store PC1 and PC2 values
+
+
+                                                            // Iterate over each object in the JSON array
+                                                            json.scores_df.forEach(function (obj) {
+                                                                // Push PC1, PC2, and Group values to the arrays
+                                                                pc1Values.push(obj[pc1Key]);
+                                                                pc2Values.push(obj[pc2Key]);
+                                                                groupValues.push(obj[groupKey]);
+                                                            });
+                                                            // console.log(pc1Values)
+
+                                                            pca_data = [];
+
+                                                            // Iterate over each object in the JSON array
+                                                            json.scores_df.forEach(function (obj) {
+                                                                // Retrieve additional data from metadata based on _row
+                                                                var gsm = obj._row;
+                                                                var group = obj.Group;
+
+                                                                // Retrieve smokerclass, stage, pc1, and pc2 from metadata
+                                                                var smokerclass = metadata['Cigarette Smoking Status:ch1'][metadata.geo_accession.indexOf(gsm)];
+                                                                var stage = metadata['Stage:ch1'][metadata.geo_accession.indexOf(gsm)];
+                                                                var pc1 = obj.PC1;
+                                                                var pc2 = obj.PC2;
+
+                                                                // Create an object with the required fields
+                                                                var newObj = {
+                                                                    GSM: gsm,
+                                                                    group: group,
+                                                                    smokerclass: smokerclass,
+                                                                    stage: stage,
+                                                                    pc1: pc1,
+                                                                    pc2: pc2
+                                                                };
+
+                                                                // Push the new object to the newData array
+                                                                pca_data.push(newObj);
+
+
+                                                            });
+                                                            heatmap_data = []
+                                                            json.scores_var.forEach(function (obj) {
+                                                                // Push PC1, PC2, and Group values to the arrays
+                                                                var gene = obj._row
+                                                                var pc1 = obj.PC1
+                                                                var pc2 = obj.PC2
+                                                                var pc3 = obj.PC3
+                                                                var pc4 = obj.PC4
+                                                                var pc5 = obj.PC5
+                                                                var pc6 = obj.PC6
+
+                                                                var newObj = {
+                                                                    gene: gene,
+                                                                    pc1: pc1,
+                                                                    pc2: pc2,
+                                                                    pc3: pc3,
+                                                                    pc4: pc4,
+                                                                    pc5: pc5,
+                                                                    pc6: pc6
+                                                                };
+                                                                heatmap_data.push(newObj);
+                                                            })
+                                                            // Display the newData array
+                                                            //console.log(pca_data);
+
+
+                                                            pca(pca_data);
+                                                            heatmap(heatmap_data);
+
+                                                        })
 
 
 
-                                            })
-                                            // DEG(data_copy_pval,parsedLogFC,old_p_adj)
-                                            // var req = ocpu.call("enrichment", {
-                                            //     data: data_copy
-                                            //     }, function (session) {
 
-                                            // })
-                                        });
 
+                                                })
+                                                // DEG(data_copy_pval,parsedLogFC,old_p_adj)
+                                                // var req = ocpu.call("enrichment", {
+                                                //     data: data_copy
+                                                //     }, function (session) {
+
+                                                // })
+                                            });
+
+
+                                    })
+                                    ///// DATI FILTRATI DAL PRIMO PVALUE, GIA' FILTRATI DAL PRIMO LOGFC, CHE ERANO GIA FILTRATI DA PRIMO IQR IN dataC_copy dataN_copy data_copy parsedLogFC ///////
+
+
+                                    // Calculate the quantile
+                                    log_thr_fc = Math.log2(thr_fc);
 
                                 })
-                                ///// DATI FILTRATI DAL PRIMO PVALUE, GIA' FILTRATI DAL PRIMO LOGFC, CHE ERANO GIA FILTRATI DA PRIMO IQR IN dataC_copy dataN_copy data_copy parsedLogFC ///////
+                            const ind2 = parsedLogFC_origin.reduce((result, entry, index) => {
+
+                                if (Math.abs(entry.logFC) < Math.log2(thr_fc)) {
+                                    result.push(index);
+                                }
+                                return result;
+                            }, []);
+
+                            // const geneCountDiv2 = document.getElementById('geneCount2');
+                            // geneCountDiv2.innerHTML = `First filtering number of genes: ${first_filter_number_genes}<br>Number of genes after filtering: ${data_copy.length - ind2.length}`;
 
 
-                                // Calculate the quantile
-                                log_thr_fc = Math.log2(thr_fc);
+                        })
+                        .catch(error => console.error('Error reading file:', error));
 
-                            })
-                        const ind2 = parsedLogFC_origin.reduce((result, entry, index) => {
+                });
+        });
 
-                            if (Math.abs(entry.logFC) < Math.log2(thr_fc)) {
-                                result.push(index);
-                            }
-                            return result;
-                        }, []);
-
-                        // const geneCountDiv2 = document.getElementById('geneCount2');
-                        // geneCountDiv2.innerHTML = `First filtering number of genes: ${first_filter_number_genes}<br>Number of genes after filtering: ${data_copy.length - ind2.length}`;
-
-
-                    })
-                    .catch(error => console.error('Error reading file:', error));
-
-            });
 
         function DEG(data, logFC, pval_adj) {
 
