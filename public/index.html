@@ -339,8 +339,12 @@
         style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 1001; display: none;">
         <div
             style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 20px; border-radius: 5px;">
-            <h2>Load raw RNA-Seq CSV file</h2>
-            <input type="file" id="fileInput">
+            <h2>Load raw RNA-Seq CSV files
+                <br>
+                File 1: Expression Data, File 2: Metadata
+            </h2>
+            <input type="file" id="fileInput1">
+            <input type="file" id="fileInput2">
             <button id="loadCsvBtn">Load Dataset</button>
         </div>
     </div>
@@ -351,8 +355,11 @@
             style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 20px; border-radius: 5px;">
             <h2>CSV Data (First 10 columns)</h2>
             <table id="csvTable"></table>
-            <p>Total Columns: <span id="totalColumns"></span></p>
-            <p>Total Rows: <span id="totalRows"></span> (Header included)</p>
+            <p>Total Columns File 1: <span id="totalColumns1"></span></p>
+            <p>Total Rows: File 2<span id="totalRows1"></span> (Header included)</p>
+            <p>Total Columns File 2: <span id="totalColumns2"></span></p>
+            <p>Total Rows: File 2<span id="totalRows2"></span> (Header included)</p>
+            <button id="selectMetadataBtn">Select Metadata Columns</button>
         </div>
     </div>
 
@@ -381,53 +388,252 @@
             document.getElementById("loadDatasetOverlay").style.display = "none";
         }
 
-        function showDisplayCsvOverlay(data, totalColumns) {
+        document.getElementById("loadCsvBtn").addEventListener("click", function () {
+            var fileInput1 = document.getElementById("fileInput1");
+            var fileInput2 = document.getElementById("fileInput2");
+            var file1 = fileInput1.files[0];
+            var file2 = fileInput2.files[0];
+
+            // Check if both files are selected
+            if (!file1 && !file2) {
+                alert("Please select at least one file");
+                return;
+            }
+
+            if (file1 && !file2) {
+                // If only the first file is selected, read and display it
+                var reader1 = new FileReader();
+                reader1.onload = function (e) {
+                    var contents1 = e.target.result;
+                    var data1 = parseCsv(contents1);
+                    hideLoadCsvOverlay();
+                    showDisplayCsvOverlay(data1);
+                };
+                reader1.readAsText(file1);
+            } else {
+                // If both files are selected, read and display both files
+                var reader1 = new FileReader();
+                var reader2 = new FileReader();
+                var contents1; // Define contents1 in the outer scope
+
+                reader1.onload = function (e) {
+                    contents1 = e.target.result; // Assign contents1 in the onload function of reader1
+                    reader2.readAsText(file2); // Read the second file once the first is loaded
+                };
+
+                reader2.onload = function (e) {
+                    var contents2 = e.target.result;
+                    var data1 = parseCsv(contents1); // Use contents1 here
+                    var data2 = parseCsv(contents2);
+                    hideLoadCsvOverlay();
+                    showDisplayCsvOverlay(data1, data2);
+                };
+
+                reader1.readAsText(file1); // Read the first file
+            }
+        });
+
+        // Function to parse CSV data
+        function parseCsv(contents) {
+            var lines = contents.split('\n');
+            var data = [];
+            var headers = lines[0].split(',');
+            for (var i = 1; i < lines.length; i++) {
+                var obj = {};
+                var currentline = lines[i].split(',');
+                for (var j = 0; j < headers.length; j++) {
+                    obj[headers[j]] = currentline[j];
+                }
+                data.push(obj);
+            }
+            return data;
+        }
+
+        function showDisplayCsvOverlay(data1, data2) {
             document.getElementById("displayCsvOverlay").style.display = "block";
-            // Display the first 10 columns of the CSV data in a table
+
+            // Display the first 10 columns of each CSV data in a table side by side
             var table = "<thead><tr>";
-            var displayedColumns = Math.min(10, Object.keys(data[0]).length);
-            Object.keys(data[0]).slice(0, displayedColumns).forEach(function (key) {
+            var displayedColumns = 5; // Display the first 10 columns
+
+            // Determine the headers and data to display based on the presence of data1 and data2
+            var headers = [];
+            var data = [];
+            if (data1 && data2) {
+                // Both datasets are provided
+                headers = [...Object.keys(data1[0]).slice(0, displayedColumns), ...Object.keys(data2[0]).slice(0, displayedColumns)];
+                data = data1.length < data2.length ? data1 : data2; // Use the shorter dataset
+                document.getElementById("totalColumns1").textContent = Object.keys(data1[0]).length;
+                document.getElementById("totalColumns2").textContent = Object.keys(data2[0]).length;
+                document.getElementById("totalRows1").textContent = data1.length;
+                document.getElementById("totalRows2").textContent = data2.length;
+            } else if (data1) {
+                // Only the first dataset is provided
+                headers = Object.keys(data1[0]).slice(0, displayedColumns);
+                data = data1;
+                document.getElementById("totalColumns1").textContent = Object.keys(data1[0]).length;
+                document.getElementById("totalRows1").textContent = data1.length;
+            } else if (data2) {
+                // Only the second dataset is provided
+                headers = Object.keys(data2[0]).slice(0, displayedColumns);
+                data = data2;
+                document.getElementById("totalColumns2").textContent = Object.keys(data2[0]).length;
+                document.getElementById("totalRows2").textContent = data2.length;
+            }
+
+            // Display headers
+            headers.forEach(function (key) {
                 table += "<th>" + key + "</th>";
             });
             table += "</tr></thead><tbody>";
+
+            // Display data
             for (var i = 0; i < 20; i++) {
                 table += "<tr>";
-                Object.values(data[i]).slice(0, displayedColumns).forEach(function (value) {
-                    table += "<td>" + value + "</td>";
+                headers.forEach(function (key) {
+                    table += "<td>" + (data[i][key] || '') + "</td>";
                 });
                 table += "</tr>";
             }
             table += "</tbody>";
+
             document.getElementById("csvTable").innerHTML = table;
-            document.getElementById("totalColumns").textContent = totalColumns;
-            document.getElementById("totalRows").textContent = data.length;
+            document.getElementById("selectMetadataBtn").addEventListener("click", function () {
+                // Hide the current overlay
+                document.getElementById("displayCsvOverlay").style.display = "none";
+
+                // Create a new overlay for selecting metadata columns
+                var selectMetadataOverlay = document.createElement("div");
+                selectMetadataOverlay.setAttribute("id", "selectMetadataOverlay");
+                selectMetadataOverlay.setAttribute("style", "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 1003; display: flex; justify-content: center; align-items: center;");
+
+                var selectMetadataContent = document.createElement("div");
+                selectMetadataContent.setAttribute("style", "background-color: white; padding: 20px; border-radius: 5px;");
+
+                // Add a title
+                var title = document.createElement("h2");
+                title.textContent = "Select Metadata Columns";
+                selectMetadataContent.appendChild(title);
+
+                // Add a message
+                var message = document.createElement("p");
+                message.textContent = "Select the metadata columns from the second file.";
+                selectMetadataContent.appendChild(message);
+
+                // Create a scrollable container for the metadata rows
+                var metadataContainer = document.createElement("div");
+                metadataContainer.setAttribute("style", "max-height: 300px; overflow-y: auto;");
+
+                // Add checkboxes for each column
+                for (var i = 0; i < data2.length; i++) {
+                    var checkboxLabel = document.createElement("label");
+                    var checkbox = document.createElement("input");
+                    checkbox.setAttribute("type", "checkbox");
+                    checkbox.setAttribute("value", data2[i][Object.keys(data2[i])[0]]); // Use the value of the first column
+                    checkboxLabel.appendChild(checkbox);
+                    checkboxLabel.appendChild(document.createTextNode(data2[i][Object.keys(data2[i])[0]])); // Display the value of the first column
+                    metadataContainer.appendChild(checkboxLabel);
+                    metadataContainer.appendChild(document.createElement("br")); // Add line break
+                }
+
+                selectMetadataContent.appendChild(metadataContainer);
+
+                // Add a button to select all metadata columns
+                var selectAllBtn = document.createElement("button");
+                selectAllBtn.textContent = "Select All";
+                selectAllBtn.addEventListener("click", function () {
+                    // Add your logic to select all metadata columns
+                    // For now, let's just display a message
+                    alert("All metadata columns selected.");
+                });
+                selectMetadataContent.appendChild(selectAllBtn);
+
+                selectMetadataOverlay.appendChild(selectMetadataContent);
+                document.body.appendChild(selectMetadataOverlay);
+            });
+
         }
 
-        // Event listener for the "Load Csv" button
-        document.getElementById("loadCsvBtn").addEventListener("click", function () {
-            var fileInput = document.getElementById("fileInput");
-            var file = fileInput.files[0];
-            var reader = new FileReader();
-            reader.onload = function (e) {
-                var contents = e.target.result;
-                // Parse the CSV data
-                var lines = contents.split('\n');
-                var data = [];
-                var headers = lines[0].split(',');
-                for (var i = 1; i < lines.length; i++) {
-                    var obj = {};
-                    var currentline = lines[i].split(',');
-                    for (var j = 0; j < headers.length; j++) {
-                        obj[headers[j]] = currentline[j];
-                    }
-                    data.push(obj);
-                }
-                // Show the CSV data
-                hideLoadCsvOverlay();
-                showDisplayCsvOverlay(data, headers.length);
-            };
-            reader.readAsText(file);
+        document.getElementById("selectMetadataBtn").addEventListener("click", function () {
+            // Hide the current overlay
+            document.getElementById("displayCsvOverlay").style.display = "none";
+
+            // Create a new overlay for selecting metadata columns
+            var selectMetadataOverlay = document.createElement("div");
+            selectMetadataOverlay.setAttribute("id", "selectMetadataOverlay");
+            selectMetadataOverlay.setAttribute("style", "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 1003; display: flex; justify-content: center; align-items: center;");
+
+            var selectMetadataContent = document.createElement("div");
+            selectMetadataContent.setAttribute("style", "background-color: white; padding: 20px; border-radius: 5px;");
+
+            // Here you can add the logic to display the columns of metadata from the second file
+            // For now, let's just display a message
+            selectMetadataContent.innerHTML = "<h2>Select Metadata Columns</h2><p>Select the metadata columns from the second file.</p>";
+
+            // Add a button to select all metadata columns
+            var selectAllBtn = document.createElement("button");
+            selectAllBtn.textContent = "Select All";
+            selectAllBtn.addEventListener("click", function () {
+                // Add your logic to select all metadata columns
+                // For now, let's just display a message
+                alert("All metadata columns selected.");
+            });
+            selectMetadataContent.appendChild(selectAllBtn);
+
+            selectMetadataOverlay.appendChild(selectMetadataContent);
+            document.body.appendChild(selectMetadataOverlay);
         });
+
+
+        // function showDisplayCsvOverlay(data, totalColumns) {
+        //     document.getElementById("displayCsvOverlay").style.display = "block";
+        //     // Display the first 10 columns of the CSV data in a table
+        //     var table = "<thead><tr>";
+        //     var displayedColumns = Math.min(10, Object.keys(data[0]).length);
+        //     Object.keys(data[0]).slice(0, displayedColumns).forEach(function (key) {
+        //         table += "<th>" + key + "</th>";
+        //     });
+        //     table += "</tr></thead><tbody>";
+        //     for (var i = 0; i < 20; i++) {
+        //         table += "<tr>";
+        //         Object.values(data[i]).slice(0, displayedColumns).forEach(function (value) {
+        //             table += "<td>" + value + "</td>";
+        //         });
+        //         table += "</tr>";
+        //     }
+        //     table += "</tbody>";
+        //     document.getElementById("csvTable").innerHTML = table;
+        //     document.getElementById("totalColumns").textContent = totalColumns;
+        //     document.getElementById("totalRows").textContent = data.length;
+        // }
+
+        // // Event listener for the "Load Csv" button
+        // document.getElementById("loadCsvBtn").addEventListener("click", function () {
+        //     var fileInput = document.getElementById("fileInput");
+        //     var file = fileInput.files[0];
+        //     var reader = new FileReader();
+        //     reader.onload = function (e) {
+        //         var contents = e.target.result;
+        //         // Parse the CSV data
+        //         var lines = contents.split('\n');
+        //         var data = [];
+        //         var headers = lines[0].split(',');
+        //         for (var i = 1; i < lines.length; i++) {
+        //             var obj = {};
+        //             var currentline = lines[i].split(',');
+        //             for (var j = 0; j < headers.length; j++) {
+        //                 obj[headers[j]] = currentline[j];
+        //             }
+        //             data.push(obj);
+        //         }
+        //         // Show the CSV data
+        //         hideLoadCsvOverlay();
+        //         showDisplayCsvOverlay(data, headers.length);
+        //     };
+        //     reader.readAsText(file);
+        // });
+
+
 
         // Event listener for the "Load Dataset" button
         document.getElementById("loadDatasetBtn").addEventListener("click", function () {
