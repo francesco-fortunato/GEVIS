@@ -349,14 +349,16 @@
         </div>
     </div>
 
-    <div id="displayCsvOverlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 1002; display: none;">
-        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 20px; border-radius: 5px;">
+    <div id="displayCsvOverlay"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 1002; display: none;">
+        <div
+            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 20px; border-radius: 5px;">
             <h2>CSV Data (First 10 columns)</h2>
             <div style="display: flex;">
                 <table id="csvTableData1" style="flex: 1; margin-right: 20px;"></table>
                 <table id="csvTableData2" style="flex: 1;"></table>
             </div>
-                <div style="clear: both;"></div> <!-- Clear float -->
+            <div style="clear: both;"></div> <!-- Clear float -->
             <p>Total Columns File 1: <span id="totalColumns1"></span></p>
             <p>Total Rows: File 1 <span id="totalRows1"></span> (Header included)</p>
             <p>Total Columns File 2: <span id="totalColumns2"></span></p>
@@ -364,7 +366,7 @@
             <button id="selectMetadataBtn">Select Metadata Rows</button>
         </div>
     </div>
-    
+
 
     <!-- Add your other HTML content here -->
 
@@ -471,63 +473,63 @@
         }
 
         function showDisplayCsvOverlay(data1, data2) {
-    document.getElementById("displayCsvOverlay").style.display = "block";
+            document.getElementById("displayCsvOverlay").style.display = "block";
 
-    // Display the first 10 columns of each CSV data in a table side by side
-    var tableData1 = "<thead><tr>";
-    var tableData2 = "<thead><tr>";
-    var displayedColumns = 5; // Display the first 10 columns
+            // Display the first 10 columns of each CSV data in a table side by side
+            var tableData1 = "<thead><tr>";
+            var tableData2 = "<thead><tr>";
+            var displayedColumns = 5; // Display the first 10 columns
 
-    // Determine the headers and data to display based on the presence of data1 and data2
-    var headersData1 = [];
-    var headersData2 = [];
+            // Determine the headers and data to display based on the presence of data1 and data2
+            var headersData1 = [];
+            var headersData2 = [];
 
-    if (data1) {
-        headersData1 = Object.keys(data1[0]).slice(0, displayedColumns);
-        document.getElementById("totalColumns1").textContent = Object.keys(data1[0]).length;
-        document.getElementById("totalRows1").textContent = data1.length;
-    }
+            if (data1) {
+                headersData1 = Object.keys(data1[0]).slice(0, displayedColumns);
+                document.getElementById("totalColumns1").textContent = Object.keys(data1[0]).length;
+                document.getElementById("totalRows1").textContent = data1.length;
+            }
 
-    if (data2) {
-        headersData2 = Object.keys(data2[0]).slice(0, displayedColumns);
-        document.getElementById("totalColumns2").textContent = Object.keys(data2[0]).length;
-        document.getElementById("totalRows2").textContent = data2.length;
-    }
+            if (data2) {
+                headersData2 = Object.keys(data2[0]).slice(0, displayedColumns);
+                document.getElementById("totalColumns2").textContent = Object.keys(data2[0]).length;
+                document.getElementById("totalRows2").textContent = data2.length;
+            }
 
-    // Display headers for data1
-    headersData1.forEach(function (key) {
-        tableData1 += "<th>" + key + "</th>";
-    });
-    tableData1 += "</tr></thead><tbody>";
+            // Display headers for data1
+            headersData1.forEach(function (key) {
+                tableData1 += "<th>" + key + "</th>";
+            });
+            tableData1 += "</tr></thead><tbody>";
 
-    // Display headers for data2
-    headersData2.forEach(function (key) {
-        tableData2 += "<th>" + key + "</th>";
-    });
-    tableData2 += "</tr></thead><tbody>";
+            // Display headers for data2
+            headersData2.forEach(function (key) {
+                tableData2 += "<th>" + key + "</th>";
+            });
+            tableData2 += "</tr></thead><tbody>";
 
-    // Display data rows for data1
-    for (var i = 0; i < Math.min(20, data1.length); i++) {
-        tableData1 += "<tr>";
-        headersData1.forEach(function (key) {
-            tableData1 += "<td>" + (data1[i][key] || '') + "</td>";
-        });
-        tableData1 += "</tr>";
-    }
-    tableData1 += "</tbody>";
+            // Display data rows for data1
+            for (var i = 0; i < Math.min(20, data1.length); i++) {
+                tableData1 += "<tr>";
+                headersData1.forEach(function (key) {
+                    tableData1 += "<td>" + (data1[i][key] || '') + "</td>";
+                });
+                tableData1 += "</tr>";
+            }
+            tableData1 += "</tbody>";
 
-    // Display data rows for data2
-    for (var i = 0; i < Math.min(20, data2.length); i++) {
-        tableData2 += "<tr>";
-        headersData2.forEach(function (key) {
-            tableData2 += "<td>" + (data2[i][key] || '') + "</td>";
-        });
-        tableData2 += "</tr>";
-    }
-    tableData2 += "</tbody>";
+            // Display data rows for data2
+            for (var i = 0; i < Math.min(20, data2.length); i++) {
+                tableData2 += "<tr>";
+                headersData2.forEach(function (key) {
+                    tableData2 += "<td>" + (data2[i][key] || '') + "</td>";
+                });
+                tableData2 += "</tr>";
+            }
+            tableData2 += "</tbody>";
 
-    document.getElementById("csvTableData1").innerHTML = tableData1;
-    document.getElementById("csvTableData2").innerHTML = tableData2;
+            document.getElementById("csvTableData1").innerHTML = tableData1;
+            document.getElementById("csvTableData2").innerHTML = tableData2;
             document.getElementById("selectMetadataBtn").addEventListener("click", function () {
                 // Hide the current overlay
                 document.getElementById("displayCsvOverlay").style.display = "none";
@@ -540,81 +542,97 @@
                 var selectMetadataContent = document.createElement("div");
                 selectMetadataContent.setAttribute("style", "background-color: white; padding: 20px; border-radius: 5px;");
 
-                // Add a title
-                var title = document.createElement("h2");
-                title.textContent = "Select Metadata Rows";
-                selectMetadataContent.appendChild(title);
+                // Here you can add the logic to display the columns of metadata from the second file
+                // For now, let's just display a message
+                selectMetadataContent.innerHTML = "<h2>Select Metadata Rows</h2><p>Select one metadata row from the second file:</p>";
 
-                // Add a message
-                var message = document.createElement("p");
-                message.textContent = "Select the metadata rows from the second file.";
-                selectMetadataContent.appendChild(message);
-
-                // Create a scrollable container for the metadata rows
-                var metadataContainer = document.createElement("div");
-                metadataContainer.setAttribute("style", "max-height: 300px; overflow-y: auto;");
-
-                console.log("Data2.length" + data2.length)
-                console.log(data2)
-                // Add checkboxes for each column
-                for (var i = 0; i < data2.length; i++) {
-                    var checkboxLabel = document.createElement("label");
-                    var checkbox = document.createElement("input");
-                    checkbox.setAttribute("type", "checkbox");
-                    checkbox.setAttribute("value", data2[i][Object.keys(data2[i])[0]]); // Use the value of the first column
-                    checkboxLabel.appendChild(checkbox);
-                    checkboxLabel.appendChild(document.createTextNode(data2[i][Object.keys(data2[i])[0]])); // Display the value of the first column
-                    metadataContainer.appendChild(checkboxLabel);
-                    metadataContainer.appendChild(document.createElement("br")); // Add line break
-                }
-
-                selectMetadataContent.appendChild(metadataContainer);
-
-                // Add a button to select all metadata columns
-                var selectAllBtn = document.createElement("button");
-                selectAllBtn.textContent = "Select All";
-                selectAllBtn.addEventListener("click", function () {
-                    // Add your logic to select all metadata columns
-                    // For now, let's just display a message
-                    alert("All metadata columns selected.");
+                // Create radio buttons for each row in data2
+                data2.forEach(function (row, index) {
+                    var radioLabel = document.createElement("label");
+                    var radioButton = document.createElement("input");
+                    radioButton.setAttribute("type", "radio");
+                    radioButton.setAttribute("name", "metadataRow"); // Set the same name for all radio buttons to make them mutually exclusive
+                    radioButton.setAttribute("value", index); // Use the index as the value for identifying the selected row
+                    if (index === 0) {
+                        radioButton.setAttribute("checked", "checked"); // Check the first radio button by default
+                    }
+                    radioLabel.appendChild(radioButton);
+                    radioLabel.appendChild(document.createTextNode(row[Object.keys(row)[0]])); // Display the value of the first column
+                    selectMetadataContent.appendChild(radioLabel);
+                    selectMetadataContent.appendChild(document.createElement("br")); // Add line break
                 });
-                selectMetadataContent.appendChild(selectAllBtn);
+
+                // Add a button to select the chosen metadata row
+                var selectRowBtn = document.createElement("button");
+                selectRowBtn.textContent = "Select Row";
+                selectRowBtn.addEventListener("click", function () {
+                    var selectedRowIndex = document.querySelector('input[name="metadataRow"]:checked').value;
+                    var rowData = Object.values(data2[selectedRowIndex]); // Get the values of the selected row
+                    var values = rowData.slice(1); // Exclude the first value (name of the row)
+
+                    // Separate values into two groups
+                    var group1 = [];
+                    var group2 = [];
+                    loop: for (var i = 0; i < values.length; i++) {
+                        var value = values[i];
+                        if (group1.length === 0 && group2.length === 0) {
+                            group1.push(value);
+                        } else if (!group1.includes(value) && (group2.length === 0 || group2.includes(value))) {
+                            group2.push(value);
+                        } else if (group1.includes(value)) {
+                            group1.push(value);
+                        } else {
+                            alert("Error: More than two groups of values found:\nGroup 1: " + group1[0] + "\nGroup 2: " + group2[0] + "\nValue that does not match with no group: " + value);
+                            group1 = [];
+                            group2 = [];
+                            break loop;
+                        }
+                    }
+                    // Check if there are exactly two groups of values
+                    if (group1.length > 0 && group2.length > 0) {
+                        console.log("Two groups of values found:\nGroup 1: " + group1[0] + "\nGroup 2: " + group2[0]);
+                        alert("Two groups of values found:\nGroup 1: " + group1[0] + "\nGroup 2: " + group2[0]);
+                    }
+                    else if (group1.length > 0 && group2.length === 0){
+                        alert("Error: just one group of values found:\nGroup 1: " + group1[0]);
+                    }
+                });
+                selectMetadataContent.appendChild(selectRowBtn);
 
                 selectMetadataOverlay.appendChild(selectMetadataContent);
                 document.body.appendChild(selectMetadataOverlay);
             });
-
         }
 
-        document.getElementById("selectMetadataBtn").addEventListener("click", function () {
-            // Hide the current overlay
-            document.getElementById("displayCsvOverlay").style.display = "none";
+        // document.getElementById("selectMetadataBtn").addEventListener("click", function () {
+        //     // Hide the current overlay
+        //     document.getElementById("displayCsvOverlay").style.display = "none";
 
-            // Create a new overlay for selecting metadata columns
-            var selectMetadataOverlay = document.createElement("div");
-            selectMetadataOverlay.setAttribute("id", "selectMetadataOverlay");
-            selectMetadataOverlay.setAttribute("style", "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 1003; display: flex; justify-content: center; align-items: center;");
+        //     // Create a new overlay for selecting metadata columns
+        //     var selectMetadataOverlay = document.createElement("div");
+        //     selectMetadataOverlay.setAttribute("id", "selectMetadataOverlay");
+        //     selectMetadataOverlay.setAttribute("style", "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 1003; display: flex; justify-content: center; align-items: center;");
 
-            var selectMetadataContent = document.createElement("div");
-            selectMetadataContent.setAttribute("style", "background-color: white; padding: 20px; border-radius: 5px;");
+        //     var selectMetadataContent = document.createElement("div");
+        //     selectMetadataContent.setAttribute("style", "background-color: white; padding: 20px; border-radius: 5px;");
 
-            // Here you can add the logic to display the columns of metadata from the second file
-            // For now, let's just display a message
-            selectMetadataContent.innerHTML = "<h2>Select Metadata Rows</h2><p>Select the metadata rows from the second file.</p>";
+        //     // Here you can add the logic to display the columns of metadata from the second file
+        //     // For now, let's just display a message
+        //     selectMetadataContent.innerHTML = "<h2>Select Metadata Rows</h2><p>Select the metadata rows from the second file.</p>";
 
-            // Add a button to select all metadata columns
-            var selectAllBtn = document.createElement("button");
-            selectAllBtn.textContent = "Select All";
-            selectAllBtn.addEventListener("click", function () {
-                // Add your logic to select all metadata columns
-                // For now, let's just display a message
-                alert("All metadata columns selected.");
-            });
-            selectMetadataContent.appendChild(selectAllBtn);
+        //     // Add a button to select all metadata columns
+        //     var selectAllBtn = document.createElement("button");
+        //     selectAllBtn.textContent = "Select All";
+        //     selectAllBtn.addEventListener("click", function () {
+        //         // Add your logic to select all metadata columns
+        //         // For now, let's just display a message
+        //         alert("All metadata columns selected.");
+        //     });
+        //     selectMetadataContent.appendChild(selectAllBtn);
 
-            selectMetadataOverlay.appendChild(selectMetadataContent);
-            document.body.appendChild(selectMetadataOverlay);
-        });
+        //     selectMetadataOverlay.appendChild(selectMetadataContent);
+        //     document.body.appendChild(selectMetadataOverlay);
+        // });
 
 
         // function showDisplayCsvOverlay(data, totalColumns) {
