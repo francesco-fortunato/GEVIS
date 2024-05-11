@@ -1326,7 +1326,8 @@
         }
 
 
-
+        let chosen_meta1
+        let chosen_meta2
         let variation_data;
         let variation_data_copy;
         let initial_num_genes;
@@ -2238,6 +2239,8 @@
                             // Create two new arrays to hold the filtered datasets
                             // Extract the selected value from data2
                             var selectedValue = group1[0]; // or group2[0] depending on which group represents the selected value
+                            chosen_meta1 = group1[0]
+                            chosen_meta2 = group2[0]
                             console.log("Selected value " + selectedValue)
 
                             // Assuming you have already obtained the selected row index and values from data2
@@ -2589,7 +2592,7 @@
 
 
 
-                                                            updateParallel(selectedGeneData, data_copy_pval, dataC_copy_pval, dataN_copy, first_dims)
+                                                            dynamicParallel(selectedGeneData, data_copy_pval, dataC_copy_pval, dataN_copy, first_dims)
 
                                                             updateBoxPlot(mostUpregulatedGeneName, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
 
@@ -6210,6 +6213,632 @@
             }
 
         }
+
+        function dynamicParallel(geneselected, data, dataC, dataN, first_dims, totalOrder) {
+
+            let structureCombinedData = [];
+
+            geneselected.forEach(geneName => {
+                var geneDataN = dataN.filter(d => d.gene === geneName);
+                var geneDataC = dataC.filter(d => d.gene === geneName);
+
+                // Extract sample names for each gene
+                var sampleKeysC = Object.keys(geneDataC[0]).filter(key => key !== "gene");
+                var sampleKeysN = Object.keys(geneDataN[0]).filter(key => key !== "gene");
+
+                let expressionValuesC = [];
+                geneDataC.forEach(entry => {
+                    expressionValuesC.push(...Object.values(entry).filter(val => typeof val === 'number' && !isNaN(val)));
+                });
+
+                let expressionValuesN = [];
+                geneDataN.forEach(entry => {
+                    expressionValuesN.push(...Object.values(entry).filter(val => typeof val === 'number' && !isNaN(val)));
+                });
+
+                var combinedData = [];
+                expressionValuesC.forEach((expression, i) => {
+                    combinedData.push({ sample: sampleKeysC[i], expression: expression, type: chosen_meta2, index: i });
+                });
+                expressionValuesN.forEach((expression, i) => {
+                    combinedData.push({ sample: sampleKeysN[i], expression: expression, type: chosen_meta1, index: i });
+                });
+
+                structureCombinedData.push({
+                    gene: geneName,
+                    expressions: combinedData
+                });
+            });
+
+            // set the dimensions and margins of the graph
+            var margin = { top: 30, right: 50, bottom: 10, left: 50 },
+                width = 1000 - margin.left - margin.right,
+                height = 320 - margin.top - margin.bottom;
+
+            // append the svg object to the body of the page
+            var svg = d3.select("#parallelcoordinates")
+                .html("")  // Clear previous content
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            var color;
+            if (selectedVariable === "case") {
+                color = d3.scaleOrdinal()
+                    .domain([chosen_meta1, chosen_meta2])
+                    .range(["#0d0887", "#fddb6d"]);
+            }
+            // Initialize y scale object
+            var y = {};
+
+            // Extract metadata categories from the values of the first column
+            var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
+            console.log("Metadata categories:", metadataCategories);
+            if (first_dims == ['Age at Diagnosis']) {
+                first_dims = metadataCategories
+            }
+
+            first_dims = metadataCategories
+
+            // Initialize y scale object
+            var y = {};
+
+            // Iterate through metadata categories to create y scales
+            metadataCategories.forEach((category, i) => {
+                var values = Object.values(metadata[i]); // Extract values for the current category
+                values.shift(); // Remove the first value (Sample_source_name_ch1)
+                var uniqueValues = [...new Set(values)]; // Filter out duplicate
+                console.log("Values for", category, ":", uniqueValues);
+                y[category] = d3.scaleOrdinal()
+                    .domain(uniqueValues) // Use unique values for the current category
+                    .range([...Array(uniqueValues.length).keys()].map(i => height - i * (height / (uniqueValues.length - 1))));
+            });
+
+            for (var i in geneselected) {
+                var name = geneselected[i];
+                y[name] = d3.scaleLinear()
+                    .domain([0, 20])
+                    .range([height, 0]);
+            }
+            console.log("Y scales:", y);
+
+            // Initialize transposedData array
+            var transposedData = [];
+
+
+
+            // Iterate over each metadata category
+            metadataCategories.forEach((category, index) => {
+                // Skip the first category (Sample_geo_accession)
+                if (index === 0) return;
+
+                // Iterate over each sample in the metadata
+                Object.keys(metadata[index]).forEach((sampleKey, sampleIndex) => {
+                    // Skip the first key (Sample_geo_accession)
+                    if (sampleIndex === 0) return;
+
+                    // If transposedData is not initialized for this sample, initialize it
+                    if (!transposedData[sampleKey]) {
+                        transposedData[sampleKey] = { [metadataCategories[0]]: metadata[0][sampleKey] };
+                    }
+
+                    // Add metadata values for each category to the transposedData
+                    transposedData[sampleKey][category] = metadata[index][sampleKey];
+                });
+            });
+
+            // Extract gene names from structureCombinedData
+            var geneNames = structureCombinedData.map(d => d.gene);
+
+            // Combine metadata categories and gene names
+            var allCategories = [...metadataCategories, ...geneNames];
+            console.log("All Categories " + allCategories)
+
+            // Build the X scale -> it finds the best position for each Y axis
+            var x = d3.scalePoint()
+                .range([0, width])
+                .domain(allCategories);
+
+            // Iterate over each gene in structureCombinedData
+            structureCombinedData.forEach(geneData => {
+                // Loop through each sample in the gene's expression data
+                geneData.expressions.forEach(sampleData => {
+                    const sampleKey = sampleData.sample;
+
+                    // If transposedData is not initialized for this sample, initialize it
+                    if (!transposedData[sampleKey]) {
+                        transposedData[sampleKey] = { [metadataCategories[0]]: metadata[0][sampleKey] };
+                    }
+
+                    // Add gene expression values for each gene to the transposedData
+                    transposedData[sampleKey][geneData.gene] = sampleData.expression;
+                });
+            });
+
+
+            // Log transposedData
+            console.log("Transposed Data:", transposedData);
+            var test = 0;
+            var gsmPaths = svg.selectAll(".gsm-path")
+                .data(Object.keys(transposedData))
+                .enter()
+                .append("path")
+                .attr("class", function (d) {
+                    // Add the pulse-red class if the GSM is in the gsmList
+                    return gsmList.includes(d.GSM) ? "gsm-path pulse-red" : "gsm-path";
+                })
+                .attr("d", function (d) {
+                    if (test == 0) {
+                        test + 1
+                        console.log(d)
+                    }
+                    // Construct the path string using the order of dimensions specified by metadataCategories
+                    return pathString(transposedData[d]);
+                })
+                .style("fill", "none")
+                .style("stroke", function (d) {
+                    return "#ffff00"; // Set the stroke color
+                    // Add logic here to set stroke color based on selectedVariable
+                });
+
+            // Function to construct the path string
+            // Initialize an empty array to store coordinates
+            function pathString(sampleData) {
+                // Initialize an empty array to store coordinates
+                var coordinates = [];
+                // Loop through each dimension in metadataCategories
+                allCategories.forEach(function (category) {
+                    console.log(sampleData)
+                    console.log([x(category), y[category](sampleData[category])])
+
+                    // Push the x and y coordinates to the coordinates array
+                    coordinates.push([x(category), y[category](sampleData[category])]);
+                });
+                // Use D3's line generator to generate the path string
+                return d3.line()(coordinates);
+            }
+
+            gsmPaths.on("click", function (d) {
+                var clickedGSM = d.GSM; // Get the GSM value of the clicked path
+
+                // Check if the clicked GSM is already in gsmList
+                var index = gsmList.indexOf(clickedGSM);
+                if (index === -1) {
+                    // If not in the list, add it
+                    gsmList.push(clickedGSM);
+                    synchronizeAnimations(this)
+                } else {
+                    // If already in the list, remove it
+                    gsmList.splice(index, 1);
+                }
+
+                // Update the class of the clicked path based on its presence in gsmList
+                d3.select(this)
+                    .classed("pulse-red", gsmList.includes(clickedGSM));
+
+
+                pca(pca_data)
+
+                updateBoxPlot(last_box, parsedLogFC, dataN_copy, dataC_copy)
+
+
+
+                console.log("GSM List:", gsmList);
+            });
+
+            function path(d) {
+                return d3.line()(dimensions.map(function (geneName) { return [x(geneName), y[geneName](d[geneName])]; }));
+            }
+
+            svg.selectAll(".gsm-path").each(function (data, i) {
+                // Reorder the SVG elements to bring paths with selected GSM to the front
+                gsmPaths.each(function () {
+                    var selectedGSM = d3.select(this).datum().GSM;
+                    if (gsmList.includes(selectedGSM)) {
+                        this.parentNode.appendChild(this); // Append to the parent node to bring it to the front
+                    }
+                });
+
+                //console.log("Data bound to path " + (i + 1) + ":", data);
+            });
+
+            function synchronizeAnimations(targetElement) {
+                // Retrieve all elements with the class 'pulse'
+                const elements = document.querySelectorAll(".pulse-red")
+
+
+                console.log(elements)
+
+                // Retrieve the Animation object of the target element
+                const targetAnimation = findAnimByName(targetElement, 'pulseRedAnimation');
+
+                if (!targetAnimation) {
+                    return
+                }
+
+                // Get the current time of the target animation
+                const targetTime = targetAnimation.currentTime;
+
+                // Loop through each element with the class 'pulse'
+                elements.forEach(element => {
+                    // Retrieve the Animation object of the current element
+                    let currentAnimation = findAnimByName(element, 'pulseRedAnimation');
+
+                    // Get the current time of the current animation
+                    const currentTime = currentAnimation.currentTime;
+
+                    // Calculate the time difference between the target animation and the current animation
+                    const timeDifference = targetTime - currentTime;
+
+                    // Adjust the playback position of the current animation to match the target animation
+                    currentAnimation.currentTime += timeDifference;
+                });
+            }
+
+            // Simple helper to find an Animation by animationName
+            function findAnimByName(elem, name) {
+                // Get all the active animations on this element
+                const anims = elem.getAnimations();
+
+                console.log(anims)
+
+                // Return the first one with the expected animationName
+                return anims.find((anim) => anim.animationName === name);
+            }
+
+
+            // Draw the axis:
+            var axis = svg.selectAll("myAxis")
+                .data(metadataCategories.concat(geneselected))
+                .enter()
+                .append("g")
+                .attr("transform", function (d) { return "translate(" + x(d) + ")"; })
+                .each(function (d) {
+                    // if (d === "Smoking Status") {
+                    //     // For "Smoking Status" dimension, customize the tick format
+                    //     d3.select(this).call(d3.axisLeft().scale(y[d]).tickFormat(function (d) {
+                    //         // Customize the tick format here
+                    //         return d === "Never Smoked" ? "Never" : d === "Former Smoker" ? "Former" : "Current";
+                    //     }));
+                    // } else {
+                    d3.select(this).call(d3.axisLeft().scale(y[d]));
+                    //}
+                });
+
+            axis.append("text")
+                .style("text-anchor", "middle")
+                .attr("y", -9)
+                .text(function (d) {
+                    // Set the label text for "Type" axis
+                    //return d === "type" ? "Type" : d;
+                })
+                .style("fill", "white");
+
+            axis.selectAll(".domain")
+                .attr("stroke", "white");
+
+            axis.selectAll(".tick text")
+                .style("fill", "white");
+            axis.selectAll(".tick line")
+                .attr("stroke", "white");
+
+
+            // Define drag behavior
+            var drag = d3.drag()
+                .on("start", dragstart)
+                .on("drag", dragmove)
+                .on("end", dragend);
+
+            // Draw the axis:
+            var axisGroups = svg.selectAll("myAxis")
+                .data(metadataCategories.concat(geneselected))
+                .enter()
+                .append("g")
+                .attr("class", "axis-group")
+                .attr("transform", function (d) { return "translate(" + x(d) + ")"; })
+                .each(function (d) {
+                    // if (d === "Smoking Status") {
+                    //     // For "Smoking Status" dimension, customize the tick format
+                    //     d3.select(this).call(d3.axisLeft().scale(y[d]).tickFormat(function (d) {
+                    //         // Customize the tick format here
+                    //         return d === "Never Smoked" ? "Never" : d === "Former Smoker" ? "Former" : "Current";
+                    //     }));
+                    // } else {
+                    d3.select(this).call(d3.axisLeft().scale(y[d]));
+                    //}
+                })
+                .call(drag); // Apply drag behavior to each axis group;
+
+            axisGroups.append("text")
+                .attr("class", "dragging") // Add the axis-label class
+                .style("text-anchor", "middle")
+                .attr("y", -9)
+                .text(function (d) {
+                    // Set the label text for "Type" axis
+                    return d === "type" ? "Type" : d;
+                })
+                .style("fill", "white");
+
+            axisGroups.selectAll(".domain")
+                .attr("stroke", "white");
+
+            axisGroups.selectAll(".tick text")
+                .style("fill", "white");
+            axisGroups.selectAll(".tick line")
+                .attr("stroke", "white");
+
+
+
+            // Drag start function
+            function dragstart(d) {
+                // Raise the dragged axis to the front
+                d3.select(this).raise().classed("active", true);
+                d3.select(this).classed("dragging", true);
+
+            }
+
+            // Drag move function
+            function dragmove(d) {
+                // Update the position of the dragged axis
+                var newPosition = d3.event.x;
+                d3.select(this).attr("transform", "translate(" + newPosition + ")");
+            }
+
+            function dragend(d) {
+                // Get the new positions of the axis groups
+                var newPositions = [];
+                svg.selectAll(".axis-group").each(function (d) {
+                    var transform = d3.select(this).attr("transform");
+                    var translateX = +transform.split("(")[1].split(")")[0];
+                    console.log(translateX)
+                    newPositions.push({ dimension: d, position: translateX });
+                });
+
+                // Sort newPositions array based on position
+                newPositions.sort(function (a, b) {
+                    return a.position - b.position;
+                });
+
+                // Separate dimensions into geneselected, metadata (first_dims), and total ordering
+                var geneselectedOrder = [];
+                var metadataOrder = [];
+                totalOrder = [];
+                newPositions.forEach(function (d) {
+                    if (geneselected.includes(d.dimension)) {
+                        geneselectedOrder.push(d.dimension);
+                    } else if (first_dims.includes(d.dimension)) {
+                        metadataOrder.push(d.dimension);
+                    }
+                    totalOrder.push(d.dimension);
+                });
+
+                // Check if any dimension was dragged too far to the left and remove it from geneselectedOrder if it belongs to geneselected
+                var removedDimensions = [];
+                newPositions.forEach(function (d) {
+                    console.log(d.position)
+                    if ((d.position < -100 || d.position > 1000) && geneselected.includes(d.dimension)) {
+                        var index = geneselectedOrder.indexOf(d.dimension);
+                        if (index !== -1) {
+                            removedDimensions.push(geneselectedOrder.splice(index, 1)[0]);
+                            // Remove highlighting color in the scatter plot
+                            scatter.selectAll("circle")
+                                .filter(circleData => circleData.gene === d.dimension)
+                                .style("fill", d => {
+                                    // Check if logFC is greater than or equal to the threshold
+                                    if (d.logFC >= log_thr_fc && d.pval_adj <= threshold) {
+                                        return "darkred";
+                                    } else if (d.logFC <= -(log_thr_fc) && d.pval_adj <= threshold) {
+                                        return "royalblue";
+                                    } else {
+                                        return "grey";
+                                    }
+                                });
+                        }
+                    }
+                });
+
+                // Remove corresponding data from transposedData
+                transposedData = transposedData.filter(function (d) {
+                    return !removedDimensions.includes(d.gene);
+                });
+
+                // Update totalOrder by removing removedDimensions
+                totalOrder = totalOrder.filter(function (d) {
+                    return !removedDimensions.includes(d);
+                });
+
+                console.log("Geneselected order:", geneselectedOrder);
+                console.log("Metadata order:", metadataOrder);
+                console.log("Total order:", totalOrder);
+                console.log("Removed dimensions:", removedDimensions);
+
+                selectedGeneData = geneselectedOrder
+
+                selectedGeneData = geneselectedOrder
+                // Find and remove the corresponding option from the select element
+                var select = document.getElementById("selectButton");
+                var options = select.options;
+
+                for (var i = 0; i < options.length; i++) {
+                    if (removedDimensions[0] === options[i].value) {
+                        select.removeChild(options[i]);
+                        break; // Exit the loop once the option is removed
+                    }
+                }
+
+
+                first_dims = metadataOrder
+
+                ordering = totalOrder
+
+                // Update dimensions with new order
+
+                // Redraw the parallel coordinates plot
+                // Call updateParallel or relevant function here with updated dimensions
+                dynamicParallel(geneselectedOrder, data, dataC, dataN, metadataOrder, totalOrder);
+                updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin, old_p_adj)
+                d3.selectAll(".axis-label").classed("dragging", false);
+
+            }
+            var newPositions = [];
+            svg.selectAll(".axis-group").each(function (d) {
+                var transform = d3.select(this).attr("transform");
+                var translateX = +transform.split("(")[1].split(")")[0];
+                console.log(translateX)
+                newPositions.push({ dimension: d, position: translateX });
+            });
+            console.log(newPositions)
+
+            // Sort newPositions array based on position
+            newPositions.sort(function (a, b) {
+                return a.position - b.position;
+            });
+
+            // Separate dimensions into geneselected, metadata (first_dims), and total ordering
+            var geneselectedOrder = [];
+            var metadataOrder = [];
+            totalOrder = [];
+            newPositions.forEach(function (d) {
+                if (geneselected.includes(d.dimension)) {
+                    geneselectedOrder.push(d.dimension);
+                } else if (first_dims.includes(d.dimension)) {
+                    metadataOrder.push(d.dimension);
+                }
+                totalOrder.push(d.dimension);
+            });
+
+            // Check if any dimension was dragged too far to the left and remove it from geneselectedOrder if it belongs to geneselected
+            var removedDimensions = [];
+            newPositions.forEach(function (d) {
+                if (d.position < -100 && geneselected.includes(d.dimension)) {
+                    var index = geneselectedOrder.indexOf(d.dimension);
+                    if (index !== -1) {
+                        removedDimensions.push(geneselectedOrder.splice(index, 1)[0]);
+                        // Remove highlighting color in the scatter plot
+                        scatter.selectAll("circle")
+                            .filter(circleData => circleData.gene === d.dimension)
+                            .style("fill", d => {
+                                // Check if logFC is greater than or equal to the threshold
+                                if (d.logFC >= log_thr_fc && d.pval_adj <= threshold) {
+                                    return "darkred";
+                                } else if (d.logFC <= -(log_thr_fc) && d.pval_adj <= threshold) {
+                                    return "royalblue";
+                                } else {
+                                    return "grey";
+                                }
+                            });
+                    }
+                }
+            });
+
+            // Remove corresponding data from transposedData
+            transposedData = transposedData.filter(function (d) {
+                return !removedDimensions.includes(d.gene);
+            });
+
+            // Update totalOrder by removing removedDimensions
+            totalOrder = totalOrder.filter(function (d) {
+                return !removedDimensions.includes(d);
+            });
+
+            console.log("Geneselected order:", geneselectedOrder);
+            console.log("Metadata order:", metadataOrder);
+            console.log("Total order:", totalOrder);
+            console.log("Removed dimensions:", removedDimensions);
+
+            selectedGeneData = geneselectedOrder
+
+
+            first_dims = metadataOrder
+
+            ordering = totalOrder
+            // Function to handle mouseover event
+            function highlight(d) {
+                // Determine the value to highlight based on the selected variable
+                var selected_reg;
+                if (selectedVariable === "case") {
+                    selected_reg = d.type;
+                } else if (selectedVariable === "Smoker") {
+                    selected_reg = d['Smoking Status'];
+                } else if (selectedVariable === "Gender") {
+                    selected_reg = d['Gender'];
+                } else if (selectedVariable === "Stage") {
+                    selected_reg = d['Stage']; // Set default value
+                }
+
+                // First, every group turns grey and reduces opacity
+                d3.selectAll(".gsm-path")
+                    .transition().duration(200)
+                    .style("stroke", function (data) {
+                        // Highlight only the selected category, reduce opacity for others
+                        if (selectedVariable === "case") {
+                            return data.type === selected_reg ? color(selected_reg) : "lightgrey";
+                        } else if (selectedVariable === "Smoker") {
+                            return data['Smoking Status'] === selected_reg ? color(selected_reg) : "lightgrey";
+                        } else if (selectedVariable === "Gender") {
+                            return data['Gender'] === selected_reg ? color(selected_reg) : "lightgrey";
+                        } else if (selectedVariable === "Stage") {
+                            return data['Stage'] === selected_reg ? color(selected_reg) : "lightgrey";
+                        }
+                    })
+                    .style("opacity", function (data) {
+                        // Set opacity based on whether it's the selected category or not
+                        if (selectedVariable === "case") {
+                            return data.type === selected_reg ? "1" : "0.2";
+                        } else if (selectedVariable === "Smoker") {
+                            return data['Smoking Status'] === selected_reg ? "1" : "0.2";
+                        } else if (selectedVariable === "Gender") {
+                            return data['Gender'] === selected_reg ? "1" : "0.2";
+                        } else if (selectedVariable === "Stage") {
+                            return data['Stage'] === selected_reg ? "1" : "0.2";
+                        }
+                    });
+
+                // Apply pulsing effect directly to the hovered element
+                d3.select(this)
+                    .classed("pulse-red", true);
+                this.parentNode.appendChild(this); // Append to the parent node to bring it to the front
+
+            }
+
+            // Function to handle mouseout event
+            function doNotHighlight() {
+                // Reset stroke color and opacity for all lines
+                d3.selectAll(".gsm-path")
+                    .transition().duration(200)
+                    .style("stroke", function (data) {
+                        // Set stroke color based on the selected variable
+                        if (selectedVariable === "case") {
+                            return color(data.type);
+                        } else if (selectedVariable === "Smoker") {
+                            return color(data['Smoking Status']);
+                        } else if (selectedVariable === "Gender") {
+                            return color(data['Gender']);
+                        } else if (selectedVariable === "Stage") {
+                            return color(data['Stage']);
+                        }
+                    })
+                    .style("opacity", "1"); // Reset opacity to 1
+
+                // Pulsing effect for paths with GSM in gsmList
+                d3.selectAll(".gsm-path")
+                    .filter(function (data) {
+                        return !gsmList.includes(data.GSM);
+                    })
+                    .classed("pulse-red", false);
+            }
+
+            // Bind mouseover and mouseleave events to all lines
+            svg.selectAll(".gsm-path")
+                .on("mouseover", highlight)
+                .on("mouseleave", doNotHighlight);
+
+
+        }
+
+
 
         function updateParallel(geneselected, data, dataC, dataN, first_dims, totalOrder) {
             let structureCombinedData = [];
