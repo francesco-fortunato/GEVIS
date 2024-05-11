@@ -372,324 +372,731 @@
 
     <script>
         // Function to show the overlay and modal
-        function showOverlay() {
-            document.getElementById("overlay").style.display = "block";
-        }
-
-        // Function to hide the overlay and modal
-        function hideOverlay() {
-            document.getElementById("overlay").style.display = "none";
-        }
-
-        // Function to show the CSV file loading overlay
-        function showLoadCsvOverlay() {
-            document.getElementById("loadDatasetOverlay").style.display = "block";
-        }
-
-        // Function to hide the CSV file loading overlay
-        function hideLoadCsvOverlay() {
-            document.getElementById("loadDatasetOverlay").style.display = "none";
-        }
-
-        document.getElementById("loadCsvBtn").addEventListener("click", function () {
-            var fileInput1 = document.getElementById("fileInput1");
-            var fileInput2 = document.getElementById("fileInput2");
-            var file1 = fileInput1.files[0];
-            var file2 = fileInput2.files[0];
-
-            // Check if both files are selected
-            if (!file1 && !file2) {
-                alert("Please select at least one file");
-                return;
-            }
-
-            if (file1 && !file2) {
-                // If only the first file is selected, read and display it
-                var reader1 = new FileReader();
-                reader1.onload = function (e) {
-                    var contents1 = e.target.result;
-                    var data1 = parseCsv(contents1);
-                    hideLoadCsvOverlay();
-                    showDisplayCsvOverlay(data1);
-                };
-                reader1.readAsText(file1);
-            } else {
-                // If both files are selected, read and display both files
-                var reader1 = new FileReader();
-                var reader2 = new FileReader();
-                var contents1; // Define contents1 in the outer scope
-
-                reader1.onload = function (e) {
-                    contents1 = e.target.result; // Assign contents1 in the onload function of reader1
-                    reader2.readAsText(file2); // Read the second file once the first is loaded
-                };
-
-                reader2.onload = function (e) {
-                    var contents2 = e.target.result;
-                    var data1 = parseCsv(contents1); // Use contents1 here
-                    var data2 = parseCsv(contents2);
-                    hideLoadCsvOverlay();
-                    showDisplayCsvOverlay(data1, data2);
-                };
-
-                reader1.readAsText(file1); // Read the first file
-            }
-        });
-
-        function parseCsv(contents) {
-            var lines = contents.split('\n');
-            var data = [];
-
-            // Determine the delimiter dynamically
-            var delimiter = detectDelimiter(lines[0]);
-            console.log("Detected delimiter:", delimiter);
-
-            var headers = lines[0].split(delimiter).map(header => header.trim()); // Trim headers
-            for (var i = 1; i < lines.length; i++) {
-                var obj = {};
-                var currentline = lines[i].split(delimiter);
-                if (currentline.length !== headers.length) {
-                    continue; // Skip this line if the number of columns doesn't match the number of headers
-                }
-                for (var j = 0; j < headers.length; j++) {
-                    obj[headers[j]] = currentline[j].trim(); // Trim data values
-                    obj[headers[j]] = obj[headers[j]].replace(/\r/g, ''); // Remove carriage return characters
-                }
-                data.push(obj);
-            }
-            return data;
-        }
-        // Function to detect the delimiter in the CSV data
-        function detectDelimiter(line) {
-            // Check if the line contains a comma or a semicolon
-            if (line.includes(',')) {
-                return ',';
-            } else if (line.includes(';')) {
-                return ';';
-            } else {
-                // Default to comma if neither comma nor semicolon is found
-                return ',';
-            }
-        }
-
-        function showDisplayCsvOverlay(data1, data2) {
-            document.getElementById("displayCsvOverlay").style.display = "block";
-
-            // Display the first 10 columns of each CSV data in a table side by side
-            var tableData1 = "<thead><tr>";
-            var tableData2 = "<thead><tr>";
-            var displayedColumns = 5; // Display the first 10 columns
-
-            // Determine the headers and data to display based on the presence of data1 and data2
-            var headersData1 = [];
-            var headersData2 = [];
-
-            if (data1) {
-                headersData1 = Object.keys(data1[0]).slice(0, displayedColumns);
-                document.getElementById("totalColumns1").textContent = Object.keys(data1[0]).length;
-                document.getElementById("totalRows1").textContent = data1.length;
-            }
-
-            if (data2) {
-                headersData2 = Object.keys(data2[0]).slice(0, displayedColumns);
-                document.getElementById("totalColumns2").textContent = Object.keys(data2[0]).length;
-                document.getElementById("totalRows2").textContent = data2.length;
-            }
-
-            // Display headers for data1
-            headersData1.forEach(function (key) {
-                tableData1 += "<th>" + key + "</th>";
-            });
-            tableData1 += "</tr></thead><tbody>";
-
-            // Display headers for data2
-            headersData2.forEach(function (key) {
-                tableData2 += "<th>" + key + "</th>";
-            });
-            tableData2 += "</tr></thead><tbody>";
-
-            // Display data rows for data1
-            for (var i = 0; i < Math.min(20, data1.length); i++) {
-                tableData1 += "<tr>";
-                headersData1.forEach(function (key) {
-                    tableData1 += "<td>" + (data1[i][key] || '') + "</td>";
-                });
-                tableData1 += "</tr>";
-            }
-            tableData1 += "</tbody>";
-
-            // Display data rows for data2
-            for (var i = 0; i < Math.min(20, data2.length); i++) {
-                tableData2 += "<tr>";
-                headersData2.forEach(function (key) {
-                    tableData2 += "<td>" + (data2[i][key] || '') + "</td>";
-                });
-                tableData2 += "</tr>";
-            }
-            tableData2 += "</tbody>";
-
-            document.getElementById("csvTableData1").innerHTML = tableData1;
-            document.getElementById("csvTableData2").innerHTML = tableData2;
-            document.getElementById("selectMetadataBtn").addEventListener("click", function () {
-                // Hide the current overlay
-                document.getElementById("displayCsvOverlay").style.display = "none";
-
-                // Create a new overlay for selecting metadata columns
-                var selectMetadataOverlay = document.createElement("div");
-                selectMetadataOverlay.setAttribute("id", "selectMetadataOverlay");
-                selectMetadataOverlay.setAttribute("style", "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 1003; display: flex; justify-content: center; align-items: center;");
-
-                var selectMetadataContent = document.createElement("div");
-                selectMetadataContent.setAttribute("style", "background-color: white; padding: 20px; border-radius: 5px;");
-
-                // Here you can add the logic to display the columns of metadata from the second file
-                // For now, let's just display a message
-                selectMetadataContent.innerHTML = "<h2>Select Metadata Rows</h2><p>Select one metadata row from the second file:</p>";
-
-                // Create radio buttons for each row in data2
-                data2.forEach(function (row, index) {
-                    var radioLabel = document.createElement("label");
-                    var radioButton = document.createElement("input");
-                    radioButton.setAttribute("type", "radio");
-                    radioButton.setAttribute("name", "metadataRow"); // Set the same name for all radio buttons to make them mutually exclusive
-                    radioButton.setAttribute("value", index); // Use the index as the value for identifying the selected row
-                    if (index === 0) {
-                        radioButton.setAttribute("checked", "checked"); // Check the first radio button by default
-                    }
-                    radioLabel.appendChild(radioButton);
-                    radioLabel.appendChild(document.createTextNode(row[Object.keys(row)[0]])); // Display the value of the first column
-                    selectMetadataContent.appendChild(radioLabel);
-                    selectMetadataContent.appendChild(document.createElement("br")); // Add line break
-                });
-
-                // Add a button to select the chosen metadata row
-                var selectRowBtn = document.createElement("button");
-                selectRowBtn.textContent = "Select Row";
-                selectRowBtn.addEventListener("click", function () {
-                    var selectedRowIndex = document.querySelector('input[name="metadataRow"]:checked').value;
-                    var rowData = Object.values(data2[selectedRowIndex]); // Get the values of the selected row
-                    var values = rowData.slice(1); // Exclude the first value (name of the row)
-
-                    // Separate values into two groups
-                    var group1 = [];
-                    var group2 = [];
-                    loop: for (var i = 0; i < values.length; i++) {
-                        var value = values[i];
-                        if (group1.length === 0 && group2.length === 0) {
-                            group1.push(value);
-                        } else if (!group1.includes(value) && (group2.length === 0 || group2.includes(value))) {
-                            group2.push(value);
-                        } else if (group1.includes(value)) {
-                            group1.push(value);
-                        } else {
-                            alert("Error: More than two groups of values found:\nGroup 1: " + group1[0] + "\nGroup 2: " + group2[0] + "\nValue that does not match with no group: " + value);
-                            group1 = [];
-                            group2 = [];
-                            break loop;
-                        }
-                    }
-                    // Check if there are exactly two groups of values
-                    if (group1.length > 0 && group2.length > 0) {
-                        console.log("Two groups of values found:\nGroup 1: " + group1[0] + "\nGroup 2: " + group2[0]);
-                        alert("Two groups of values found:\nGroup 1: " + group1[0] + "\nGroup 2: " + group2[0]);
-                    }
-                    else if (group1.length > 0 && group2.length === 0){
-                        alert("Error: just one group of values found:\nGroup 1: " + group1[0]);
-                    }
-                });
-                selectMetadataContent.appendChild(selectRowBtn);
-
-                selectMetadataOverlay.appendChild(selectMetadataContent);
-                document.body.appendChild(selectMetadataOverlay);
-            });
-        }
-
-        // document.getElementById("selectMetadataBtn").addEventListener("click", function () {
-        //     // Hide the current overlay
-        //     document.getElementById("displayCsvOverlay").style.display = "none";
-
-        //     // Create a new overlay for selecting metadata columns
-        //     var selectMetadataOverlay = document.createElement("div");
-        //     selectMetadataOverlay.setAttribute("id", "selectMetadataOverlay");
-        //     selectMetadataOverlay.setAttribute("style", "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 1003; display: flex; justify-content: center; align-items: center;");
-
-        //     var selectMetadataContent = document.createElement("div");
-        //     selectMetadataContent.setAttribute("style", "background-color: white; padding: 20px; border-radius: 5px;");
-
-        //     // Here you can add the logic to display the columns of metadata from the second file
-        //     // For now, let's just display a message
-        //     selectMetadataContent.innerHTML = "<h2>Select Metadata Rows</h2><p>Select the metadata rows from the second file.</p>";
-
-        //     // Add a button to select all metadata columns
-        //     var selectAllBtn = document.createElement("button");
-        //     selectAllBtn.textContent = "Select All";
-        //     selectAllBtn.addEventListener("click", function () {
-        //         // Add your logic to select all metadata columns
-        //         // For now, let's just display a message
-        //         alert("All metadata columns selected.");
-        //     });
-        //     selectMetadataContent.appendChild(selectAllBtn);
-
-        //     selectMetadataOverlay.appendChild(selectMetadataContent);
-        //     document.body.appendChild(selectMetadataOverlay);
-        // });
-
-
-        // function showDisplayCsvOverlay(data, totalColumns) {
-        //     document.getElementById("displayCsvOverlay").style.display = "block";
-        //     // Display the first 10 columns of the CSV data in a table
-        //     var table = "<thead><tr>";
-        //     var displayedColumns = Math.min(10, Object.keys(data[0]).length);
-        //     Object.keys(data[0]).slice(0, displayedColumns).forEach(function (key) {
-        //         table += "<th>" + key + "</th>";
-        //     });
-        //     table += "</tr></thead><tbody>";
-        //     for (var i = 0; i < 20; i++) {
-        //         table += "<tr>";
-        //         Object.values(data[i]).slice(0, displayedColumns).forEach(function (value) {
-        //             table += "<td>" + value + "</td>";
-        //         });
-        //         table += "</tr>";
-        //     }
-        //     table += "</tbody>";
-        //     document.getElementById("csvTable").innerHTML = table;
-        //     document.getElementById("totalColumns").textContent = totalColumns;
-        //     document.getElementById("totalRows").textContent = data.length;
+        // function showOverlay() {
+        //     document.getElementById("overlay").style.display = "block";
         // }
 
-        // // Event listener for the "Load Csv" button
+        // // Function to hide the overlay and modal
+        // function hideOverlay() {
+        //     document.getElementById("overlay").style.display = "none";
+        // }
+
+        // // Function to show the CSV file loading overlay
+        // function showLoadCsvOverlay() {
+        //     document.getElementById("loadDatasetOverlay").style.display = "block";
+        // }
+
+        // // Function to hide the CSV file loading overlay
+        // function hideLoadCsvOverlay() {
+        //     document.getElementById("loadDatasetOverlay").style.display = "none";
+        // }
+
         // document.getElementById("loadCsvBtn").addEventListener("click", function () {
-        //     var fileInput = document.getElementById("fileInput");
-        //     var file = fileInput.files[0];
-        //     var reader = new FileReader();
-        //     reader.onload = function (e) {
-        //         var contents = e.target.result;
-        //         // Parse the CSV data
-        //         var lines = contents.split('\n');
-        //         var data = [];
-        //         var headers = lines[0].split(',');
-        //         for (var i = 1; i < lines.length; i++) {
-        //             var obj = {};
-        //             var currentline = lines[i].split(',');
-        //             for (var j = 0; j < headers.length; j++) {
-        //                 obj[headers[j]] = currentline[j];
-        //             }
-        //             data.push(obj);
-        //         }
-        //         // Show the CSV data
-        //         hideLoadCsvOverlay();
-        //         showDisplayCsvOverlay(data, headers.length);
-        //     };
-        //     reader.readAsText(file);
+        //     var fileInput1 = document.getElementById("fileInput1");
+        //     var fileInput2 = document.getElementById("fileInput2");
+        //     var file1 = fileInput1.files[0];
+        //     var file2 = fileInput2.files[0];
+
+        //     // Check if both files are selected
+        //     if (!file1 && !file2) {
+        //         alert("Please select at least one file");
+        //         return;
+        //     }
+
+        //     if (file1 && !file2) {
+        //         // If only the first file is selected, read and display it
+        //         var reader1 = new FileReader();
+        //         reader1.onload = function (e) {
+        //             var contents1 = e.target.result;
+        //             var data1 = parseCsv(contents1);
+        //             hideLoadCsvOverlay();
+        //             showDisplayCsvOverlay(data1);
+        //         };
+        //         reader1.readAsText(file1);
+        //     } else {
+        //         // If both files are selected, read and display both files
+        //         var reader1 = new FileReader();
+        //         var reader2 = new FileReader();
+        //         var contents1; // Define contents1 in the outer scope
+
+        //         reader1.onload = function (e) {
+        //             contents1 = e.target.result; // Assign contents1 in the onload function of reader1
+        //             reader2.readAsText(file2); // Read the second file once the first is loaded
+        //         };
+
+        //         reader2.onload = function (e) {
+        //             var contents2 = e.target.result;
+        //             var data1 = parseCsv(contents1); // Use contents1 here
+        //             var data2 = parseCsv(contents2);
+        //             hideLoadCsvOverlay();
+        //             showDisplayCsvOverlay(data1, data2);
+        //         };
+
+        //         reader1.readAsText(file1); // Read the first file
+        //     }
         // });
 
+        // function parseCsv(contents) {
+        //     var lines = contents.split('\n');
+        //     var data = [];
 
+        //     // Determine the delimiter dynamically
+        //     var delimiter = detectDelimiter(lines[0]);
+        //     console.log("Detected delimiter:", delimiter);
+
+        //     var headers = lines[0].split(delimiter).map(header => header.trim()); // Trim headers
+        //     for (var i = 1; i < lines.length; i++) {
+        //         var obj = {};
+        //         var currentline = lines[i].split(delimiter);
+        //         if (currentline.length !== headers.length) {
+        //             continue; // Skip this line if the number of columns doesn't match the number of headers
+        //         }
+        //         for (var j = 0; j < headers.length; j++) {
+        //             obj[headers[j]] = currentline[j].trim(); // Trim data values
+        //             obj[headers[j]] = obj[headers[j]].replace(/\r/g, ''); // Remove carriage return characters
+        //         }
+        //         data.push(obj);
+        //     }
+        //     return data;
+        // }
+        // // Function to detect the delimiter in the CSV data
+        // function detectDelimiter(line) {
+        //     // Check if the line contains a comma or a semicolon
+        //     if (line.includes(',')) {
+        //         return ',';
+        //     } else if (line.includes(';')) {
+        //         return ';';
+        //     } else {
+        //         // Default to comma if neither comma nor semicolon is found
+        //         return ',';
+        //     }
+        // }
+
+        // function showDisplayCsvOverlay(data1, data2) {
+        //     document.getElementById("displayCsvOverlay").style.display = "block";
+
+        //     // Display the first 10 columns of each CSV data in a table side by side
+        //     var tableData1 = "<thead><tr>";
+        //     var tableData2 = "<thead><tr>";
+        //     var displayedColumns = 5; // Display the first 10 columns
+
+        //     // Determine the headers and data to display based on the presence of data1 and data2
+        //     var headersData1 = [];
+        //     var headersData2 = [];
+
+        //     if (data1) {
+        //         headersData1 = Object.keys(data1[0]).slice(0, displayedColumns);
+        //         document.getElementById("totalColumns1").textContent = Object.keys(data1[0]).length;
+        //         document.getElementById("totalRows1").textContent = data1.length;
+        //     }
+
+        //     if (data2) {
+        //         headersData2 = Object.keys(data2[0]).slice(0, displayedColumns);
+        //         document.getElementById("totalColumns2").textContent = Object.keys(data2[0]).length;
+        //         document.getElementById("totalRows2").textContent = data2.length;
+        //     }
+
+        //     // Display headers for data1
+        //     headersData1.forEach(function (key) {
+        //         tableData1 += "<th>" + key + "</th>";
+        //     });
+        //     tableData1 += "</tr></thead><tbody>";
+
+        //     // Display headers for data2
+        //     headersData2.forEach(function (key) {
+        //         tableData2 += "<th>" + key + "</th>";
+        //     });
+        //     tableData2 += "</tr></thead><tbody>";
+
+        //     // Display data rows for data1
+        //     for (var i = 0; i < Math.min(20, data1.length); i++) {
+        //         tableData1 += "<tr>";
+        //         headersData1.forEach(function (key) {
+        //             tableData1 += "<td>" + (data1[i][key] || '') + "</td>";
+        //         });
+        //         tableData1 += "</tr>";
+        //     }
+        //     tableData1 += "</tbody>";
+
+        //     // Display data rows for data2
+        //     for (var i = 0; i < Math.min(20, data2.length); i++) {
+        //         tableData2 += "<tr>";
+        //         headersData2.forEach(function (key) {
+        //             tableData2 += "<td>" + (data2[i][key] || '') + "</td>";
+        //         });
+        //         tableData2 += "</tr>";
+        //     }
+        //     tableData2 += "</tbody>";
+
+        //     document.getElementById("csvTableData1").innerHTML = tableData1;
+        //     document.getElementById("csvTableData2").innerHTML = tableData2;
+        //     document.getElementById("selectMetadataBtn").addEventListener("click", function () {
+        //         // Hide the current overlay
+        //         document.getElementById("displayCsvOverlay").style.display = "none";
+
+        //         // Create a new overlay for selecting metadata rows
+        //         var selectMetadataOverlay = document.createElement("div");
+        //         selectMetadataOverlay.setAttribute("id", "selectMetadataOverlay");
+        //         selectMetadataOverlay.setAttribute("style", "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 1003; display: flex; justify-content: center; align-items: center;");
+
+        //         var selectMetadataContent = document.createElement("div");
+        //         selectMetadataContent.setAttribute("style", "background-color: white; padding: 20px; border-radius: 5px;");
+
+        //         // Here you can add the logic to display the rows of metadata from the second file
+        //         // For now, let's just display a message
+        //         selectMetadataContent.innerHTML = "<h2>Select Metadata Rows</h2><p>Select one metadata row from the second file:</p>";
+
+        //         // Create radio buttons for each row in data2
+        //         data2.forEach(function (row, index) {
+        //             var radioLabel = document.createElement("label");
+        //             var radioButton = document.createElement("input");
+        //             radioButton.setAttribute("type", "radio");
+        //             radioButton.setAttribute("name", "metadataRow"); // Set the same name for all radio buttons to make them mutually exclusive
+        //             radioButton.setAttribute("value", index); // Use the index as the value for identifying the selected row
+        //             if (index === 0) {
+        //                 radioButton.setAttribute("checked", "checked"); // Check the first radio button by default
+        //             }
+        //             radioLabel.appendChild(radioButton);
+        //             radioLabel.appendChild(document.createTextNode(row[Object.keys(row)[0]])); // Display the value of the first column
+        //             selectMetadataContent.appendChild(radioLabel);
+        //             selectMetadataContent.appendChild(document.createElement("br")); // Add line break
+        //         });
+
+        //         // Add a button to select the chosen metadata row
+        //         var selectRowBtn = document.createElement("button");
+        //         selectRowBtn.textContent = "Check Row";
+        //         console.log(data2)
+        //         console.log(data1)
+        //         selectRowBtn.addEventListener("click", function () {
+        //             var selectedRowIndex = document.querySelector('input[name="metadataRow"]:checked').value;
+        //             var rowData = Object.values(data2[selectedRowIndex]); // Get the values of the selected row
+        //             var values = rowData.slice(1); // Exclude the first value (name of the row)
+
+        //             // Separate values into two groups
+        //             var group1 = [];
+        //             var group2 = [];
+        //             loop: for (var i = 0; i < values.length; i++) {
+        //                 var value = values[i];
+        //                 if (group1.length === 0 && group2.length === 0) {
+        //                     group1.push(value);
+        //                 } else if (!group1.includes(value) && (group2.length === 0 || group2.includes(value))) {
+        //                     group2.push(value);
+        //                 } else if (group1.includes(value)) {
+        //                     group1.push(value);
+        //                 } else {
+        //                     alert("Error: More than two groups of values found:\nGroup 1: " + group1[0] + "\nGroup 2: " + group2[0] + "\nValue that does not match with no group: " + value);
+        //                     group1 = [];
+        //                     group2 = [];
+        //                     break loop;
+        //                 }
+        //             }
+        //             // Check if there are exactly two groups of values
+        //             if (group1.length > 0 && group2.length > 0) {
+        //                 console.log("Two groups of values found:\nGroup 1: " + group1[0] + "\nGroup 2: " + group2[0]);
+        //                 alert("Two groups of values found:\nGroup 1: " + group1[0] + "\nGroup 2: " + group2[0]);
+        //                 // Add a button for the next step
+        //                 var nextStepBtn = document.createElement("button");
+        //                 nextStepBtn.textContent = "Continue";
+        //                 nextStepBtn.addEventListener("click", function () {
+
+        //                     document.getElementById("selectMetadataOverlay").style.display = "none";
+
+        //                     document.getElementById("loadingOverlay").style.display = "block";
+        //                     // Assuming you have already obtained the selected row index and values from data2
+
+        //                     // Create two new arrays to hold the filtered datasets
+        //                     // Extract the selected value from data2
+        //                     var selectedValue = group1[0]; // or group2[0] depending on which group represents the selected value
+        //                     console.log("Selected value " + selectedValue)
+
+        //                     // Assuming you have already obtained the selected row index and values from data2
+        //                     // Assuming you have already obtained the selected row indices and values from data2
+
+        //                     for (var i = 0; i < data1.length; i++) {
+        //                         var obj = data1[i];
+        //                         var geneKey = Object.keys(obj)[0]; // Get the original first key
+        //                         var geneValue = obj[geneKey]; // Get the value corresponding to the original first key
+
+        //                         // Create a new object with the first key set to "Gene"
+        //                         var newObj = { "Gene": geneValue };
+
+        //                         // Add the remaining key-value pairs to the new object
+        //                         for (var key in obj) {
+        //                             if (key !== geneKey) { // Skip the original first key
+        //                                 newObj[key] = obj[key]; // Add the key-value pair to the new object
+        //                             }
+        //                         }
+
+        //                         // Replace the original object with the new object
+        //                         data1[i] = newObj;
+        //                     }
+
+
+        //                     // Create two new arrays to hold the filtered datasets
+        //                     var dataC = [];
+        //                     var dataN = [];
+
+        //                     // Loop through each object in data1
+        //                     for (var i = 0; i < data1.length; i++) {
+        //                         var obj = data1[i];
+        //                         var gene = obj[Object.keys(obj)[0]]; // Get the gene name from the first property of the object
+
+        //                         // Create new objects for dataC and dataN
+        //                         var newObjC = { "gene": gene };
+        //                         var newObjN = { "gene": gene };
+
+        //                         // Loop through the keys in the object and add values to newObjC and newObjN accordingly
+        //                         for (var key in obj) {
+        //                             if (key !== Object.keys(obj)[0]) { // Skip the first key (gene name)
+        //                                 // Check if the value in data2 matches the selected value
+        //                                 if (data2[selectedRowIndex][key] === selectedValue) {
+        //                                     newObjC[key] = obj[key]; // Add value to newObjC
+        //                                 } else {
+        //                                     newObjN[key] = obj[key]; // Add value to newObjN
+        //                                 }
+        //                             }
+        //                         }
+
+        //                         // Push the new objects to dataC and dataN
+        //                         dataC.push(newObjC);
+        //                         dataN.push(newObjN);
+        //                     }
+
+        //                     console.log(Object.keys(dataC[0]).length - 1)
+        //                     console.log(Object.keys(dataN[0]).length - 1)
+
+        //                     // Assuming you have obtained genes from data1
+        //                     var genes = data1.map(obj => obj[Object.keys(obj)[0]]);
+
+        //                     // Calculate overall mean for data1
+        //                     var overall_mean = data1.map(obj => {
+        //                         var values = Object.values(obj).slice(1).map(parseFloat);
+        //                         return values.reduce((acc, val) => acc + val, 0) / values.length;
+        //                     });
+
+        //                     // Filter out rows with overall mean equal to 0
+        //                     var ind = overall_mean.reduce((acc, val, index) => {
+        //                         if (val === 0) { console.log("VALUE 0"); acc.push(index); }
+        //                         return acc;
+        //                     }, []);
+
+        //                     console.log(ind)
+
+        //                     // Check if ind is not empty
+        //                     if (ind.length > 0) {
+        //                         dataN = dataN.filter((_, index) => !ind.includes(index));
+        //                         dataC = dataC.filter((_, index) => !ind.includes(index));
+        //                         data1 = data1.filter((_, index) => !ind.includes(index));
+        //                         genes = genes.filter((_, index) => !ind.includes(index));
+        //                     }
+
+        //                     // Step 2.1: Logarithmic transformation
+        //                     dataN = dataN.map(obj => {
+        //                         var newObj = {};
+        //                         newObj["gene"] = obj["gene"];
+        //                         for (var key in obj) {
+        //                             if (key !== "gene") {
+        //                                 newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
+        //                             }
+        //                         }
+        //                         return newObj;
+        //                     });
+
+        //                     dataC = dataC.map(obj => {
+        //                         var newObj = {};
+        //                         newObj["gene"] = obj["gene"];
+        //                         for (var key in obj) {
+        //                             if (key !== "gene") {
+        //                                 newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
+        //                             }
+        //                         }
+        //                         return newObj;
+        //                     });
+
+        //                     data1 = data1.map(obj => {
+        //                         var newObj = {};
+        //                         newObj[Object.keys(obj)[0]] = obj[Object.keys(obj)[0]];
+        //                         for (var key in obj) {
+        //                             if (key !== Object.keys(obj)[0]) {
+        //                                 newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
+        //                             }
+        //                         }
+        //                         return newObj;
+        //                     });
+
+        //                     // console.log(dataC);
+        //                     // console.log(dataN);
+
+        //                     // At this point, dataC contains objects where the corresponding column matches the selected value
+        //                     // And dataN contains objects where the corresponding column does not match the selected value
+
+        //                     // You can now use these datasets as needed
+
+        //                     var req = ocpu.call("variation", {
+        //                         rawdata: data1,
+        //                     }, function (session) {
+        //                         var filteredDataURL = session.loc + "/R/.val/json";
+        //                         console.log(session);
+        //                         // Fetch the filtered data from the URL
+        //                         fetch(filteredDataURL)
+        //                             .then(response => response.json())
+        //                             .then(data => {
+        //                                 const innerData = JSON.parse(data[0]);
+        //                                 console.log(data1)
+
+        //                                 // Extract variation values from the inner JSON array
+        //                                 const variation_data = innerData.map(obj => obj.Variation);
+
+        //                                 // Now you have an array of variation values, you can use it as needed
+        //                                 console.log(variation_data);
+        //                                 thr_prc = ss.quantile(variation_data, prc_IQR);
+
+        //                                 console.log("numero di geni iniziali prima di qualsiasi filtro " + row_length)
+
+        //                                 thr_prc = ss.quantile(variation_data, prc_IQR);
+        //                                 updateHistogram(variation_data);
+
+        //                                 const ind = variation_data_copy.reduce((result, entry, index) => {
+
+        //                                     if (entry < thr_prc) {
+        //                                         result.push(index);
+        //                                     }
+        //                                     return result;
+        //                                 }, []);
+
+        //                                 if (ind.length > 0) {
+
+        //                                     // Remove entries corresponding to ind from dataN
+        //                                     data_copy1 = data_original.filter((entry, index) => !ind.includes(index));
+
+        //                                     // Remove entries corresponding to ind from dataC
+        //                                     dataC_copy1 = dataC_original.filter((entry, index) => !ind.includes(index));
+
+        //                                     // Remove entries corresponding to ind from data
+        //                                     dataN_copy1 = dataN_original.filter((entry, index) => !ind.includes(index));
+
+        //                                     // Remove entries corresponding to ind from genes
+        //                                     //genes = genes.filter((entry, index) => !ind.includes(index));
+
+        //                                     // Remove entries corresponding to ind from logFC
+        //                                     //parsedLogFC = parsedLogFC.filter((entry, index) => !ind.includes(index));
+
+        //                                 }
+
+        //                                 dataN_copy = dataN_copy1
+        //                                 dataC_copy = dataC_copy1
+        //                                 data_copy = data_copy1
+        //                                 console.log("geni tolti dal primo filtering del IQR", ind.length)
+
+        //                                 // Update the gene count display
+        //                                 // const geneCountDiv = document.getElementById('geneCount');
+        //                                 // geneCountDiv.innerHTML = `Initial number of genes: ${initial_num_genes}<br>Number of genes after filtering: ${data_copy.length}`;
+
+        //                                 first_filter_number_genes = data_copy.length
+
+        //                                 parsedLogFC_origin1 = calculateLogFC(dataC_original, dataN_original)
+        //                                 parsedLogFC_origin = calculateLogFC(dataC_copy, dataN_copy);
+        //                                 parsedLogFC = parsedLogFC_origin
+
+        //                                 //  console.log("first parsed origin after",parsedLogFC_origin.length)
+        //                                 //  console.log("first data orign afterN ",dataN_copy.length)
+        //                                 //  console.log("first data orign afterC ",dataC_copy.length)
+
+        //                                 averageExpressions10C = calculateAverageLog10Expressions(dataC_copy);
+        //                                 averageExpressions10N = calculateAverageLog10Expressions(dataN_copy);
+
+
+        //                                 fetch('genes_and_pval_adj.json')
+        //                                     .then(response => response.json())
+        //                                     .then(data => {
+        //                                         p_val_adj = data
+
+        //                                         // Calculate the quantile
+        //                                         log_thr_fc = Math.log2(1.1);
+        //                                         //console.log(log_thr_fc)
+        //                                         const ind = parsedLogFC_origin.reduce((result, entry, index) => {
+
+        //                                             if (Math.abs(entry.logFC) < Math.log2(thr_fc)) {
+        //                                                 result.push(index);
+
+        //                                             }
+        //                                             return result;
+        //                                         }, []);
+        //                                         console.log("geni tolti dal primo filtering del LOGFC", ind.length)
+
+        //                                         // console.log("parsed log before ",parsedLogFC.length)
+        //                                         // console.log("data copy beforeC ",dataC_copy.length)
+        //                                         // console.log("data copy beforeN ",dataN_copy.length)
+
+        //                                         // console.log("parsed log origin ",parsedLogFC_origin.length)
+        //                                         ///////////////////////
+
+        //                                         //DIMENSIONE DI PARSED E DATAC,DATAN SONO UGUALI , GIUSTAMENTE
+
+        //                                         //////////////////////
+        //                                         // console.log(parsedLogFC_origin)
+        //                                         // console.log(data_copy)
+        //                                         if (ind.length > 0) {
+
+        //                                             // Remove entries corresponding to ind from dataN
+        //                                             dataC_copy = dataC_copy1.filter((entry, index) => !ind.includes(index));
+
+        //                                             // Remove entries corresponding to ind from dataN
+        //                                             dataN_copy = dataN_copy1.filter((entry, index) => !ind.includes(index));
+
+        //                                             data_copy = data_copy1.filter((entry, index) => !ind.includes(index));
+
+        //                                             parsedLogFC = parsedLogFC_origin.filter((entry, index) => !ind.includes(index));
+        //                                         }
+
+        //                                         //////// DATI FILTRATI DAL PRIMO FOLD-CHANGE//////////////////
+        //                                         // console.log(parsedLogFC)
+        //                                         // console.log(data_copy)
+
+        //                                         updateLogFCHistogram(parsedLogFC_origin)
+
+        //                                         var req = ocpu.call("hello", {
+        //                                             data: data_copy
+        //                                         }, function (session) {
+        //                                             var filteredDataURL = session.loc + "/R/.val/json";
+        //                                             //console.log(session);
+        //                                             // Fetch the filtered data from the URL
+        //                                             fetch(filteredDataURL)
+        //                                                 .then(response => response.json())
+        //                                                 .then(data => {
+        //                                                     old_p_adj = data
+        //                                                     const ind = old_p_adj.reduce((result, entry, index) => {
+
+        //                                                         if (entry.pval_adj > threshold) {
+        //                                                             result.push(index);
+        //                                                         }
+        //                                                         return result;
+        //                                                     }, []);
+
+
+        //                                                     console.log("geni tolti dal primo filtering del pval", ind.length)
+
+        //                                                     if (ind.length > 0) {
+
+        //                                                         //console.log(parsedLogFC.length)
+
+        //                                                         // Remove entries corresponding to ind from dataN
+
+        //                                                         // Remove entries corresponding to ind from dataN
+        //                                                         dataC_copy_pval = dataC_copy.filter((entry, index) => !ind.includes(index));
+
+        //                                                         // Remove entries corresponding to ind from dataN
+        //                                                         dataN_copy_pval = dataN_copy.filter((entry, index) => !ind.includes(index));
+
+
+        //                                                         data_copy_pval = data_copy.filter((entry, index) => !ind.includes(index));
+
+        //                                                         console.log("geni rimamenti dal primo filtering", data_copy.length)
+        //                                                         // Remove entries corresponding to ind from logFC
+        //                                                         parsedLogFC = parsedLogFC.filter((entry, index) => !ind.includes(index));
+
+        //                                                         parsedLogFC_pval = parsedLogFC
+        //                                                         updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
+
+        //                                                         console.log("Promise: al box gli passo parsedlogFC", parsedLogFC.length)
+
+        //                                                         var sortedLogFC = parsedLogFC.slice().sort((a, b) => b.logFC - a.logFC);
+
+        //                                                         var mostUpregulatedGene = sortedLogFC[0];
+        //                                                         var secondMostUpregulatedGene = sortedLogFC[1];
+
+        //                                                         var mostDownregulatedGene = sortedLogFC[sortedLogFC.length - 1];
+        //                                                         var secondMostDownregulatedGene = sortedLogFC[sortedLogFC.length - 2];
+
+        //                                                         var mostUpregulatedGeneName = mostUpregulatedGene.Gene
+        //                                                         //var secondMostUpregulatedGeneName = secondMostUpregulatedGene.Gene
+        //                                                         var mostDownregulatedGeneName = mostDownregulatedGene.Gene
+        //                                                         //var secondMostDownregulatedGeneName = secondMostDownregulatedGene.Gene
+
+
+        //                                                         genes = [mostUpregulatedGeneName, mostDownregulatedGeneName]
+
+        //                                                         selectedGeneData.push(mostUpregulatedGeneName)
+        //                                                         selectedGeneData.push(mostDownregulatedGeneName)
+
+
+
+        //                                                         updateParallel(selectedGeneData, data_copy_pval, dataC_copy_pval, dataN_copy, first_dims)
+
+        //                                                         updateBoxPlot(mostUpregulatedGeneName, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
+
+        //                                                         updateCounter()
+
+        //                                                         scatter.selectAll("circle")
+        //                                                             .filter(circleData => circleData.gene === mostUpregulatedGeneName || circleData.gene === mostDownregulatedGeneName)
+        //                                                             .style("fill", d => {
+        //                                                                 // Check if logFC is greater than or equal to the threshold
+        //                                                                 return "green";
+
+        //                                                             })
+        //                                                             .classed('pulse', true);
+
+
+        //                                                         document.getElementById("checkbox").style.visibility = "visible";
+        //                                                         document.getElementById("radiobox").style.visibility = "visible";
+
+
+        //                                                     }
+        //                                                     console.log(dataN_copy.length)
+        //                                                     var pc1Values = [];
+        //                                                     var pc2Values = [];
+        //                                                     var groupValues = [];
+        //                                                     var req = ocpu.call("pca", {
+        //                                                         data: data_copy_pval,
+        //                                                         dataN: dataN_copy_pval,
+        //                                                         dataC: dataC_copy_pval
+        //                                                     }, function (session) {
+        //                                                         var filteredDataURL = session.loc + "/R/.val/json";
+        //                                                         //console.log(session);
+        //                                                         // Fetch the filtered data from the URL
+        //                                                         fetch(filteredDataURL)
+        //                                                             .then(response => response.json())
+        //                                                             .then(data => {
+        //                                                                 json = data
+        //                                                                 console.log(filteredDataURL)
+        //                                                                 console.log(json)
+
+        //                                                                 var pc1Key = "PC1";
+        //                                                                 var pc2Key = "PC2";
+        //                                                                 var groupKey = "Group";
+
+        //                                                                 // Arrays to store PC1 and PC2 values
+
+
+        //                                                                 // Iterate over each object in the JSON array
+        //                                                                 json.scores_df.forEach(function (obj) {
+        //                                                                     // Push PC1, PC2, and Group values to the arrays
+        //                                                                     pc1Values.push(obj[pc1Key]);
+        //                                                                     pc2Values.push(obj[pc2Key]);
+        //                                                                     groupValues.push(obj[groupKey]);
+        //                                                                 });
+        //                                                                 // console.log(pc1Values)
+
+        //                                                                 pca_data = [];
+
+        //                                                                 // Iterate over each object in the JSON array
+        //                                                                 json.scores_df.forEach(function (obj) {
+        //                                                                     // Retrieve additional data from metadata based on _row
+        //                                                                     var gsm = obj._row;
+        //                                                                     var group = obj.Group;
+
+        //                                                                     // Retrieve smokerclass, stage, pc1, and pc2 from metadata
+        //                                                                     var smokerclass = metadata['Cigarette Smoking Status:ch1'][metadata.geo_accession.indexOf(gsm)];
+        //                                                                     var stage = metadata['Stage:ch1'][metadata.geo_accession.indexOf(gsm)];
+        //                                                                     var pc1 = obj.PC1;
+        //                                                                     var pc2 = obj.PC2;
+
+        //                                                                     // Create an object with the required fields
+        //                                                                     var newObj = {
+        //                                                                         GSM: gsm,
+        //                                                                         group: group,
+        //                                                                         smokerclass: smokerclass,
+        //                                                                         stage: stage,
+        //                                                                         pc1: pc1,
+        //                                                                         pc2: pc2
+        //                                                                     };
+
+        //                                                                     // Push the new object to the newData array
+        //                                                                     pca_data.push(newObj);
+
+
+        //                                                                 });
+        //                                                                 heatmap_data = []
+        //                                                                 json.scores_var.forEach(function (obj) {
+        //                                                                     // Push PC1, PC2, and Group values to the arrays
+        //                                                                     var gene = obj._row
+        //                                                                     var pc1 = obj.PC1
+        //                                                                     var pc2 = obj.PC2
+        //                                                                     var pc3 = obj.PC3
+        //                                                                     var pc4 = obj.PC4
+        //                                                                     var pc5 = obj.PC5
+        //                                                                     var pc6 = obj.PC6
+
+        //                                                                     var newObj = {
+        //                                                                         gene: gene,
+        //                                                                         pc1: pc1,
+        //                                                                         pc2: pc2,
+        //                                                                         pc3: pc3,
+        //                                                                         pc4: pc4,
+        //                                                                         pc5: pc5,
+        //                                                                         pc6: pc6
+        //                                                                     };
+        //                                                                     heatmap_data.push(newObj);
+        //                                                                 })
+        //                                                                 // Display the newData array
+        //                                                                 //console.log(pca_data);
+
+
+        //                                                                 pca(pca_data);
+        //                                                                 heatmap(heatmap_data);
+
+        //                                                             })
+
+
+
+
+
+        //                                                     })
+        //                                                     // DEG(data_copy_pval,parsedLogFC,old_p_adj)
+        //                                                     // var req = ocpu.call("enrichment", {
+        //                                                     //     data: data_copy
+        //                                                     //     }, function (session) {
+
+        //                                                     // })
+        //                                                 });
+
+
+        //                                         })
+        //                                         ///// DATI FILTRATI DAL PRIMO PVALUE, GIA' FILTRATI DAL PRIMO LOGFC, CHE ERANO GIA FILTRATI DA PRIMO IQR IN dataC_copy dataN_copy data_copy parsedLogFC ///////
+
+
+        //                                         // Calculate the quantile
+        //                                         log_thr_fc = Math.log2(thr_fc);
+
+        //                                     })
+        //                                 const ind2 = parsedLogFC_origin.reduce((result, entry, index) => {
+
+        //                                     if (Math.abs(entry.logFC) < Math.log2(thr_fc)) {
+        //                                         result.push(index);
+        //                                     }
+        //                                     return result;
+        //                                 }, []);
+
+        //                                 // const geneCountDiv2 = document.getElementById('geneCount2');
+        //                                 // geneCountDiv2.innerHTML = `First filtering number of genes: ${first_filter_number_genes}<br>Number of genes after filtering: ${data_copy.length - ind2.length}`;
+
+
+
+        //                             });
+
+        //                     })
+
+
+        //                 });
+        //                 selectMetadataContent.appendChild(nextStepBtn);
+
+        //             }
+        //             else if (group1.length > 0 && group2.length === 0) {
+        //                 alert("Error: just one group of values found:\nGroup 1: " + group1[0]);
+        //             }
+        //         });
+        //         selectMetadataContent.appendChild(selectRowBtn);
+
+        //         selectMetadataOverlay.appendChild(selectMetadataContent);
+        //         document.body.appendChild(selectMetadataOverlay);
+        //     });
+        // }
 
         // Event listener for the "Load Dataset" button
-        document.getElementById("loadDatasetBtn").addEventListener("click", function () {
-            hideOverlay();
-            showLoadCsvOverlay();
-        });
+        // document.getElementById("loadDatasetBtn").addEventListener("click", function () {
+        //     hideOverlay();
+        //     showLoadCsvOverlay();
+        // });
 
     </script>
 
@@ -1237,6 +1644,113 @@
             // Add your code to load the dataset here
         });
 
+        // Function to show the overlay and modal
+        function showOverlay() {
+            document.getElementById("overlay").style.display = "block";
+        }
+
+        // Function to hide the overlay and modal
+        function hideOverlay() {
+            document.getElementById("overlay").style.display = "none";
+        }
+
+        // Function to show the CSV file loading overlay
+        function showLoadCsvOverlay() {
+            document.getElementById("loadDatasetOverlay").style.display = "block";
+        }
+
+        // Function to hide the CSV file loading overlay
+        function hideLoadCsvOverlay() {
+            document.getElementById("loadDatasetOverlay").style.display = "none";
+        }
+
+        document.getElementById("loadCsvBtn").addEventListener("click", function () {
+            var fileInput1 = document.getElementById("fileInput1");
+            var fileInput2 = document.getElementById("fileInput2");
+            var file1 = fileInput1.files[0];
+            var file2 = fileInput2.files[0];
+
+            // Check if both files are selected
+            if (!file1 && !file2) {
+                alert("Please select at least one file");
+                return;
+            }
+
+            if (file1 && !file2) {
+                // If only the first file is selected, read and display it
+                var reader1 = new FileReader();
+                reader1.onload = function (e) {
+                    var contents1 = e.target.result;
+                    var data1 = parseCsv(contents1);
+                    hideLoadCsvOverlay();
+                    showDisplayCsvOverlay(data1);
+                };
+                reader1.readAsText(file1);
+            } else {
+                // If both files are selected, read and display both files
+                var reader1 = new FileReader();
+                var reader2 = new FileReader();
+                var contents1; // Define contents1 in the outer scope
+
+                reader1.onload = function (e) {
+                    contents1 = e.target.result; // Assign contents1 in the onload function of reader1
+                    reader2.readAsText(file2); // Read the second file once the first is loaded
+                };
+
+                reader2.onload = function (e) {
+                    var contents2 = e.target.result;
+                    var data1 = parseCsv(contents1); // Use contents1 here
+                    var data2 = parseCsv(contents2);
+                    hideLoadCsvOverlay();
+                    showDisplayCsvOverlay(data1, data2);
+                };
+
+                reader1.readAsText(file1); // Read the first file
+            }
+        });
+
+        function parseCsv(contents) {
+            var lines = contents.split('\n');
+            var data = [];
+
+            // Determine the delimiter dynamically
+            var delimiter = detectDelimiter(lines[0]);
+            console.log("Detected delimiter:", delimiter);
+
+            var headers = lines[0].split(delimiter).map(header => header.trim()); // Trim headers
+            for (var i = 1; i < lines.length; i++) {
+                var obj = {};
+                var currentline = lines[i].split(delimiter);
+                if (currentline.length !== headers.length) {
+                    continue; // Skip this line if the number of columns doesn't match the number of headers
+                }
+                for (var j = 0; j < headers.length; j++) {
+                    obj[headers[j]] = currentline[j].trim(); // Trim data values
+                    obj[headers[j]] = obj[headers[j]].replace(/\r/g, ''); // Remove carriage return characters
+                }
+                data.push(obj);
+            }
+            return data;
+        }
+        // Function to detect the delimiter in the CSV data
+        function detectDelimiter(line) {
+            // Check if the line contains a comma or a semicolon
+            if (line.includes(',')) {
+                return ',';
+            } else if (line.includes(';')) {
+                return ';';
+            } else {
+                // Default to comma if neither comma nor semicolon is found
+                return ',';
+            }
+        }
+
+        // Event listener for the "Load Dataset" button
+        document.getElementById("loadDatasetBtn").addEventListener("click", function () {
+            hideOverlay();
+            showLoadCsvOverlay();
+        });
+
 
         document.getElementById("tryExampleBtn").addEventListener("click", function () {
             hideOverlay();
@@ -1247,6 +1761,7 @@
                     dataC_original = dataC
                     dataN_original = dataN
                     data_original = data
+                    console.log(data)
                     metadata = meta
                     fetch('variation_lung.txt')
                         .then(response => response.text())
@@ -1257,6 +1772,7 @@
                                 const [gene, variation] = row.trim().split('\t');
                                 return parseFloat(variation);
                             });
+                            console.log(variation_data)
                             const row_length = rows.length - 1
                             initial_num_genes = row_length
                             variation_data_copy = (variation_data);
@@ -1302,7 +1818,7 @@
                             // geneCountDiv.innerHTML = `Initial number of genes: ${initial_num_genes}<br>Number of genes after filtering: ${data_copy.length}`;
 
                             first_filter_number_genes = data_copy.length
-
+                            console.log(dataC_original)
                             parsedLogFC_origin1 = calculateLogFC(dataC_original, dataN_original)
                             parsedLogFC_origin = calculateLogFC(dataC_copy, dataN_copy);
                             parsedLogFC = parsedLogFC_origin
@@ -1585,6 +2101,663 @@
 
                 });
         });
+
+
+        function showDisplayCsvOverlay(data1, data2) {
+            document.getElementById("displayCsvOverlay").style.display = "block";
+
+            // Display the first 10 columns of each CSV data in a table side by side
+            var tableData1 = "<thead><tr>";
+            var tableData2 = "<thead><tr>";
+            var displayedColumns = 5; // Display the first 10 columns
+
+            // Determine the headers and data to display based on the presence of data1 and data2
+            var headersData1 = [];
+            var headersData2 = [];
+
+            if (data1) {
+                headersData1 = Object.keys(data1[0]).slice(0, displayedColumns);
+                document.getElementById("totalColumns1").textContent = Object.keys(data1[0]).length;
+                document.getElementById("totalRows1").textContent = data1.length;
+            }
+
+            if (data2) {
+                headersData2 = Object.keys(data2[0]).slice(0, displayedColumns);
+                document.getElementById("totalColumns2").textContent = Object.keys(data2[0]).length;
+                document.getElementById("totalRows2").textContent = data2.length;
+            }
+
+            // Display headers for data1
+            headersData1.forEach(function (key) {
+                tableData1 += "<th>" + key + "</th>";
+            });
+            tableData1 += "</tr></thead><tbody>";
+
+            // Display headers for data2
+            headersData2.forEach(function (key) {
+                tableData2 += "<th>" + key + "</th>";
+            });
+            tableData2 += "</tr></thead><tbody>";
+
+            // Display data rows for data1
+            for (var i = 0; i < Math.min(20, data1.length); i++) {
+                tableData1 += "<tr>";
+                headersData1.forEach(function (key) {
+                    tableData1 += "<td>" + (data1[i][key] || '') + "</td>";
+                });
+                tableData1 += "</tr>";
+            }
+            tableData1 += "</tbody>";
+
+            // Display data rows for data2
+            for (var i = 0; i < Math.min(20, data2.length); i++) {
+                tableData2 += "<tr>";
+                headersData2.forEach(function (key) {
+                    tableData2 += "<td>" + (data2[i][key] || '') + "</td>";
+                });
+                tableData2 += "</tr>";
+            }
+            tableData2 += "</tbody>";
+
+            document.getElementById("csvTableData1").innerHTML = tableData1;
+            document.getElementById("csvTableData2").innerHTML = tableData2;
+            document.getElementById("selectMetadataBtn").addEventListener("click", function () {
+                // Hide the current overlay
+                document.getElementById("displayCsvOverlay").style.display = "none";
+
+                // Create a new overlay for selecting metadata rows
+                var selectMetadataOverlay = document.createElement("div");
+                selectMetadataOverlay.setAttribute("id", "selectMetadataOverlay");
+                selectMetadataOverlay.setAttribute("style", "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 1003; display: flex; justify-content: center; align-items: center;");
+
+                var selectMetadataContent = document.createElement("div");
+                selectMetadataContent.setAttribute("style", "background-color: white; padding: 20px; border-radius: 5px;");
+
+                // Here you can add the logic to display the rows of metadata from the second file
+                // For now, let's just display a message
+                selectMetadataContent.innerHTML = "<h2>Select Metadata Rows</h2><p>Select one metadata row from the second file:</p>";
+
+                // Create radio buttons for each row in data2
+                data2.forEach(function (row, index) {
+                    var radioLabel = document.createElement("label");
+                    var radioButton = document.createElement("input");
+                    radioButton.setAttribute("type", "radio");
+                    radioButton.setAttribute("name", "metadataRow"); // Set the same name for all radio buttons to make them mutually exclusive
+                    radioButton.setAttribute("value", index); // Use the index as the value for identifying the selected row
+                    if (index === 0) {
+                        radioButton.setAttribute("checked", "checked"); // Check the first radio button by default
+                    }
+                    radioLabel.appendChild(radioButton);
+                    radioLabel.appendChild(document.createTextNode(row[Object.keys(row)[0]])); // Display the value of the first column
+                    selectMetadataContent.appendChild(radioLabel);
+                    selectMetadataContent.appendChild(document.createElement("br")); // Add line break
+                });
+
+                // Add a button to select the chosen metadata row
+                var selectRowBtn = document.createElement("button");
+                selectRowBtn.textContent = "Check Row";
+                console.log(data2)
+                console.log(data1)
+                selectRowBtn.addEventListener("click", function () {
+                    var selectedRowIndex = document.querySelector('input[name="metadataRow"]:checked').value;
+                    var rowData = Object.values(data2[selectedRowIndex]); // Get the values of the selected row
+                    var values = rowData.slice(1); // Exclude the first value (name of the row)
+
+                    // Separate values into two groups
+                    var group1 = [];
+                    var group2 = [];
+                    loop: for (var i = 0; i < values.length; i++) {
+                        var value = values[i];
+                        if (group1.length === 0 && group2.length === 0) {
+                            group1.push(value);
+                        } else if (!group1.includes(value) && (group2.length === 0 || group2.includes(value))) {
+                            group2.push(value);
+                        } else if (group1.includes(value)) {
+                            group1.push(value);
+                        } else {
+                            alert("Error: More than two groups of values found:\nGroup 1: " + group1[0] + "\nGroup 2: " + group2[0] + "\nValue that does not match with no group: " + value);
+                            group1 = [];
+                            group2 = [];
+                            break loop;
+                        }
+                    }
+                    // Check if there are exactly two groups of values
+                    if (group1.length > 0 && group2.length > 0) {
+                        console.log("Two groups of values found:\nGroup 1: " + group1[0] + "\nGroup 2: " + group2[0]);
+                        alert("Two groups of values found:\nGroup 1: " + group1[0] + "\nGroup 2: " + group2[0]);
+                        // Add a button for the next step
+                        var nextStepBtn = document.createElement("button");
+                        nextStepBtn.textContent = "Continue";
+                        nextStepBtn.addEventListener("click", function () {
+
+                            document.getElementById("selectMetadataOverlay").style.display = "none";
+
+                            document.getElementById("loadingOverlay").style.display = "block";
+                            // Assuming you have already obtained the selected row index and values from data2
+
+                            // Create two new arrays to hold the filtered datasets
+                            // Extract the selected value from data2
+                            var selectedValue = group1[0]; // or group2[0] depending on which group represents the selected value
+                            console.log("Selected value " + selectedValue)
+
+                            // Assuming you have already obtained the selected row index and values from data2
+
+                            // Create two new arrays to hold the filtered datasets
+                            var dataC = [];
+                            var dataN = [];
+
+                            // Loop through each object in data1
+                            for (var i = 0; i < data1.length; i++) {
+                                var obj = data1[i];
+                                var gene = obj[Object.keys(obj)[0]]; // Get the gene name from the first property of the object
+
+                                // Create new objects for dataC and dataN
+                                var newObjC = { "gene": gene };
+                                var newObjN = { "gene": gene };
+
+                                // Loop through the keys in the object and add values to newObjC and newObjN accordingly
+                                for (var key in obj) {
+                                    if (key !== Object.keys(obj)[0]) { // Skip the first key (gene name)
+                                        // Check if the value in data2 matches the selected value
+                                        if (data2[selectedRowIndex][key] === selectedValue) {
+                                            newObjC[key] = obj[key]; // Add value to newObjC
+                                        } else {
+                                            newObjN[key] = obj[key]; // Add value to newObjN
+                                        }
+                                    }
+                                }
+
+                                // Push the new objects to dataC and dataN
+                                dataC.push(newObjC);
+                                dataN.push(newObjN);
+                            }
+
+                            // Create a new array to hold the reordered data
+                            var reorderedData = [];
+
+                            // Loop through each object in data1
+                            for (var i = 0; i < data1.length; i++) {
+                                var obj = data1[i];
+                                var gene = obj[Object.keys(obj)[0]]; // Get the first value of the object
+
+                                // Find the corresponding row in dataC and dataN
+                                var rowDataN = dataN.find(row => row.gene === gene);
+                                var rowDataC = dataC.find(row => row.gene === gene);
+
+                                // Construct the new object with the desired structure
+                                var reorderedObj = { "gene": gene };
+
+
+                                // Add GSM values from dataN to reorderedObj
+                                for (var key in rowDataN) {
+                                    if (key !== "gene") { // Skip the gene key
+                                        reorderedObj[key] = rowDataN[key];
+                                    }
+                                }
+
+                                // Add GSM values from dataC to reorderedObj
+                                for (var key in rowDataC) {
+                                    if (key !== "gene") { // Skip the gene key
+                                        reorderedObj[key] = rowDataC[key];
+                                    }
+                                }
+
+                                // Push the new object to the reorderedData array
+                                reorderedData.push(reorderedObj);
+                            }
+
+                            // Now, reorderedData contains the desired structure
+                            console.log(reorderedData);
+
+
+                            data1 = reorderedData
+
+                            console.log(Object.keys(dataC[0]).length - 1)
+                            console.log(Object.keys(dataN[0]).length - 1)
+
+                            // Assuming you have obtained genes from data1
+                            var genes = data1.map(obj => obj[Object.keys(obj)[0]]);
+
+                            // Calculate overall mean for data1
+                            var overall_mean = data1.map(obj => {
+                                var values = Object.values(obj).slice(1).map(parseFloat);
+                                return values.reduce((acc, val) => acc + val, 0) / values.length;
+                            });
+
+                            // Filter out rows with overall mean equal to 0
+                            var ind = overall_mean.reduce((acc, val, index) => {
+                                if (val === 0) { console.log("VALUE 0"); acc.push(index); }
+                                return acc;
+                            }, []);
+
+                            console.log(ind)
+
+                            // Check if ind is not empty
+                            if (ind.length > 0) {
+                                dataN = dataN.filter((_, index) => !ind.includes(index));
+                                dataC = dataC.filter((_, index) => !ind.includes(index));
+                                data1 = data1.filter((_, index) => !ind.includes(index));
+                                genes = genes.filter((_, index) => !ind.includes(index));
+                            }
+
+                            // Step 2.1: Logarithmic transformation
+                            dataN = dataN.map(obj => {
+                                var newObj = {};
+                                for (var key in obj) {
+                                    if (key !== "gene") {
+                                        newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
+                                    }
+                                }
+                                newObj["gene"] = obj["gene"];
+
+                                return newObj;
+                            });
+
+                            dataC = dataC.map(obj => {
+                                var newObj = {};
+                                for (var key in obj) {
+                                    if (key !== "gene") {
+                                        newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
+                                    }
+                                }
+                                newObj["gene"] = obj["gene"];
+
+                                return newObj;
+                            });
+
+                            data1 = data1.map(obj => {
+                                var newObj = {};
+                                for (var key in obj) {
+                                    if (key !== Object.keys(obj)[0]) {
+                                        newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
+                                    }
+                                }
+                                newObj["gene"] = obj[Object.keys(obj)[0]]; // Add the gene key-value pair at the end
+                                return newObj;
+                            });
+
+                            console.log(data1)
+
+                            // console.log(dataC);
+                            // console.log(dataN);
+
+                            // At this point, dataC contains objects where the corresponding column matches the selected value
+                            // And dataN contains objects where the corresponding column does not match the selected value
+
+                            // You can now use these datasets as needed
+
+                            dataC_original = dataC
+                            dataN_original = dataN
+                            data_original = data1
+                            metadata = data2
+
+
+                            var req = ocpu.call("variation", {
+                                rawdata: data1,
+                            }, function (session) {
+                                var filteredDataURL = session.loc + "/R/.val/json";
+                                console.log(session);
+                                // Fetch the filtered data from the URL
+                                fetch(filteredDataURL)
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        document.getElementById("loadingOverlay").style.display = "none";
+
+                                        const innerData = JSON.parse(data[0]);
+                                        console.log(data1)
+
+                                        // Extract variation values from the inner JSON array
+                                        const variation_data = innerData.map(obj => obj.Variation);
+
+                                        // Now you have an array of variation values, you can use it as needed
+                                        console.log(variation_data);
+                                        row_length = variation_data.length
+                                        initial_num_genes = row_length
+
+                                        console.log("numero di geni iniziali prima di qualsiasi filtro " + row_length)
+
+                                        thr_prc = ss.quantile(variation_data, prc_IQR);
+                                        updateHistogram(variation_data);
+                                        variation_data_copy = (variation_data);
+
+                                        const ind = variation_data_copy.reduce((result, entry, index) => {
+
+                                            if (entry < thr_prc) {
+                                                result.push(index);
+                                            }
+                                            return result;
+                                        }, []);
+
+                                        if (ind.length > 0) {
+
+                                            // Remove entries corresponding to ind from dataN
+                                            data_copy1 = data_original.filter((entry, index) => !ind.includes(index));
+
+                                            // Remove entries corresponding to ind from dataC
+                                            dataC_copy1 = dataC_original.filter((entry, index) => !ind.includes(index));
+
+                                            // Remove entries corresponding to ind from data
+                                            dataN_copy1 = dataN_original.filter((entry, index) => !ind.includes(index));
+
+                                            // Remove entries corresponding to ind from genes
+                                            //genes = genes.filter((entry, index) => !ind.includes(index));
+
+                                            // Remove entries corresponding to ind from logFC
+                                            //parsedLogFC = parsedLogFC.filter((entry, index) => !ind.includes(index));
+
+                                        }
+
+                                        dataN_copy = dataN_copy1
+                                        dataC_copy = dataC_copy1
+                                        data_copy = data_copy1
+                                        console.log("geni tolti dal primo filtering del IQR", ind.length)
+
+                                        // Update the gene count display
+                                        // const geneCountDiv = document.getElementById('geneCount');
+                                        // geneCountDiv.innerHTML = `Initial number of genes: ${initial_num_genes}<br>Number of genes after filtering: ${data_copy.length}`;
+
+                                        first_filter_number_genes = data_copy.length
+                                        console.log(dataC_original)
+
+
+                                        parsedLogFC_origin1 = calculateLogFC(dataC_original, dataN_original)
+                                        parsedLogFC_origin = calculateLogFC(dataC_copy, dataN_copy);
+                                        parsedLogFC = parsedLogFC_origin
+                                        console.log(parsedLogFC)
+
+                                        //  console.log("first parsed origin after",parsedLogFC_origin.length)
+                                        //  console.log("first data orign afterN ",dataN_copy.length)
+                                        //  console.log("first data orign afterC ",dataC_copy.length)
+
+                                        averageExpressions10C = calculateAverageLog10Expressions(dataC_copy);
+                                        averageExpressions10N = calculateAverageLog10Expressions(dataN_copy);
+
+                                        if (parsedLogFC) {
+
+                                            // Calculate the quantile
+                                            log_thr_fc = Math.log2(1.1);
+                                            //console.log(log_thr_fc)
+                                            const ind = parsedLogFC_origin.reduce((result, entry, index) => {
+
+                                                if (Math.abs(entry.logFC) < Math.log2(thr_fc)) {
+                                                    result.push(index);
+
+                                                }
+                                                return result;
+                                            }, []);
+                                            console.log("geni tolti dal primo filtering del LOGFC", ind.length)
+
+                                            // console.log("parsed log before ",parsedLogFC.length)
+                                            // console.log("data copy beforeC ",dataC_copy.length)
+                                            // console.log("data copy beforeN ",dataN_copy.length)
+
+                                            // console.log("parsed log origin ",parsedLogFC_origin.length)
+                                            /////////////////////// 
+
+                                            //DIMENSIONE DI PARSED E DATAC,DATAN SONO UGUALI , GIUSTAMENTE
+
+                                            //////////////////////
+                                            // console.log(parsedLogFC_origin)
+                                            // console.log(data_copy)
+                                            if (ind.length > 0) {
+
+                                                // Remove entries corresponding to ind from dataN
+                                                dataC_copy = dataC_copy1.filter((entry, index) => !ind.includes(index));
+
+                                                // Remove entries corresponding to ind from dataN
+                                                dataN_copy = dataN_copy1.filter((entry, index) => !ind.includes(index));
+
+                                                data_copy = data_copy1.filter((entry, index) => !ind.includes(index));
+
+                                                parsedLogFC = parsedLogFC_origin.filter((entry, index) => !ind.includes(index));
+                                            }
+
+                                            //////// DATI FILTRATI DAL PRIMO FOLD-CHANGE//////////////////
+                                            // console.log(parsedLogFC)
+                                            // console.log(data_copy)
+
+                                            updateLogFCHistogram(parsedLogFC_origin)
+
+                                            var req = ocpu.call("hello", {
+                                                data: data_copy
+                                            }, function (session) {
+                                                var filteredDataURL = session.loc + "/R/.val/json";
+                                                //console.log(session);
+                                                // Fetch the filtered data from the URL
+                                                fetch(filteredDataURL)
+                                                    .then(response => response.json())
+                                                    .then(data => {
+                                                        old_p_adj = data
+                                                        const ind = old_p_adj.reduce((result, entry, index) => {
+
+                                                            if (entry.pval_adj > threshold) {
+                                                                result.push(index);
+                                                            }
+                                                            return result;
+                                                        }, []);
+
+                                                        console.log(old_p_adj)
+                                                        console.log(ind)
+
+
+                                                        console.log("geni tolti dal primo filtering del pval", ind.length)
+
+                                                        if (ind.length > 0) {
+
+                                                            //console.log(parsedLogFC.length)
+
+                                                            // Remove entries corresponding to ind from dataN
+
+                                                            // Remove entries corresponding to ind from dataN
+                                                            dataC_copy_pval = dataC_copy.filter((entry, index) => !ind.includes(index));
+
+                                                            // Remove entries corresponding to ind from dataN
+                                                            dataN_copy_pval = dataN_copy.filter((entry, index) => !ind.includes(index));
+
+
+                                                            data_copy_pval = data_copy.filter((entry, index) => !ind.includes(index));
+
+                                                            console.log("geni rimamenti dal primo filtering", data_copy.length)
+                                                            // Remove entries corresponding to ind from logFC
+                                                            parsedLogFC = parsedLogFC.filter((entry, index) => !ind.includes(index));
+
+                                                            parsedLogFC_pval = parsedLogFC
+                                                            updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
+
+                                                            console.log("Promise: al box gli passo parsedlogFC", parsedLogFC.length)
+
+                                                            var sortedLogFC = parsedLogFC.slice().sort((a, b) => b.logFC - a.logFC);
+
+                                                            var mostUpregulatedGene = sortedLogFC[0];
+                                                            var secondMostUpregulatedGene = sortedLogFC[1];
+
+                                                            var mostDownregulatedGene = sortedLogFC[sortedLogFC.length - 1];
+                                                            var secondMostDownregulatedGene = sortedLogFC[sortedLogFC.length - 2];
+
+                                                            console.log(mostUpregulatedGene)
+
+                                                            var mostUpregulatedGeneName = mostUpregulatedGene.Gene
+                                                            //var secondMostUpregulatedGeneName = secondMostUpregulatedGene.Gene
+                                                            var mostDownregulatedGeneName = mostDownregulatedGene.Gene
+                                                            //var secondMostDownregulatedGeneName = secondMostDownregulatedGene.Gene
+
+
+                                                            genes = [mostUpregulatedGeneName, mostDownregulatedGeneName]
+
+                                                            selectedGeneData.push(mostUpregulatedGeneName)
+                                                            selectedGeneData.push(mostDownregulatedGeneName)
+
+
+
+                                                            updateParallel(selectedGeneData, data_copy_pval, dataC_copy_pval, dataN_copy, first_dims)
+
+                                                            updateBoxPlot(mostUpregulatedGeneName, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
+
+                                                            updateCounter()
+
+                                                            scatter.selectAll("circle")
+                                                                .filter(circleData => circleData.gene === mostUpregulatedGeneName || circleData.gene === mostDownregulatedGeneName)
+                                                                .style("fill", d => {
+                                                                    // Check if logFC is greater than or equal to the threshold
+                                                                    return "green";
+
+                                                                })
+                                                                .classed('pulse', true);
+
+
+                                                            document.getElementById("checkbox").style.visibility = "visible";
+                                                            document.getElementById("radiobox").style.visibility = "visible";
+
+
+                                                        }
+                                                        console.log(dataN_copy.length)
+                                                        var pc1Values = [];
+                                                        var pc2Values = [];
+                                                        var groupValues = [];
+                                                        var req = ocpu.call("pca", {
+                                                            data: data_copy_pval,
+                                                            dataN: dataN_copy_pval,
+                                                            dataC: dataC_copy_pval
+                                                        }, function (session) {
+                                                            var filteredDataURL = session.loc + "/R/.val/json";
+                                                            //console.log(session);
+                                                            // Fetch the filtered data from the URL
+                                                            fetch(filteredDataURL)
+                                                                .then(response => response.json())
+                                                                .then(data => {
+                                                                    json = data
+                                                                    console.log(filteredDataURL)
+                                                                    console.log(json)
+
+                                                                    var pc1Key = "PC1";
+                                                                    var pc2Key = "PC2";
+                                                                    var groupKey = "Group";
+
+                                                                    // Arrays to store PC1 and PC2 values
+
+
+                                                                    // Iterate over each object in the JSON array
+                                                                    json.scores_df.forEach(function (obj) {
+                                                                        // Push PC1, PC2, and Group values to the arrays
+                                                                        pc1Values.push(obj[pc1Key]);
+                                                                        pc2Values.push(obj[pc2Key]);
+                                                                        groupValues.push(obj[groupKey]);
+                                                                    });
+                                                                    // console.log(pc1Values)
+
+                                                                    pca_data = [];
+
+                                                                    // Iterate over each object in the JSON array
+                                                                    json.scores_df.forEach(function (obj) {
+                                                                        // Retrieve additional data from metadata based on _row
+                                                                        var gsm = obj._row;
+                                                                        var group = obj.Group;
+
+                                                                        // Retrieve smokerclass, stage, pc1, and pc2 from metadata
+                                                                        var smokerclass = metadata['Cigarette Smoking Status:ch1'][metadata.geo_accession.indexOf(gsm)];
+                                                                        var stage = metadata['Stage:ch1'][metadata.geo_accession.indexOf(gsm)];
+                                                                        var pc1 = obj.PC1;
+                                                                        var pc2 = obj.PC2;
+
+                                                                        // Create an object with the required fields
+                                                                        var newObj = {
+                                                                            GSM: gsm,
+                                                                            group: group,
+                                                                            smokerclass: smokerclass,
+                                                                            stage: stage,
+                                                                            pc1: pc1,
+                                                                            pc2: pc2
+                                                                        };
+
+                                                                        // Push the new object to the newData array
+                                                                        pca_data.push(newObj);
+
+
+                                                                    });
+                                                                    heatmap_data = []
+                                                                    json.scores_var.forEach(function (obj) {
+                                                                        // Push PC1, PC2, and Group values to the arrays
+                                                                        var gene = obj._row
+                                                                        var pc1 = obj.PC1
+                                                                        var pc2 = obj.PC2
+                                                                        var pc3 = obj.PC3
+                                                                        var pc4 = obj.PC4
+                                                                        var pc5 = obj.PC5
+                                                                        var pc6 = obj.PC6
+
+                                                                        var newObj = {
+                                                                            gene: gene,
+                                                                            pc1: pc1,
+                                                                            pc2: pc2,
+                                                                            pc3: pc3,
+                                                                            pc4: pc4,
+                                                                            pc5: pc5,
+                                                                            pc6: pc6
+                                                                        };
+                                                                        heatmap_data.push(newObj);
+                                                                    })
+                                                                    // Display the newData array
+                                                                    //console.log(pca_data);
+
+
+                                                                    pca(pca_data);
+                                                                    heatmap(heatmap_data);
+
+                                                                })
+
+
+
+
+
+                                                        })
+                                                        // DEG(data_copy_pval,parsedLogFC,old_p_adj)
+                                                        // var req = ocpu.call("enrichment", {
+                                                        //     data: data_copy
+                                                        //     }, function (session) {
+
+                                                        // })
+                                                    });
+
+
+                                            })
+                                            ///// DATI FILTRATI DAL PRIMO PVALUE, GIA' FILTRATI DAL PRIMO LOGFC, CHE ERANO GIA FILTRATI DA PRIMO IQR IN dataC_copy dataN_copy data_copy parsedLogFC ///////
+
+
+                                            // Calculate the quantile
+                                            log_thr_fc = Math.log2(thr_fc);
+                                        }
+                                        const ind2 = parsedLogFC_origin.reduce((result, entry, index) => {
+
+                                            if (Math.abs(entry.logFC) < Math.log2(thr_fc)) {
+                                                result.push(index);
+                                            }
+                                            return result;
+                                        }, []);
+
+                                        // const geneCountDiv2 = document.getElementById('geneCount2');
+                                        // geneCountDiv2.innerHTML = `First filtering number of genes: ${first_filter_number_genes}<br>Number of genes after filtering: ${data_copy.length - ind2.length}`;
+
+
+                                    });
+
+                            })
+
+
+                        });
+                        selectMetadataContent.appendChild(nextStepBtn);
+
+                    }
+                    else if (group1.length > 0 && group2.length === 0) {
+                        alert("Error: just one group of values found:\nGroup 1: " + group1[0]);
+                    }
+                });
+                selectMetadataContent.appendChild(selectRowBtn);
+
+                selectMetadataOverlay.appendChild(selectMetadataContent);
+                document.body.appendChild(selectMetadataOverlay);
+            });
+        }
+
 
 
         function DEG(data, logFC, pval_adj) {

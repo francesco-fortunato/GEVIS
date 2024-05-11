@@ -200,3 +200,24 @@ enrichment <- function (data,direction){
   return(list(annotation_top = annotation_top, annotation_top1 = annotation_top1, annotation_top2= annotation_top2,annotation_top3= annotation_top3))
 
 }
+
+
+variation <- function(rawdata) {
+  library(jsonlite)
+
+  # Extract gene names
+  genes <- rawdata[, ncol(rawdata)]
+
+  # Calculate variation using IQR for each gene
+  variation <- apply(rawdata[, -ncol(rawdata)], 1, IQR)
+
+  # Create a data frame containing gene names and variation
+  variat_data <- data.frame(Gene = genes, Variation = variation)
+
+  # Convert data frame to JSON
+  json_data <- toJSON(variat_data)
+
+  # Return JSON data
+  return(json_data)
+}
+
