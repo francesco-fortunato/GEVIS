@@ -28,8 +28,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-interpolate/1.5.0/d3-interpolate.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-scale/3.2.2/d3-scale.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-scale-chromatic/1.6.0/d3-scale-chromatic.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.0.7/css/dataTables.dataTables.css" />
+    <script src="https://cdn.datatables.net/2.0.7/js/dataTables.js"></script>
 
     <style>
+        .highlight {
+            background-color: rgba(var(--dt-row-hover), 0.052) !important;
+        }
+
         /* Modal styles */
         .modal {
             display: none;
@@ -322,6 +328,40 @@
             font-size: 24px;
             /* Add more styles as needed */
         }
+
+        #radioBoxContainer::-webkit-scrollbar-track {
+            -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            background-color: #F5F5F5;
+        }
+
+        #radioBoxContainer::-webkit-scrollbar {
+            width: 8px;
+            background-color: #F5F5F5;
+        }
+
+        #radioBoxContainer::-webkit-scrollbar-thumb {
+            border-radius: 10px;
+            -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+            background-color: #6c757d;
+        }
+
+        #checkboxContainer::-webkit-scrollbar-track {
+            -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            background-color: #F5F5F5;
+        }
+
+        #checkboxContainer::-webkit-scrollbar {
+            width: 8px;
+            background-color: #F5F5F5;
+        }
+
+        #checkboxContainer::-webkit-scrollbar-thumb {
+            border-radius: 10px;
+            -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+            background-color: #6c757d;
+        }
     </style>
 </head>
 
@@ -353,752 +393,17 @@
         style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 1002; display: none;">
         <div
             style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 20px; border-radius: 5px;">
-            <h2>CSV Data (First 10 columns)</h2>
+            <h2>CSV Data (First 5 columns)</h2>
             <div style="display: flex;">
-                <table id="csvTableData1" style="flex: 1; margin-right: 20px;"></table>
-                <table id="csvTableData2" style="flex: 1;"></table>
+                <table id="csvTableData1" class="display" style="flex: 1; margin-right: 20px;"></table>
+                <table id="csvTableData2" class="display" style="flex: 1;"></table>
             </div>
             <div style="clear: both;"></div> <!-- Clear float -->
             <p>Total Columns File 1: <span id="totalColumns1"></span></p>
-            <p>Total Rows: File 1 <span id="totalRows1"></span> (Header included)</p>
             <p>Total Columns File 2: <span id="totalColumns2"></span></p>
-            <p>Total Rows: File 2 <span id="totalRows2"></span> (Header included)</p>
             <button id="selectMetadataBtn">Select Metadata Rows</button>
         </div>
     </div>
-
-
-    <!-- Add your other HTML content here -->
-
-    <script>
-        // Function to show the overlay and modal
-        // function showOverlay() {
-        //     document.getElementById("overlay").style.display = "block";
-        // }
-
-        // // Function to hide the overlay and modal
-        // function hideOverlay() {
-        //     document.getElementById("overlay").style.display = "none";
-        // }
-
-        // // Function to show the CSV file loading overlay
-        // function showLoadCsvOverlay() {
-        //     document.getElementById("loadDatasetOverlay").style.display = "block";
-        // }
-
-        // // Function to hide the CSV file loading overlay
-        // function hideLoadCsvOverlay() {
-        //     document.getElementById("loadDatasetOverlay").style.display = "none";
-        // }
-
-        // document.getElementById("loadCsvBtn").addEventListener("click", function () {
-        //     var fileInput1 = document.getElementById("fileInput1");
-        //     var fileInput2 = document.getElementById("fileInput2");
-        //     var file1 = fileInput1.files[0];
-        //     var file2 = fileInput2.files[0];
-
-        //     // Check if both files are selected
-        //     if (!file1 && !file2) {
-        //         alert("Please select at least one file");
-        //         return;
-        //     }
-
-        //     if (file1 && !file2) {
-        //         // If only the first file is selected, read and display it
-        //         var reader1 = new FileReader();
-        //         reader1.onload = function (e) {
-        //             var contents1 = e.target.result;
-        //             var data1 = parseCsv(contents1);
-        //             hideLoadCsvOverlay();
-        //             showDisplayCsvOverlay(data1);
-        //         };
-        //         reader1.readAsText(file1);
-        //     } else {
-        //         // If both files are selected, read and display both files
-        //         var reader1 = new FileReader();
-        //         var reader2 = new FileReader();
-        //         var contents1; // Define contents1 in the outer scope
-
-        //         reader1.onload = function (e) {
-        //             contents1 = e.target.result; // Assign contents1 in the onload function of reader1
-        //             reader2.readAsText(file2); // Read the second file once the first is loaded
-        //         };
-
-        //         reader2.onload = function (e) {
-        //             var contents2 = e.target.result;
-        //             var data1 = parseCsv(contents1); // Use contents1 here
-        //             var data2 = parseCsv(contents2);
-        //             hideLoadCsvOverlay();
-        //             showDisplayCsvOverlay(data1, data2);
-        //         };
-
-        //         reader1.readAsText(file1); // Read the first file
-        //     }
-        // });
-
-        // function parseCsv(contents) {
-        //     var lines = contents.split('\n');
-        //     var data = [];
-
-        //     // Determine the delimiter dynamically
-        //     var delimiter = detectDelimiter(lines[0]);
-        //     console.log("Detected delimiter:", delimiter);
-
-        //     var headers = lines[0].split(delimiter).map(header => header.trim()); // Trim headers
-        //     for (var i = 1; i < lines.length; i++) {
-        //         var obj = {};
-        //         var currentline = lines[i].split(delimiter);
-        //         if (currentline.length !== headers.length) {
-        //             continue; // Skip this line if the number of columns doesn't match the number of headers
-        //         }
-        //         for (var j = 0; j < headers.length; j++) {
-        //             obj[headers[j]] = currentline[j].trim(); // Trim data values
-        //             obj[headers[j]] = obj[headers[j]].replace(/\r/g, ''); // Remove carriage return characters
-        //         }
-        //         data.push(obj);
-        //     }
-        //     return data;
-        // }
-        // // Function to detect the delimiter in the CSV data
-        // function detectDelimiter(line) {
-        //     // Check if the line contains a comma or a semicolon
-        //     if (line.includes(',')) {
-        //         return ',';
-        //     } else if (line.includes(';')) {
-        //         return ';';
-        //     } else {
-        //         // Default to comma if neither comma nor semicolon is found
-        //         return ',';
-        //     }
-        // }
-
-        // function showDisplayCsvOverlay(data1, data2) {
-        //     document.getElementById("displayCsvOverlay").style.display = "block";
-
-        //     // Display the first 10 columns of each CSV data in a table side by side
-        //     var tableData1 = "<thead><tr>";
-        //     var tableData2 = "<thead><tr>";
-        //     var displayedColumns = 5; // Display the first 10 columns
-
-        //     // Determine the headers and data to display based on the presence of data1 and data2
-        //     var headersData1 = [];
-        //     var headersData2 = [];
-
-        //     if (data1) {
-        //         headersData1 = Object.keys(data1[0]).slice(0, displayedColumns);
-        //         document.getElementById("totalColumns1").textContent = Object.keys(data1[0]).length;
-        //         document.getElementById("totalRows1").textContent = data1.length;
-        //     }
-
-        //     if (data2) {
-        //         headersData2 = Object.keys(data2[0]).slice(0, displayedColumns);
-        //         document.getElementById("totalColumns2").textContent = Object.keys(data2[0]).length;
-        //         document.getElementById("totalRows2").textContent = data2.length;
-        //     }
-
-        //     // Display headers for data1
-        //     headersData1.forEach(function (key) {
-        //         tableData1 += "<th>" + key + "</th>";
-        //     });
-        //     tableData1 += "</tr></thead><tbody>";
-
-        //     // Display headers for data2
-        //     headersData2.forEach(function (key) {
-        //         tableData2 += "<th>" + key + "</th>";
-        //     });
-        //     tableData2 += "</tr></thead><tbody>";
-
-        //     // Display data rows for data1
-        //     for (var i = 0; i < Math.min(20, data1.length); i++) {
-        //         tableData1 += "<tr>";
-        //         headersData1.forEach(function (key) {
-        //             tableData1 += "<td>" + (data1[i][key] || '') + "</td>";
-        //         });
-        //         tableData1 += "</tr>";
-        //     }
-        //     tableData1 += "</tbody>";
-
-        //     // Display data rows for data2
-        //     for (var i = 0; i < Math.min(20, data2.length); i++) {
-        //         tableData2 += "<tr>";
-        //         headersData2.forEach(function (key) {
-        //             tableData2 += "<td>" + (data2[i][key] || '') + "</td>";
-        //         });
-        //         tableData2 += "</tr>";
-        //     }
-        //     tableData2 += "</tbody>";
-
-        //     document.getElementById("csvTableData1").innerHTML = tableData1;
-        //     document.getElementById("csvTableData2").innerHTML = tableData2;
-        //     document.getElementById("selectMetadataBtn").addEventListener("click", function () {
-        //         // Hide the current overlay
-        //         document.getElementById("displayCsvOverlay").style.display = "none";
-
-        //         // Create a new overlay for selecting metadata rows
-        //         var selectMetadataOverlay = document.createElement("div");
-        //         selectMetadataOverlay.setAttribute("id", "selectMetadataOverlay");
-        //         selectMetadataOverlay.setAttribute("style", "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 1003; display: flex; justify-content: center; align-items: center;");
-
-        //         var selectMetadataContent = document.createElement("div");
-        //         selectMetadataContent.setAttribute("style", "background-color: white; padding: 20px; border-radius: 5px;");
-
-        //         // Here you can add the logic to display the rows of metadata from the second file
-        //         // For now, let's just display a message
-        //         selectMetadataContent.innerHTML = "<h2>Select Metadata Rows</h2><p>Select one metadata row from the second file:</p>";
-
-        //         // Create radio buttons for each row in data2
-        //         data2.forEach(function (row, index) {
-        //             var radioLabel = document.createElement("label");
-        //             var radioButton = document.createElement("input");
-        //             radioButton.setAttribute("type", "radio");
-        //             radioButton.setAttribute("name", "metadataRow"); // Set the same name for all radio buttons to make them mutually exclusive
-        //             radioButton.setAttribute("value", index); // Use the index as the value for identifying the selected row
-        //             if (index === 0) {
-        //                 radioButton.setAttribute("checked", "checked"); // Check the first radio button by default
-        //             }
-        //             radioLabel.appendChild(radioButton);
-        //             radioLabel.appendChild(document.createTextNode(row[Object.keys(row)[0]])); // Display the value of the first column
-        //             selectMetadataContent.appendChild(radioLabel);
-        //             selectMetadataContent.appendChild(document.createElement("br")); // Add line break
-        //         });
-
-        //         // Add a button to select the chosen metadata row
-        //         var selectRowBtn = document.createElement("button");
-        //         selectRowBtn.textContent = "Check Row";
-        //         console.log(data2)
-        //         console.log(data1)
-        //         selectRowBtn.addEventListener("click", function () {
-        //             var selectedRowIndex = document.querySelector('input[name="metadataRow"]:checked').value;
-        //             var rowData = Object.values(data2[selectedRowIndex]); // Get the values of the selected row
-        //             var values = rowData.slice(1); // Exclude the first value (name of the row)
-
-        //             // Separate values into two groups
-        //             var group1 = [];
-        //             var group2 = [];
-        //             loop: for (var i = 0; i < values.length; i++) {
-        //                 var value = values[i];
-        //                 if (group1.length === 0 && group2.length === 0) {
-        //                     group1.push(value);
-        //                 } else if (!group1.includes(value) && (group2.length === 0 || group2.includes(value))) {
-        //                     group2.push(value);
-        //                 } else if (group1.includes(value)) {
-        //                     group1.push(value);
-        //                 } else {
-        //                     alert("Error: More than two groups of values found:\nGroup 1: " + group1[0] + "\nGroup 2: " + group2[0] + "\nValue that does not match with no group: " + value);
-        //                     group1 = [];
-        //                     group2 = [];
-        //                     break loop;
-        //                 }
-        //             }
-        //             // Check if there are exactly two groups of values
-        //             if (group1.length > 0 && group2.length > 0) {
-        //                 console.log("Two groups of values found:\nGroup 1: " + group1[0] + "\nGroup 2: " + group2[0]);
-        //                 alert("Two groups of values found:\nGroup 1: " + group1[0] + "\nGroup 2: " + group2[0]);
-        //                 // Add a button for the next step
-        //                 var nextStepBtn = document.createElement("button");
-        //                 nextStepBtn.textContent = "Continue";
-        //                 nextStepBtn.addEventListener("click", function () {
-
-        //                     document.getElementById("selectMetadataOverlay").style.display = "none";
-
-        //                     document.getElementById("loadingOverlay").style.display = "block";
-        //                     // Assuming you have already obtained the selected row index and values from data2
-
-        //                     // Create two new arrays to hold the filtered datasets
-        //                     // Extract the selected value from data2
-        //                     var selectedValue = group1[0]; // or group2[0] depending on which group represents the selected value
-        //                     console.log("Selected value " + selectedValue)
-
-        //                     // Assuming you have already obtained the selected row index and values from data2
-        //                     // Assuming you have already obtained the selected row indices and values from data2
-
-        //                     for (var i = 0; i < data1.length; i++) {
-        //                         var obj = data1[i];
-        //                         var geneKey = Object.keys(obj)[0]; // Get the original first key
-        //                         var geneValue = obj[geneKey]; // Get the value corresponding to the original first key
-
-        //                         // Create a new object with the first key set to "Gene"
-        //                         var newObj = { "Gene": geneValue };
-
-        //                         // Add the remaining key-value pairs to the new object
-        //                         for (var key in obj) {
-        //                             if (key !== geneKey) { // Skip the original first key
-        //                                 newObj[key] = obj[key]; // Add the key-value pair to the new object
-        //                             }
-        //                         }
-
-        //                         // Replace the original object with the new object
-        //                         data1[i] = newObj;
-        //                     }
-
-
-        //                     // Create two new arrays to hold the filtered datasets
-        //                     var dataC = [];
-        //                     var dataN = [];
-
-        //                     // Loop through each object in data1
-        //                     for (var i = 0; i < data1.length; i++) {
-        //                         var obj = data1[i];
-        //                         var gene = obj[Object.keys(obj)[0]]; // Get the gene name from the first property of the object
-
-        //                         // Create new objects for dataC and dataN
-        //                         var newObjC = { "gene": gene };
-        //                         var newObjN = { "gene": gene };
-
-        //                         // Loop through the keys in the object and add values to newObjC and newObjN accordingly
-        //                         for (var key in obj) {
-        //                             if (key !== Object.keys(obj)[0]) { // Skip the first key (gene name)
-        //                                 // Check if the value in data2 matches the selected value
-        //                                 if (data2[selectedRowIndex][key] === selectedValue) {
-        //                                     newObjC[key] = obj[key]; // Add value to newObjC
-        //                                 } else {
-        //                                     newObjN[key] = obj[key]; // Add value to newObjN
-        //                                 }
-        //                             }
-        //                         }
-
-        //                         // Push the new objects to dataC and dataN
-        //                         dataC.push(newObjC);
-        //                         dataN.push(newObjN);
-        //                     }
-
-        //                     console.log(Object.keys(dataC[0]).length - 1)
-        //                     console.log(Object.keys(dataN[0]).length - 1)
-
-        //                     // Assuming you have obtained genes from data1
-        //                     var genes = data1.map(obj => obj[Object.keys(obj)[0]]);
-
-        //                     // Calculate overall mean for data1
-        //                     var overall_mean = data1.map(obj => {
-        //                         var values = Object.values(obj).slice(1).map(parseFloat);
-        //                         return values.reduce((acc, val) => acc + val, 0) / values.length;
-        //                     });
-
-        //                     // Filter out rows with overall mean equal to 0
-        //                     var ind = overall_mean.reduce((acc, val, index) => {
-        //                         if (val === 0) { console.log("VALUE 0"); acc.push(index); }
-        //                         return acc;
-        //                     }, []);
-
-        //                     console.log(ind)
-
-        //                     // Check if ind is not empty
-        //                     if (ind.length > 0) {
-        //                         dataN = dataN.filter((_, index) => !ind.includes(index));
-        //                         dataC = dataC.filter((_, index) => !ind.includes(index));
-        //                         data1 = data1.filter((_, index) => !ind.includes(index));
-        //                         genes = genes.filter((_, index) => !ind.includes(index));
-        //                     }
-
-        //                     // Step 2.1: Logarithmic transformation
-        //                     dataN = dataN.map(obj => {
-        //                         var newObj = {};
-        //                         newObj["gene"] = obj["gene"];
-        //                         for (var key in obj) {
-        //                             if (key !== "gene") {
-        //                                 newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
-        //                             }
-        //                         }
-        //                         return newObj;
-        //                     });
-
-        //                     dataC = dataC.map(obj => {
-        //                         var newObj = {};
-        //                         newObj["gene"] = obj["gene"];
-        //                         for (var key in obj) {
-        //                             if (key !== "gene") {
-        //                                 newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
-        //                             }
-        //                         }
-        //                         return newObj;
-        //                     });
-
-        //                     data1 = data1.map(obj => {
-        //                         var newObj = {};
-        //                         newObj[Object.keys(obj)[0]] = obj[Object.keys(obj)[0]];
-        //                         for (var key in obj) {
-        //                             if (key !== Object.keys(obj)[0]) {
-        //                                 newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
-        //                             }
-        //                         }
-        //                         return newObj;
-        //                     });
-
-        //                     // console.log(dataC);
-        //                     // console.log(dataN);
-
-        //                     // At this point, dataC contains objects where the corresponding column matches the selected value
-        //                     // And dataN contains objects where the corresponding column does not match the selected value
-
-        //                     // You can now use these datasets as needed
-
-        //                     var req = ocpu.call("variation", {
-        //                         rawdata: data1,
-        //                     }, function (session) {
-        //                         var filteredDataURL = session.loc + "/R/.val/json";
-        //                         console.log(session);
-        //                         // Fetch the filtered data from the URL
-        //                         fetch(filteredDataURL)
-        //                             .then(response => response.json())
-        //                             .then(data => {
-        //                                 const innerData = JSON.parse(data[0]);
-        //                                 console.log(data1)
-
-        //                                 // Extract variation values from the inner JSON array
-        //                                 const variation_data = innerData.map(obj => obj.Variation);
-
-        //                                 // Now you have an array of variation values, you can use it as needed
-        //                                 console.log(variation_data);
-        //                                 thr_prc = ss.quantile(variation_data, prc_IQR);
-
-        //                                 console.log("numero di geni iniziali prima di qualsiasi filtro " + row_length)
-
-        //                                 thr_prc = ss.quantile(variation_data, prc_IQR);
-        //                                 updateHistogram(variation_data);
-
-        //                                 const ind = variation_data_copy.reduce((result, entry, index) => {
-
-        //                                     if (entry < thr_prc) {
-        //                                         result.push(index);
-        //                                     }
-        //                                     return result;
-        //                                 }, []);
-
-        //                                 if (ind.length > 0) {
-
-        //                                     // Remove entries corresponding to ind from dataN
-        //                                     data_copy1 = data_original.filter((entry, index) => !ind.includes(index));
-
-        //                                     // Remove entries corresponding to ind from dataC
-        //                                     dataC_copy1 = dataC_original.filter((entry, index) => !ind.includes(index));
-
-        //                                     // Remove entries corresponding to ind from data
-        //                                     dataN_copy1 = dataN_original.filter((entry, index) => !ind.includes(index));
-
-        //                                     // Remove entries corresponding to ind from genes
-        //                                     //genes = genes.filter((entry, index) => !ind.includes(index));
-
-        //                                     // Remove entries corresponding to ind from logFC
-        //                                     //parsedLogFC = parsedLogFC.filter((entry, index) => !ind.includes(index));
-
-        //                                 }
-
-        //                                 dataN_copy = dataN_copy1
-        //                                 dataC_copy = dataC_copy1
-        //                                 data_copy = data_copy1
-        //                                 console.log("geni tolti dal primo filtering del IQR", ind.length)
-
-        //                                 // Update the gene count display
-        //                                 // const geneCountDiv = document.getElementById('geneCount');
-        //                                 // geneCountDiv.innerHTML = `Initial number of genes: ${initial_num_genes}<br>Number of genes after filtering: ${data_copy.length}`;
-
-        //                                 first_filter_number_genes = data_copy.length
-
-        //                                 parsedLogFC_origin1 = calculateLogFC(dataC_original, dataN_original)
-        //                                 parsedLogFC_origin = calculateLogFC(dataC_copy, dataN_copy);
-        //                                 parsedLogFC = parsedLogFC_origin
-
-        //                                 //  console.log("first parsed origin after",parsedLogFC_origin.length)
-        //                                 //  console.log("first data orign afterN ",dataN_copy.length)
-        //                                 //  console.log("first data orign afterC ",dataC_copy.length)
-
-        //                                 averageExpressions10C = calculateAverageLog10Expressions(dataC_copy);
-        //                                 averageExpressions10N = calculateAverageLog10Expressions(dataN_copy);
-
-
-        //                                 fetch('genes_and_pval_adj.json')
-        //                                     .then(response => response.json())
-        //                                     .then(data => {
-        //                                         p_val_adj = data
-
-        //                                         // Calculate the quantile
-        //                                         log_thr_fc = Math.log2(1.1);
-        //                                         //console.log(log_thr_fc)
-        //                                         const ind = parsedLogFC_origin.reduce((result, entry, index) => {
-
-        //                                             if (Math.abs(entry.logFC) < Math.log2(thr_fc)) {
-        //                                                 result.push(index);
-
-        //                                             }
-        //                                             return result;
-        //                                         }, []);
-        //                                         console.log("geni tolti dal primo filtering del LOGFC", ind.length)
-
-        //                                         // console.log("parsed log before ",parsedLogFC.length)
-        //                                         // console.log("data copy beforeC ",dataC_copy.length)
-        //                                         // console.log("data copy beforeN ",dataN_copy.length)
-
-        //                                         // console.log("parsed log origin ",parsedLogFC_origin.length)
-        //                                         ///////////////////////
-
-        //                                         //DIMENSIONE DI PARSED E DATAC,DATAN SONO UGUALI , GIUSTAMENTE
-
-        //                                         //////////////////////
-        //                                         // console.log(parsedLogFC_origin)
-        //                                         // console.log(data_copy)
-        //                                         if (ind.length > 0) {
-
-        //                                             // Remove entries corresponding to ind from dataN
-        //                                             dataC_copy = dataC_copy1.filter((entry, index) => !ind.includes(index));
-
-        //                                             // Remove entries corresponding to ind from dataN
-        //                                             dataN_copy = dataN_copy1.filter((entry, index) => !ind.includes(index));
-
-        //                                             data_copy = data_copy1.filter((entry, index) => !ind.includes(index));
-
-        //                                             parsedLogFC = parsedLogFC_origin.filter((entry, index) => !ind.includes(index));
-        //                                         }
-
-        //                                         //////// DATI FILTRATI DAL PRIMO FOLD-CHANGE//////////////////
-        //                                         // console.log(parsedLogFC)
-        //                                         // console.log(data_copy)
-
-        //                                         updateLogFCHistogram(parsedLogFC_origin)
-
-        //                                         var req = ocpu.call("hello", {
-        //                                             data: data_copy
-        //                                         }, function (session) {
-        //                                             var filteredDataURL = session.loc + "/R/.val/json";
-        //                                             //console.log(session);
-        //                                             // Fetch the filtered data from the URL
-        //                                             fetch(filteredDataURL)
-        //                                                 .then(response => response.json())
-        //                                                 .then(data => {
-        //                                                     old_p_adj = data
-        //                                                     const ind = old_p_adj.reduce((result, entry, index) => {
-
-        //                                                         if (entry.pval_adj > threshold) {
-        //                                                             result.push(index);
-        //                                                         }
-        //                                                         return result;
-        //                                                     }, []);
-
-
-        //                                                     console.log("geni tolti dal primo filtering del pval", ind.length)
-
-        //                                                     if (ind.length > 0) {
-
-        //                                                         //console.log(parsedLogFC.length)
-
-        //                                                         // Remove entries corresponding to ind from dataN
-
-        //                                                         // Remove entries corresponding to ind from dataN
-        //                                                         dataC_copy_pval = dataC_copy.filter((entry, index) => !ind.includes(index));
-
-        //                                                         // Remove entries corresponding to ind from dataN
-        //                                                         dataN_copy_pval = dataN_copy.filter((entry, index) => !ind.includes(index));
-
-
-        //                                                         data_copy_pval = data_copy.filter((entry, index) => !ind.includes(index));
-
-        //                                                         console.log("geni rimamenti dal primo filtering", data_copy.length)
-        //                                                         // Remove entries corresponding to ind from logFC
-        //                                                         parsedLogFC = parsedLogFC.filter((entry, index) => !ind.includes(index));
-
-        //                                                         parsedLogFC_pval = parsedLogFC
-        //                                                         updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
-
-        //                                                         console.log("Promise: al box gli passo parsedlogFC", parsedLogFC.length)
-
-        //                                                         var sortedLogFC = parsedLogFC.slice().sort((a, b) => b.logFC - a.logFC);
-
-        //                                                         var mostUpregulatedGene = sortedLogFC[0];
-        //                                                         var secondMostUpregulatedGene = sortedLogFC[1];
-
-        //                                                         var mostDownregulatedGene = sortedLogFC[sortedLogFC.length - 1];
-        //                                                         var secondMostDownregulatedGene = sortedLogFC[sortedLogFC.length - 2];
-
-        //                                                         var mostUpregulatedGeneName = mostUpregulatedGene.Gene
-        //                                                         //var secondMostUpregulatedGeneName = secondMostUpregulatedGene.Gene
-        //                                                         var mostDownregulatedGeneName = mostDownregulatedGene.Gene
-        //                                                         //var secondMostDownregulatedGeneName = secondMostDownregulatedGene.Gene
-
-
-        //                                                         genes = [mostUpregulatedGeneName, mostDownregulatedGeneName]
-
-        //                                                         selectedGeneData.push(mostUpregulatedGeneName)
-        //                                                         selectedGeneData.push(mostDownregulatedGeneName)
-
-
-
-        //                                                         updateParallel(selectedGeneData, data_copy_pval, dataC_copy_pval, dataN_copy, first_dims)
-
-        //                                                         updateBoxPlot(mostUpregulatedGeneName, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
-
-        //                                                         updateCounter()
-
-        //                                                         scatter.selectAll("circle")
-        //                                                             .filter(circleData => circleData.gene === mostUpregulatedGeneName || circleData.gene === mostDownregulatedGeneName)
-        //                                                             .style("fill", d => {
-        //                                                                 // Check if logFC is greater than or equal to the threshold
-        //                                                                 return "green";
-
-        //                                                             })
-        //                                                             .classed('pulse', true);
-
-
-        //                                                         document.getElementById("checkbox").style.visibility = "visible";
-        //                                                         document.getElementById("radiobox").style.visibility = "visible";
-
-
-        //                                                     }
-        //                                                     console.log(dataN_copy.length)
-        //                                                     var pc1Values = [];
-        //                                                     var pc2Values = [];
-        //                                                     var groupValues = [];
-        //                                                     var req = ocpu.call("pca", {
-        //                                                         data: data_copy_pval,
-        //                                                         dataN: dataN_copy_pval,
-        //                                                         dataC: dataC_copy_pval
-        //                                                     }, function (session) {
-        //                                                         var filteredDataURL = session.loc + "/R/.val/json";
-        //                                                         //console.log(session);
-        //                                                         // Fetch the filtered data from the URL
-        //                                                         fetch(filteredDataURL)
-        //                                                             .then(response => response.json())
-        //                                                             .then(data => {
-        //                                                                 json = data
-        //                                                                 console.log(filteredDataURL)
-        //                                                                 console.log(json)
-
-        //                                                                 var pc1Key = "PC1";
-        //                                                                 var pc2Key = "PC2";
-        //                                                                 var groupKey = "Group";
-
-        //                                                                 // Arrays to store PC1 and PC2 values
-
-
-        //                                                                 // Iterate over each object in the JSON array
-        //                                                                 json.scores_df.forEach(function (obj) {
-        //                                                                     // Push PC1, PC2, and Group values to the arrays
-        //                                                                     pc1Values.push(obj[pc1Key]);
-        //                                                                     pc2Values.push(obj[pc2Key]);
-        //                                                                     groupValues.push(obj[groupKey]);
-        //                                                                 });
-        //                                                                 // console.log(pc1Values)
-
-        //                                                                 pca_data = [];
-
-        //                                                                 // Iterate over each object in the JSON array
-        //                                                                 json.scores_df.forEach(function (obj) {
-        //                                                                     // Retrieve additional data from metadata based on _row
-        //                                                                     var gsm = obj._row;
-        //                                                                     var group = obj.Group;
-
-        //                                                                     // Retrieve smokerclass, stage, pc1, and pc2 from metadata
-        //                                                                     var smokerclass = metadata['Cigarette Smoking Status:ch1'][metadata.geo_accession.indexOf(gsm)];
-        //                                                                     var stage = metadata['Stage:ch1'][metadata.geo_accession.indexOf(gsm)];
-        //                                                                     var pc1 = obj.PC1;
-        //                                                                     var pc2 = obj.PC2;
-
-        //                                                                     // Create an object with the required fields
-        //                                                                     var newObj = {
-        //                                                                         GSM: gsm,
-        //                                                                         group: group,
-        //                                                                         smokerclass: smokerclass,
-        //                                                                         stage: stage,
-        //                                                                         pc1: pc1,
-        //                                                                         pc2: pc2
-        //                                                                     };
-
-        //                                                                     // Push the new object to the newData array
-        //                                                                     pca_data.push(newObj);
-
-
-        //                                                                 });
-        //                                                                 heatmap_data = []
-        //                                                                 json.scores_var.forEach(function (obj) {
-        //                                                                     // Push PC1, PC2, and Group values to the arrays
-        //                                                                     var gene = obj._row
-        //                                                                     var pc1 = obj.PC1
-        //                                                                     var pc2 = obj.PC2
-        //                                                                     var pc3 = obj.PC3
-        //                                                                     var pc4 = obj.PC4
-        //                                                                     var pc5 = obj.PC5
-        //                                                                     var pc6 = obj.PC6
-
-        //                                                                     var newObj = {
-        //                                                                         gene: gene,
-        //                                                                         pc1: pc1,
-        //                                                                         pc2: pc2,
-        //                                                                         pc3: pc3,
-        //                                                                         pc4: pc4,
-        //                                                                         pc5: pc5,
-        //                                                                         pc6: pc6
-        //                                                                     };
-        //                                                                     heatmap_data.push(newObj);
-        //                                                                 })
-        //                                                                 // Display the newData array
-        //                                                                 //console.log(pca_data);
-
-
-        //                                                                 pca(pca_data);
-        //                                                                 heatmap(heatmap_data);
-
-        //                                                             })
-
-
-
-
-
-        //                                                     })
-        //                                                     // DEG(data_copy_pval,parsedLogFC,old_p_adj)
-        //                                                     // var req = ocpu.call("enrichment", {
-        //                                                     //     data: data_copy
-        //                                                     //     }, function (session) {
-
-        //                                                     // })
-        //                                                 });
-
-
-        //                                         })
-        //                                         ///// DATI FILTRATI DAL PRIMO PVALUE, GIA' FILTRATI DAL PRIMO LOGFC, CHE ERANO GIA FILTRATI DA PRIMO IQR IN dataC_copy dataN_copy data_copy parsedLogFC ///////
-
-
-        //                                         // Calculate the quantile
-        //                                         log_thr_fc = Math.log2(thr_fc);
-
-        //                                     })
-        //                                 const ind2 = parsedLogFC_origin.reduce((result, entry, index) => {
-
-        //                                     if (Math.abs(entry.logFC) < Math.log2(thr_fc)) {
-        //                                         result.push(index);
-        //                                     }
-        //                                     return result;
-        //                                 }, []);
-
-        //                                 // const geneCountDiv2 = document.getElementById('geneCount2');
-        //                                 // geneCountDiv2.innerHTML = `First filtering number of genes: ${first_filter_number_genes}<br>Number of genes after filtering: ${data_copy.length - ind2.length}`;
-
-
-
-        //                             });
-
-        //                     })
-
-
-        //                 });
-        //                 selectMetadataContent.appendChild(nextStepBtn);
-
-        //             }
-        //             else if (group1.length > 0 && group2.length === 0) {
-        //                 alert("Error: just one group of values found:\nGroup 1: " + group1[0]);
-        //             }
-        //         });
-        //         selectMetadataContent.appendChild(selectRowBtn);
-
-        //         selectMetadataOverlay.appendChild(selectMetadataContent);
-        //         document.body.appendChild(selectMetadataOverlay);
-        //     });
-        // }
-
-        // Event listener for the "Load Dataset" button
-        // document.getElementById("loadDatasetBtn").addEventListener("click", function () {
-        //     hideOverlay();
-        //     showLoadCsvOverlay();
-        // });
-
-    </script>
 
 
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
@@ -1201,36 +506,45 @@
 
                 <div id="style_scatter">
                     <div class="flex">
+                        <div id="checkboxContainer"
+                            style="overflow-y:scroll; max-height: 70px; color: white; width: 450px;margin-left: 0%; visibility: hidden;">
+                            <!-- Checkboxes will be dynamically added here -->
+                        </div>
+
                         <div id="checkbox" class="btn-group btn-group-toggle" data-toggle="buttons"
-                            style="visibility: hidden;">
-                            <label for="vehicle1" class="btn btn-secondary active"
-                                style="color: #ddd; margin-right: 5px;">
+                            style="visibility: hidden; display: none;">
+                            <label for="vehicle1" style="color: #ddd; margin-right: 5px;">
                                 <input type="checkbox" id="vehicle1" name="vehicle1" value="Age" checked
                                     onchange="handleCheckboxChange()">
                                 Age</label>
 
-                            <label for="vehicle2" class="btn btn-secondary" style="color: #ddd; margin-right: 5px;">
+                            <label for="vehicle2" style="color: #ddd; margin-right: 5px;">
                                 <input type="checkbox" id="vehicle2" name="vehicle2" value="Smoker"
                                     onchange="handleCheckboxChangeCigarettes()">
                                 Smoker class</label>
 
-                            <label for="vehicle3" class="btn btn-secondary" style="color: #ddd; margin-right: 5px;">
+                            <label for="vehicle3" style="color: #ddd; margin-right: 5px;">
                                 <input type="checkbox" id="vehicle3" name="vehicle3" value="Gender"
                                     onchange="handleCheckboxChangeGender()">
                                 Gender</label>
 
-                            <label for="vehicle4" class="btn btn-secondary" style="color: #ddd; margin-right: 5px;">
+                            <label for="vehicle4" style="color: #ddd; margin-right: 5px;">
                                 <input type="checkbox" id="vehicle4" name="vehicle4" value="Stage"
                                     onchange="handleCheckboxChangeStage()">
                                 Stage</label>
 
-                            <label for="vehicle5" class="btn btn-secondary" style="color: #ddd; margin-right: 5px;">
+                            <label for="vehicle5" style="color: #ddd; margin-right: 5px;">
                                 <input type="checkbox" id="vehicle5" name="vehicle5" value="type"
                                     onchange="handleCheckboxChangeType()">
                                 Type</label>
                         </div>
+                        <div id="radioBoxContainer"
+                            style="overflow-y:scroll; max-height: 70px; color: white; width: 450px;margin-left: 10%; visibility: hidden;">
+                            <!-- Checkboxes will be dynamically added here -->
+                        </div>
+
                         <div id="radiobox" class="btn-group btn-group-toggle" data-toggle="buttons"
-                            style="visibility: hidden; margin-left: 10%;">
+                            style="visibility: hidden; margin-left: 10%; display: none;">
 
                             <label for="variable1" class="btn btn-secondary active"
                                 style="color: #ddd;  margin-right: 5px; border-radius: 50px;">
@@ -1328,6 +642,9 @@
 
         let chosen_meta1
         let chosen_meta2
+        let selectedRowName
+        let case_number
+        let normal_number
         let variation_data;
         let variation_data_copy;
         let initial_num_genes;
@@ -1435,7 +752,7 @@
             showLoadingMessage();
 
             // Call your function to create the dot plot here
-            DEG(data_copy_pval, parsedLogFC, old_p_adj);
+            DEG(data_copy_pval, parsedLogFC_pval, old_p_adj);
         }
 
         // When the user clicks the button, open the modal and create the dot plot inside it
@@ -2110,22 +1427,19 @@
             // Display the first 10 columns of each CSV data in a table side by side
             var tableData1 = "<thead><tr>";
             var tableData2 = "<thead><tr>";
-            var displayedColumns = 5; // Display the first 10 columns
 
             // Determine the headers and data to display based on the presence of data1 and data2
             var headersData1 = [];
             var headersData2 = [];
 
             if (data1) {
-                headersData1 = Object.keys(data1[0]).slice(0, displayedColumns);
+                headersData1 = Object.keys(data1[0]).slice(0, 5);
                 document.getElementById("totalColumns1").textContent = Object.keys(data1[0]).length;
-                document.getElementById("totalRows1").textContent = data1.length;
             }
 
             if (data2) {
-                headersData2 = Object.keys(data2[0]).slice(0, displayedColumns);
+                headersData2 = Object.keys(data2[0]).slice(0, 5);
                 document.getElementById("totalColumns2").textContent = Object.keys(data2[0]).length;
-                document.getElementById("totalRows2").textContent = data2.length;
             }
 
             // Display headers for data1
@@ -2141,7 +1455,7 @@
             tableData2 += "</tr></thead><tbody>";
 
             // Display data rows for data1
-            for (var i = 0; i < Math.min(20, data1.length); i++) {
+            for (var i = 0; i < data1.length; i++) {
                 tableData1 += "<tr>";
                 headersData1.forEach(function (key) {
                     tableData1 += "<td>" + (data1[i][key] || '') + "</td>";
@@ -2151,7 +1465,7 @@
             tableData1 += "</tbody>";
 
             // Display data rows for data2
-            for (var i = 0; i < Math.min(20, data2.length); i++) {
+            for (var i = 0; i < data2.length; i++) {
                 tableData2 += "<tr>";
                 headersData2.forEach(function (key) {
                     tableData2 += "<td>" + (data2[i][key] || '') + "</td>";
@@ -2162,6 +1476,30 @@
 
             document.getElementById("csvTableData1").innerHTML = tableData1;
             document.getElementById("csvTableData2").innerHTML = tableData2;
+            $('#csvTableData1').DataTable({
+                "paging": true, // Enable pagination
+                "pageLength": 10, // Number of rows per page
+                ordering: false,
+                searching: false,
+                "lengthChange": false
+                // "scrollY": "200px", // Height of the scrolling container
+                // "scrollCollapse": true // Collapse the table height to fit the scrolling container
+            });
+
+            // Initialize DataTable for the second table with virtual scrolling
+            $('#csvTableData2').DataTable({
+                "paging": true, // Enable pagination
+                "pageLength": 10, // Number of rows per page
+                ordering: false,
+                searching: false,
+                "lengthChange": false
+
+                // "scrollY": "200px", // Height of the scrolling container
+                // "scrollCollapse": true // Collapse the table height to fit the scrolling container
+            });
+
+            $('#csvTableData1_wrapper').css('margin-right', '40px');
+
             document.getElementById("selectMetadataBtn").addEventListener("click", function () {
                 // Hide the current overlay
                 document.getElementById("displayCsvOverlay").style.display = "none";
@@ -2202,6 +1540,10 @@
                 selectRowBtn.addEventListener("click", function () {
                     var selectedRowIndex = document.querySelector('input[name="metadataRow"]:checked').value;
                     var rowData = Object.values(data2[selectedRowIndex]); // Get the values of the selected row
+                    selectedRowName = rowData[0]
+                    selectedVariable = selectedRowName
+                    console.log(selectedRowName)
+                    first_dims = [selectedRowName]
                     var values = rowData.slice(1); // Exclude the first value (name of the row)
 
                     // Separate values into two groups
@@ -2314,6 +1656,9 @@
 
 
                             data1 = reorderedData
+
+                            case_number = Object.keys(dataC[0]).length - 1
+                            normal_number = Object.keys(dataN[0]).length - 1
 
                             console.log(Object.keys(dataC[0]).length - 1)
                             console.log(Object.keys(dataN[0]).length - 1)
@@ -2521,8 +1866,10 @@
 
                                             updateLogFCHistogram(parsedLogFC_origin)
 
-                                            var req = ocpu.call("hello", {
-                                                data: data_copy
+                                            var req = ocpu.call("pval", {
+                                                data: data_copy,
+                                                N: normal_number,
+                                                M: case_number
                                             }, function (session) {
                                                 var filteredDataURL = session.loc + "/R/.val/json";
                                                 //console.log(session);
@@ -2607,9 +1954,122 @@
                                                                 })
                                                                 .classed('pulse', true);
 
+                                                            // Function to handle checkbox change event
+                                                            function handleCheckboxChange(event) {
+                                                                var isChecked = event.target.checked;
+                                                                var category = event.target.value;
 
-                                                            document.getElementById("checkbox").style.visibility = "visible";
-                                                            document.getElementById("radiobox").style.visibility = "visible";
+                                                                if (isChecked) {
+                                                                    // Add category to first_dims array
+                                                                    first_dims.unshift(category);
+                                                                } else {
+                                                                    // Remove category from first_dims array
+                                                                    var index = first_dims.indexOf(category);
+                                                                    if (index !== -1) {
+                                                                        first_dims.splice(index, 1);
+                                                                    }
+                                                                }
+
+                                                                // Log the updated first_dims array
+                                                                console.log("Updated first_dims:", first_dims);
+
+                                                                dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
+                                                            }
+
+
+                                                            var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
+
+                                                            // Get the container element
+                                                            var checkboxContainer = document.getElementById("checkboxContainer");
+
+                                                            // Initialize a variable to count the number of checkboxes added to the current row
+                                                            var checkboxesInRow = 0;
+
+                                                            // Iterate through metadataCategories to create checkboxes
+                                                            metadataCategories.forEach(function (category) {
+                                                                // Create a checkbox element
+                                                                var checkbox = document.createElement("input");
+                                                                checkbox.type = "checkbox";
+                                                                checkbox.value = category;
+                                                                checkbox.id = "checkbox_" + category; // Set a unique ID for each checkbox
+
+                                                                // Set the checked attribute based on condition
+                                                                if (category === selectedRowName) {
+                                                                    checkbox.checked = true;
+                                                                }
+
+                                                                // Create a label for the checkbox
+                                                                var label = document.createElement("label");
+                                                                label.htmlFor = checkbox.id;
+                                                                label.appendChild(document.createTextNode(category));
+
+                                                                // Add event listener to the checkbox to handle change event
+                                                                checkbox.addEventListener("change", handleCheckboxChange);
+
+                                                                // Append the checkbox and label to the container element
+                                                                checkboxContainer.appendChild(checkbox);
+                                                                checkboxContainer.appendChild(label);
+
+                                                                // Increment the count of checkboxes in the row
+                                                                checkboxesInRow++;
+
+                                                                // Add a line break after every two checkboxes
+                                                                if (checkboxesInRow % 2 === 0) {
+                                                                    checkboxContainer.appendChild(document.createElement("br"));
+                                                                }
+                                                            });
+
+                                                            // Initialize a variable to count the number of radio buttons added to the current row
+                                                            var radioButtonsInRow = 0;
+                                                            // Get the container element
+                                                            var radioBoxContainer = document.getElementById("radioBoxContainer");
+
+                                                            // Function to handle radio button change event
+                                                            function handleRadioButtonChange(event) {
+                                                                // Update selectedVariable with the value of the selected radio button
+                                                                selectedVariable = event.target.value;
+
+                                                                dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims, ordering);
+                                                            }
+
+
+                                                            // Iterate through metadataCategories to create radio buttons
+                                                            metadataCategories.forEach(function (category) {
+                                                                // Create a radio button element
+                                                                var radioButton = document.createElement("input");
+                                                                radioButton.type = "radio";
+                                                                radioButton.name = "radioButtonGroup"; // Set the same name for all radio buttons in the group
+                                                                radioButton.value = category;
+                                                                radioButton.id = "radioButton_" + category; // Set a unique ID for each radio button
+
+                                                                // Set the checked attribute based on condition
+                                                                if (category === selectedRowName) {
+                                                                    radioButton.checked = true;
+                                                                }
+
+                                                                // Create a label for the radio button
+                                                                var label = document.createElement("label");
+                                                                label.htmlFor = radioButton.id;
+                                                                label.appendChild(document.createTextNode(category));
+
+                                                                // Add event listener to the radio button to handle change event
+                                                                radioButton.addEventListener("change", handleRadioButtonChange);
+
+                                                                // Append the radio button and label to the container element
+                                                                radioBoxContainer.appendChild(radioButton);
+                                                                radioBoxContainer.appendChild(label);
+
+                                                                // Increment the count of radio buttons in the row
+                                                                radioButtonsInRow++;
+
+                                                                // Add a line break after every two radio buttons
+                                                                if (radioButtonsInRow % 2 === 0) {
+                                                                    radioBoxContainer.appendChild(document.createElement("br"));
+                                                                }
+                                                            });
+
+                                                            document.getElementById("checkboxContainer").style.visibility = "visible";
+                                                            document.getElementById("radioBoxContainer").style.visibility = "visible";
 
 
                                                         }
@@ -2648,17 +2108,18 @@
                                                                     });
                                                                     // console.log(pc1Values)
 
-                                                                    pca_data = [];
+                                                                    // Extract metadata categories from the values of the first column
+                                                                    var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
+                                                                    console.log("Metadata categories:", metadataCategories);
+
+                                                                    // Initialize pca_data array
+                                                                    var pca_data = [];
 
                                                                     // Iterate over each object in the JSON array
                                                                     json.scores_df.forEach(function (obj) {
                                                                         // Retrieve additional data from metadata based on _row
                                                                         var gsm = obj._row;
                                                                         var group = obj.Group;
-
-                                                                        // Retrieve smokerclass, stage, pc1, and pc2 from metadata
-                                                                        var smokerclass = metadata['Cigarette Smoking Status:ch1'][metadata.geo_accession.indexOf(gsm)];
-                                                                        var stage = metadata['Stage:ch1'][metadata.geo_accession.indexOf(gsm)];
                                                                         var pc1 = obj.PC1;
                                                                         var pc2 = obj.PC2;
 
@@ -2666,17 +2127,19 @@
                                                                         var newObj = {
                                                                             GSM: gsm,
                                                                             group: group,
-                                                                            smokerclass: smokerclass,
-                                                                            stage: stage,
                                                                             pc1: pc1,
                                                                             pc2: pc2
                                                                         };
 
-                                                                        // Push the new object to the newData array
+                                                                        // Add metadata values for each category to the newObj
+                                                                        metadataCategories.forEach((category, index) => {
+                                                                            newObj[category] = metadata[index][gsm];
+                                                                        });
+
+                                                                        // Push the new object to the pca_data array
                                                                         pca_data.push(newObj);
-
-
                                                                     });
+
                                                                     heatmap_data = []
                                                                     json.scores_var.forEach(function (obj) {
                                                                         // Push PC1, PC2, and Group values to the arrays
@@ -3136,6 +2599,24 @@
                 }
                 title.text("UP Genes " + selectedGroup);
 
+
+
+                // Define a scaling factor that the user can adjust
+                var scalingFactor = 20; // Default scaling factor
+
+                // Add an input element for the user to adjust the scaling factor
+                var scalingFactorInput = d3.select("#slider_dot_polot")
+                    .html("")
+                    .append("input")
+                    .attr("type", "range")
+                    .attr("min", 0) // Minimum scaling factor
+                    .attr("max", 100) // Maximum scaling factor
+                    .attr("value", scalingFactor) // Default scaling factor
+                    .on("input", function () {
+                        scalingFactor = +this.value;
+                        updateDots(); // Update the dots with the new scaling factor
+                    });
+
                 var colorScale = d3.scaleLinear()
                     .domain([minValue, maxValue])
                     .range(["red", "blue"]);
@@ -3186,7 +2667,14 @@
 
 
                 // Update dots
-                dot.data(data)
+                var dots = svg.selectAll("circle")
+                    .data(data);
+
+                // Remove existing circles
+                dots.exit().remove();
+
+                // Append new circles for any new data points
+                dots.enter().append("circle")
                     .transition()
                     .duration(1000)
                     .attr("cx", function (d) { return x(d.Gene_count); })
@@ -3200,6 +2688,21 @@
                         return colorScale(adjustedPValue);
                     });
 
+                // Transition existing circles to new positions
+                dots.transition()
+                    .duration(1000)
+                    .attr("cx", function (d) { return x(d.Gene_count); })
+                    .attr("cy", function (d) { return y(d.Term) + y.bandwidth() / 2; })
+                    .attr("r", function (d) { return d.Gene_ratio * scalingFactor; }) // Adjust radius as per Gene_ratio and updated scaling factor
+                    .style("fill", function (d) {
+                        // Access the Adjusted.P.value property using bracket notation
+                        adjustedPValue = d['Adjusted.P.value'];
+
+                        // Interpolate color using the color scale
+                        return colorScale(adjustedPValue);
+                    });
+
+
                 // Update legend
                 legendScale.domain([d3.min(data, function (d) { return d['Adjusted.P.value']; }), d3.max(data, function (d) { return d['Adjusted.P.value']; })]);
                 var tickValues = [d3.min(data, function (d) { return d['Adjusted.P.value']; }), d3.max(data, function (d) { return d['Adjusted.P.value']; })];
@@ -3212,6 +2715,11 @@
 
                 // Remove the domain path
                 axis.select(".domain").remove();
+                // Function to update the dots with the new scaling factor
+                function updateDots() {
+                    svg.selectAll("circle")
+                        .attr("r", function (d) { return d.Gene_ratio * scalingFactor; }); // Adjust radius based on scaling factor
+                }
             }
 
             // Define the event handler for the change event
@@ -3470,6 +2978,7 @@
             function update(selectedGroup, data) {
                 var minValue;
                 var maxValue;
+
                 // Adjust data based on selected group
                 if (selectedGroup == 'DisGenNet') {
                     data = data.annotation_top;
@@ -3483,6 +2992,7 @@
                     maxValue = d3.max(data, function (d) { return d['Adjusted.P.value']; });
                 } else if (selectedGroup == 'Molecular function') {
                     data = data.annotation_top2;
+                    console.log("MOLECULAR FUNCTION", data)
                     data.sort((a, b) => b.Gene_count - a.Gene_count);
                     minValue = d3.min(data, function (d) { return d['Adjusted.P.value']; });
                     maxValue = d3.max(data, function (d) { return d['Adjusted.P.value']; });
@@ -3494,6 +3004,22 @@
                     maxValue = d3.max(data, function (d) { return d['Adjusted.P.value']; });
                 }
                 title.text("DOWN Genes " + selectedGroup);
+
+                // Define a scaling factor that the user can adjust
+                var scalingFactor = 20; // Default scaling factor
+
+                // Add an input element for the user to adjust the scaling factor
+                var scalingFactorInput = d3.select("#slider_dot_polot1")
+                    .html("")
+                    .append("input")
+                    .attr("type", "range")
+                    .attr("min", 0) // Minimum scaling factor
+                    .attr("max", 100) // Maximum scaling factor
+                    .attr("value", scalingFactor) // Default scaling factor
+                    .on("input", function () {
+                        scalingFactor = +this.value;
+                        updateDots(); // Update the dots with the new scaling factor
+                    });
 
                 var colorScale = d3.scaleLinear()
                     .domain([minValue, maxValue])
@@ -3545,12 +3071,33 @@
 
 
                 // Update dots
-                dot.data(data)
+                var dots = svg.selectAll("circle")
+                    .data(data);
+
+                // Remove existing circles
+                dots.exit().remove();
+
+                // Append new circles for any new data points
+                dots.enter().append("circle")
                     .transition()
                     .duration(1000)
                     .attr("cx", function (d) { return x(d.Gene_count); })
                     .attr("cy", function (d) { return y(d.Term) + y.bandwidth() / 2; })
                     .attr("r", function (d) { return d.Gene_ratio * scalingFactor; }) // Adjust radius as per Gene_ratio and scaling factor
+                    .style("fill", function (d) {
+                        // Access the Adjusted.P.value property using bracket notation
+                        adjustedPValue = d['Adjusted.P.value'];
+
+                        // Interpolate color using the color scale
+                        return colorScale(adjustedPValue);
+                    });
+
+                // Transition existing circles to new positions
+                dots.transition()
+                    .duration(1000)
+                    .attr("cx", function (d) { return x(d.Gene_count); })
+                    .attr("cy", function (d) { return y(d.Term) + y.bandwidth() / 2; })
+                    .attr("r", function (d) { return d.Gene_ratio * scalingFactor; }) // Adjust radius as per Gene_ratio and updated scaling factor
                     .style("fill", function (d) {
                         // Access the Adjusted.P.value property using bracket notation
                         adjustedPValue = d['Adjusted.P.value'];
@@ -3571,6 +3118,11 @@
 
                 // Remove the domain path
                 axis.select(".domain").remove();
+
+                function updateDots() {
+                    svg.selectAll("circle")
+                        .attr("r", function (d) { return d.Gene_ratio * scalingFactor; }); // Adjust radius based on scaling factor
+                }
             }
 
             // Define the event handler for the change event
@@ -4310,16 +3862,11 @@
                 var pc1Value = obj.pc1;
                 var pc2Value = obj.pc2;
                 var groupValue = obj.group;
-                var smokerValue = obj.smokerclass;
-                var stageValue = obj.stage;
                 var gsmValue = obj.GSM; // Assuming GSM is a property in the object
 
                 pc1Values.push(pc1Value);
                 pc2Values.push(pc2Value);
                 groupValues.push(groupValue);
-                smokerValues.push(smokerValue);
-                stageValues.push(stageValue);
-
                 // Use the values as needed
                 //console.log("PC1:", pc1Value, ", PC2:", pc2Value, ", Group:", groupValue);
             });
@@ -4355,23 +3902,13 @@
                 .attr("cy", function (d) { return yScale(d.pc2); })
                 .attr("r", 5) // Adjust the radius as needed
                 .style("fill", function (d) {
-                    // Set different colors based on groups
-                    if (d.stage === "Normal") {
-                        return "green";
-                    } else if (d.stage === "IA") {
-                        return "yellow";
-                    } else if (d.stage === "IIA") {
-                        return "orange";
-                    } else if (d.stage === "IIIA") {
+                    console.log(d)
+                    console.log(selectedRowName)
+                    console.log(d[selectedRowName])
+                    if (d[selectedRowName] == chosen_meta2) {
                         return "red";
-                    } else if (d.stage === "IB") {
-                        return "yellow";
-                    } else if (d.stage === "IIB") {
-                        return "orange";
-                    } else if (d.stage === "IIIB") {
-                        return "red";
-                    } else if (d.stage === "IV") {
-                        return "darkred";
+                    } else {
+                        return "green"
                     }
                 })
                 .attr("stroke", function (d) {
@@ -4506,11 +4043,8 @@
 
             }
             var legendItems = [
-                { label: "Normal", color: "green" },
-                { label: "Stage I", color: "yellow" },
-                { label: "Stage II", color: "orange" },
-                { label: "Stage III", color: "red" },
-                { label: "Stage IV", color: "darkred" }
+                { label: chosen_meta2, color: "green" },
+                { label: chosen_meta1, color: "red" }
             ];
 
             // Create legend group
@@ -6276,11 +5810,6 @@
             // Extract metadata categories from the values of the first column
             var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
             console.log("Metadata categories:", metadataCategories);
-            if (first_dims == ['Age at Diagnosis']) {
-                first_dims = metadataCategories
-            }
-
-            first_dims = metadataCategories
 
             // Initialize y scale object
             var y = {};
@@ -6306,8 +5835,6 @@
 
             // Initialize transposedData array
             var transposedData = [];
-
-
 
             // Iterate over each metadata category
             metadataCategories.forEach((category, index) => {
@@ -6336,10 +5863,50 @@
             var allCategories = [...metadataCategories, ...geneNames];
             console.log("All Categories " + allCategories)
 
+            if (totalOrder !== undefined) {
+                dimensions = totalOrder
+            } else {
+                dimensions = first_dims.concat(geneselected);
+
+            }
+
+            var colorScale
+
+            function getColorScale(selectedVariable) {
+                // Initialize an empty array to store unique values
+                var uniqueValues = [];
+
+                // Iterate over each object in transposedData
+                Object.values(transposedData).forEach(function (obj) {
+                    // Get the value of the selected variable for this object
+                    var value = obj[selectedVariable];
+
+                    // If the value is not already in the uniqueValues array, add it
+                    if (value && !uniqueValues.includes(value)) {
+                        uniqueValues.push(value);
+                    }
+                });
+
+                // Generate a color scale with a unique color for each value
+                colorScale = d3.scaleOrdinal()
+                    .domain(uniqueValues)
+                    .range(d3.schemeSet2); // You can use any color scheme here
+
+                // Log the domain and range of the color scale
+                console.log("Color scale domain (unique values):", colorScale.domain());
+                console.log("Color scale range (assigned colors):", colorScale.range());
+
+                return colorScale;
+            }
+
+
+            getColorScale(selectedVariable)
+
+
             // Build the X scale -> it finds the best position for each Y axis
             var x = d3.scalePoint()
                 .range([0, width])
-                .domain(allCategories);
+                .domain(dimensions);
 
             // Iterate over each gene in structureCombinedData
             structureCombinedData.forEach(geneData => {
@@ -6370,16 +5937,14 @@
                     return gsmList.includes(d.GSM) ? "gsm-path pulse-red" : "gsm-path";
                 })
                 .attr("d", function (d) {
-                    if (test == 0) {
-                        test + 1
-                        console.log(d)
-                    }
                     // Construct the path string using the order of dimensions specified by metadataCategories
                     return pathString(transposedData[d]);
                 })
                 .style("fill", "none")
                 .style("stroke", function (d) {
-                    return "#ffff00"; // Set the stroke color
+                    var selectedValue = transposedData[d][selectedVariable];
+                    // Add logic here to set stroke color based on sampleSource
+                    return colorScale(selectedValue);
                     // Add logic here to set stroke color based on selectedVariable
                 });
 
@@ -6389,10 +5954,7 @@
                 // Initialize an empty array to store coordinates
                 var coordinates = [];
                 // Loop through each dimension in metadataCategories
-                allCategories.forEach(function (category) {
-                    console.log(sampleData)
-                    console.log([x(category), y[category](sampleData[category])])
-
+                dimensions.forEach(function (category) {
                     // Push the x and y coordinates to the coordinates array
                     coordinates.push([x(category), y[category](sampleData[category])]);
                 });
@@ -6425,7 +5987,6 @@
 
 
 
-                console.log("GSM List:", gsmList);
             });
 
             function path(d) {
@@ -6491,7 +6052,7 @@
 
             // Draw the axis:
             var axis = svg.selectAll("myAxis")
-                .data(metadataCategories.concat(geneselected))
+                .data(dimensions)
                 .enter()
                 .append("g")
                 .attr("transform", function (d) { return "translate(" + x(d) + ")"; })
@@ -6511,6 +6072,7 @@
                 .style("text-anchor", "middle")
                 .attr("y", -9)
                 .text(function (d) {
+                    return d;
                     // Set the label text for "Type" axis
                     //return d === "type" ? "Type" : d;
                 })
@@ -6533,7 +6095,7 @@
 
             // Draw the axis:
             var axisGroups = svg.selectAll("myAxis")
-                .data(metadataCategories.concat(geneselected))
+                .data(dimensions)
                 .enter()
                 .append("g")
                 .attr("class", "axis-group")
@@ -6557,7 +6119,7 @@
                 .attr("y", -9)
                 .text(function (d) {
                     // Set the label text for "Type" axis
-                    return d === "type" ? "Type" : d;
+                    return d;
                 })
                 .style("fill", "white");
 
@@ -6640,9 +6202,9 @@
                 });
 
                 // Remove corresponding data from transposedData
-                transposedData = transposedData.filter(function (d) {
-                    return !removedDimensions.includes(d.gene);
-                });
+                // transposedData = transposedData.filter(function (d) {
+                //     return !removedDimensions.includes(d.gene);
+                // });
 
                 // Update totalOrder by removing removedDimensions
                 totalOrder = totalOrder.filter(function (d) {
@@ -6733,10 +6295,10 @@
                 }
             });
 
-            // Remove corresponding data from transposedData
-            transposedData = transposedData.filter(function (d) {
-                return !removedDimensions.includes(d.gene);
-            });
+            // // Remove corresponding data from transposedData
+            // transposedData = transposedData.filter(function (d) {
+            //     return !removedDimensions.includes(d.gene);
+            // });
 
             // Update totalOrder by removing removedDimensions
             totalOrder = totalOrder.filter(function (d) {
@@ -6757,50 +6319,24 @@
             // Function to handle mouseover event
             function highlight(d) {
                 // Determine the value to highlight based on the selected variable
-                var selected_reg;
-                if (selectedVariable === "case") {
-                    selected_reg = d.type;
-                } else if (selectedVariable === "Smoker") {
-                    selected_reg = d['Smoking Status'];
-                } else if (selectedVariable === "Gender") {
-                    selected_reg = d['Gender'];
-                } else if (selectedVariable === "Stage") {
-                    selected_reg = d['Stage']; // Set default value
-                }
+                var selected_reg = transposedData[d][selectedVariable];
 
                 // First, every group turns grey and reduces opacity
                 d3.selectAll(".gsm-path")
                     .transition().duration(200)
                     .style("stroke", function (data) {
                         // Highlight only the selected category, reduce opacity for others
-                        if (selectedVariable === "case") {
-                            return data.type === selected_reg ? color(selected_reg) : "lightgrey";
-                        } else if (selectedVariable === "Smoker") {
-                            return data['Smoking Status'] === selected_reg ? color(selected_reg) : "lightgrey";
-                        } else if (selectedVariable === "Gender") {
-                            return data['Gender'] === selected_reg ? color(selected_reg) : "lightgrey";
-                        } else if (selectedVariable === "Stage") {
-                            return data['Stage'] === selected_reg ? color(selected_reg) : "lightgrey";
-                        }
+                        return transposedData[data][selectedVariable] === selected_reg ? colorScale(selected_reg) : "lightgrey";
                     })
                     .style("opacity", function (data) {
                         // Set opacity based on whether it's the selected category or not
-                        if (selectedVariable === "case") {
-                            return data.type === selected_reg ? "1" : "0.2";
-                        } else if (selectedVariable === "Smoker") {
-                            return data['Smoking Status'] === selected_reg ? "1" : "0.2";
-                        } else if (selectedVariable === "Gender") {
-                            return data['Gender'] === selected_reg ? "1" : "0.2";
-                        } else if (selectedVariable === "Stage") {
-                            return data['Stage'] === selected_reg ? "1" : "0.2";
-                        }
+                        return transposedData[data][selectedVariable] === selected_reg ? "1" : "0.2";
                     });
 
                 // Apply pulsing effect directly to the hovered element
                 d3.select(this)
                     .classed("pulse-red", true);
                 this.parentNode.appendChild(this); // Append to the parent node to bring it to the front
-
             }
 
             // Function to handle mouseout event
@@ -6809,16 +6345,10 @@
                 d3.selectAll(".gsm-path")
                     .transition().duration(200)
                     .style("stroke", function (data) {
+                        var selectedValue = transposedData[data][selectedVariable];
+                        // Add logic here to set stroke color based on sampleSource
+                        return colorScale(selectedValue);
                         // Set stroke color based on the selected variable
-                        if (selectedVariable === "case") {
-                            return color(data.type);
-                        } else if (selectedVariable === "Smoker") {
-                            return color(data['Smoking Status']);
-                        } else if (selectedVariable === "Gender") {
-                            return color(data['Gender']);
-                        } else if (selectedVariable === "Stage") {
-                            return color(data['Stage']);
-                        }
                     })
                     .style("opacity", "1"); // Reset opacity to 1
 

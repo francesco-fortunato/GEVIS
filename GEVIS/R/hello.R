@@ -221,3 +221,30 @@ variation <- function(rawdata) {
   return(json_data)
 }
 
+deseq <- function(expression_data, metadata, group1, group2, metadata_column) {
+  library(DESeq2)
+
+  dim(expression_data)
+  dim(metadata)
+
+  metadata <- t(metadata)
+  expression_data <- round(expression_data)
+
+
+  # Create DESeqDataSet object
+  dds <- DESeqDataSetFromMatrix(countData = expression_data,
+                                colData = metadata,
+                                design = ~ Sample_source_name_ch1)
+  dds <- DESeq(dds)
+
+#  group1 <- "Adenocarcinoma of the Lung"
+#  group2 <- "Normal Lung Tissue"
+#  metadata_column <- "Sample_source_name_ch1"
+
+  # Create contrast dynamically
+  contrast <- c(metadata_column, group1, group2)
+
+  # Run DESeq analysis
+  res <- results(dds, contrast = contrast)
+
+}
