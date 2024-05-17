@@ -11,6 +11,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/simple-statistics/7.0.0/simple-statistics.min.js"></script>
     <script src='https://cdn.jsdelivr.net/gh/kdpsingh/rjs@master/r.js'></script>
     <script src="https://d3js.org/d3.v4.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.js"
         integrity="sha512-5mCB0Kvv97yTzqo0174qxPjMisck/WlK51+mw/RV7UfYbtHI8LuLR82BzZuxHUKSfbh75u9cZHgUcqrZDaBJuA=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -32,6 +34,79 @@
     <script src="https://cdn.datatables.net/2.0.7/js/dataTables.js"></script>
 
     <style>
+        /*------ Style 1 ------*/
+        #style1 {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 50px;
+            height: 30px;
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+        }
+
+        #style1::-webkit-color-swatch {
+            border-radius: 5px;
+            border: none;
+        }
+
+        #style1::-moz-color-swatch {
+            border-radius: 5px;
+            border: none;
+        }
+
+        /* Additional styles to adjust layout */
+        .color-input-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+        }
+
+        .input-wrapper {
+            margin-left: 10px;
+            /* Adjust the margin to fine-tune the distance */
+        }
+
+        .value-span {
+            flex: 1;
+            text-align: center;
+            /* Center the text */
+        }
+
+        .color-input-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0px 24px;
+            gap: 0px;
+            /* Adjust gap to bring elements closer */
+        }
+
+        .input-wrapper {
+            display: inline-block;
+            margin-right: 70px;
+        }
+
+        .value-span {
+            margin-right: 10px;
+            /* Optional: Adjust right margin to bring it closer to the input */
+        }
+
+        .category-container {
+            margin-bottom: 10px;
+            /* Add some space between category containers */
+        }
+
+        .value-span {
+            display: inline-block;
+            text-align: left;
+            /* Center the unique value */
+            margin-left: 40px;
+            /* Add some space between the value and the color input */
+        }
+
         .highlight {
             background-color: rgba(var(--dt-row-hover), 0.052) !important;
         }
@@ -962,6 +1037,7 @@
             // Add your code to load the dataset here
         });
 
+
         // Function to show the overlay and modal
         function showOverlay() {
             document.getElementById("overlay").style.display = "block";
@@ -1532,6 +1608,183 @@
                     selectMetadataContent.appendChild(document.createElement("br")); // Add line break
                 });
 
+                var selectColors = document.createElement("button");
+                selectColors.textContent = "Select color";
+                selectMetadataContent.appendChild(selectColors)
+
+                selectColors.addEventListener("click", function () {
+                    // Create a new overlay for selecting colors
+                    var selectColorOverlay = document.createElement("div");
+                    selectColorOverlay.setAttribute("id", "selectColorOverlay");
+                    selectColorOverlay.setAttribute("style", "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 1003; display: flex; justify-content: center; align-items: center;");
+
+                    var selectColorContent = document.createElement("div");
+                    selectColorContent.setAttribute("style", "background-color: white; padding: 20px; border-radius: 5px;");
+
+                    // Here you can add the logic to display the rows of metadata from the second file
+                    // For now, let's just display a message
+                    selectColorContent.innerHTML = "<h2>Select Colors</h2><p>Select a color for each unique value in the metadata categories:</p>";
+                    console.log(data2)
+
+                    // Define an object to store the color scale values with category information
+                    var colorScaleValues = {};
+
+                    // Create color inputs for each unique value in metadata categories
+                    data2.forEach(function (category, i) {
+                        var rowData = Object.values(data2[i]); // Get the values of the selected row
+                        var rowName = rowData[0];
+                        var values = rowData.slice(1); // Exclude the first value (name of the row)
+                        // Create an object to store the colors for this category
+                        var categoryColors = {};
+
+                        // Create a container for each category
+                        var categoryContainer = document.createElement("div");
+                        categoryContainer.classList.add("category-container");
+
+                        // Create a label for the category
+                        var categoryLabel = document.createElement("label");
+                        categoryLabel.textContent = rowName + ": ";
+                        categoryLabel.classList.add("category-label");
+                        categoryContainer.appendChild(categoryLabel);
+
+                        // Get unique values for the current category
+                        var uniqueValues = new Set(values);
+
+                        // Check if there are fewer than 9 unique values
+                        if (uniqueValues.size < 9) {
+                            // Create a Sortable instance for this group of unique values
+                            var sortable = new Sortable(categoryContainer, {
+                                draggable: '.color-input-container',
+                                animation: 150,
+                                onEnd: function (evt) {
+                                    updateColorScaleValues();
+                                }
+                            });
+
+                            // Create color inputs for each unique value
+                            let colorIndex = 0;
+                            uniqueValues.forEach(function (value) {
+                                var colorInputContainer = document.createElement("div");
+                                colorInputContainer.classList.add("color-input-container");
+
+                                // Create a span to hold the unique value (centered)
+                                var valueSpan = document.createElement("span");
+                                valueSpan.textContent = value;
+                                valueSpan.classList.add("value-span");
+                                colorInputContainer.appendChild(valueSpan);
+
+                                // Create a wrapper div for the color input
+                                var inputWrapper = document.createElement("div");
+                                inputWrapper.classList.add("input-wrapper");
+
+                                // Create a color input (aligned to the right)
+                                var colorInput = document.createElement("input");
+                                colorInput.type = "color";
+                                colorInput.id = "style1"; // Apply the style by setting the id
+                                colorInput.name = category + "_" + value; // Use a unique name for each color input
+
+                                // Assign specific colors for "female" and "male"
+                                if (value.toLowerCase().includes("female")) {
+                                    colorInput.value = d3.schemeSet1[7]; // Eighth color of the schemeSet1 for "female"
+                                } else if (value.toLowerCase().includes("male")) {
+                                    colorInput.value = d3.schemeSet1[1]; // Second color of the schemeSet1 for "male"
+                                } else {
+                                    colorInput.value = d3.schemeSet1[colorIndex % d3.schemeSet1.length]; // Default to cycling through the schemeSet1 colors
+                                    colorIndex++;
+                                }
+
+                                colorInput.classList.add("color-input");
+                                inputWrapper.appendChild(colorInput);
+
+                                // Add the wrapper div to the color input container
+                                colorInputContainer.appendChild(inputWrapper);
+
+                                // Add the color input container to the category container
+                                categoryContainer.appendChild(colorInputContainer);
+
+                                // Add the color input container to the category container
+                                categoryColors[value] = colorInput.value;
+
+                                // Store the category information in the colorScaleValues object
+                                colorScaleValues[rowName] = categoryColors;
+                            });
+
+                            // Add the category container to the selectColorContent element
+                            selectColorContent.appendChild(categoryContainer);
+                        }
+                    });
+
+                    // Function to update the color scale values
+                    function updateColorScaleValues() {
+                        // Clear the colorScaleValues object
+                        colorScaleValues = {};
+
+                        // Iterate over each category container
+                        var categoryContainers = document.querySelectorAll('.category-container');
+                        categoryContainers.forEach(function (container) {
+                            // Get the category name
+                            var categoryName = container.querySelector('.category-label').textContent.replace(':', '').trim();
+
+                            // Create an object to store the colors for this category
+                            var categoryColors = {};
+
+                            // Iterate over each color input container in the category container
+                            var colorInputContainers = container.querySelectorAll('.color-input-container');
+                            colorInputContainers.forEach(function (colorInputContainer) {
+                                // Get the value and color of the color input
+                                var value = colorInputContainer.querySelector('.value-span').textContent;
+                                var colorInput = colorInputContainer.querySelector('.color-input');
+                                var color = colorInput.value;
+
+                                // Store the value and color in the categoryColors object
+                                categoryColors[value] = color;
+                            });
+
+                            // Store the categoryColors object in the colorScaleValues object
+                            colorScaleValues[categoryName] = categoryColors;
+                        });
+                    }
+
+
+                    console.log(colorScaleValues)
+                    // Add a back button to go back to the previous step
+                    var backBtn = document.createElement("button");
+                    backBtn.textContent = "Back";
+                    backBtn.addEventListener("click", function () {
+                        console.log(colorScaleValues)
+                        // Remove the current overlay and display the previous one
+                        selectColorOverlay.remove();
+                        document.body.appendChild(selectMetadataOverlay); // Assuming selectMetadataOverlay is defined earlier
+                    });
+                    selectColorContent.appendChild(backBtn);
+
+
+                    // Add a button to continue with the selected colors
+                    var continueBtn = document.createElement("button");
+                    continueBtn.textContent = "Continue";
+                    continueBtn.addEventListener("click", function () {
+                        // Get selected colors and continue with your logic
+                        var selectedColors = {};
+                        metadataCategories.forEach(function (category) {
+                            selectedColors[category] = {};
+                            data2.forEach(function (row) {
+                                var value = row[category];
+                                var colorInput = document.querySelector('input[name="' + category + '_' + value + '"]');
+                                selectedColors[category][value] = colorInput.value;
+                            });
+                        });
+                        console.log("Selected colors:", selectedColors);
+                        // Continue with your logic here
+                        // Close the overlay
+                        selectColorOverlay.remove();
+                    });
+
+                    selectColorContent.appendChild(continueBtn);
+                    selectColorOverlay.appendChild(selectColorContent);
+                    document.body.appendChild(selectColorOverlay);
+                });
+
+
                 // Add a button to select the chosen metadata row
                 var selectRowBtn = document.createElement("button");
                 selectRowBtn.textContent = "Check Row";
@@ -1568,6 +1821,8 @@
                     if (group1.length > 0 && group2.length > 0) {
                         console.log("Two groups of values found:\nGroup 1: " + group1[0] + "\nGroup 2: " + group2[0]);
                         alert("Two groups of values found:\nGroup 1: " + group1[0] + "\nGroup 2: " + group2[0]);
+
+
                         // Add a button for the next step
                         var nextStepBtn = document.createElement("button");
                         nextStepBtn.textContent = "Continue";
@@ -2034,7 +2289,31 @@
 
 
                                                             // Iterate through metadataCategories to create radio buttons
-                                                            metadataCategories.forEach(function (category) {
+                                                            // Count the unique values in the metadata category
+                                                            function countUniqueValues(cat, j) {
+                                                                var uniqueValues = new Set(); // Use a Set to store unique values
+                                                                // Iterate through metadata categories to create y scales
+                                                                metadataCategories.forEach((category, i) => {
+                                                                    if (j === i) {
+                                                                        var values = Object.values(metadata[i]); // Extract values for the current category
+                                                                        values.shift(); // Remove the first value (Sample_source_name_ch1)
+                                                                        var uniqueValues = [...new Set(values)]; // Filter out duplicate
+                                                                        console.log("Values for", category, ":", uniqueValues);
+                                                                        return uniqueValues.length; // Return the size of the Set, which is the count of unique values
+                                                                    }
+                                                                });
+                                                            }
+
+                                                            // Iterate through metadataCategories to create radio buttons
+                                                            metadataCategories.forEach(function (category, i) {
+                                                                // Check if the category has more than 9 unique values
+                                                                var values = Object.values(metadata[i]); // Extract values for the current category
+                                                                values.shift(); // Remove the first value (Sample_source_name_ch1)
+                                                                var uniqueValues = [...new Set(values)]; // Filter out duplicate
+                                                                console.log("Values for", category, ":", uniqueValues);
+                                                                console.log(uniqueValues.length);
+                                                                if (uniqueValues.length >= 9) return
+
                                                                 // Create a radio button element
                                                                 var radioButton = document.createElement("input");
                                                                 radioButton.type = "radio";
@@ -2217,6 +2496,8 @@
                         alert("Error: just one group of values found:\nGroup 1: " + group1[0]);
                     }
                 });
+                selectMetadataContent.appendChild(selectColors);
+
                 selectMetadataContent.appendChild(selectRowBtn);
 
                 selectMetadataOverlay.appendChild(selectMetadataContent);
@@ -3902,9 +4183,9 @@
                 .attr("cy", function (d) { return yScale(d.pc2); })
                 .attr("r", 5) // Adjust the radius as needed
                 .style("fill", function (d) {
-                    console.log(d)
-                    console.log(selectedRowName)
-                    console.log(d[selectedRowName])
+                    // console.log(d)
+                    // console.log(selectedRowName)
+                    // console.log(d[selectedRowName])
                     if (d[selectedRowName] == chosen_meta2) {
                         return "red";
                     } else {
@@ -4963,7 +5244,7 @@
                             }
                         }
 
-                        updateParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
+                        dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
                     } else {
                         // If not highlighted, apply the highlighting
                         selectedElement
@@ -5001,7 +5282,7 @@
                         synchronizeAnimations(this);
 
                         // Call a function to create parallel coordinates plot using selectedGeneData
-                        updateParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
+                        dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
                     }
                 });
 
