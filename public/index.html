@@ -718,7 +718,7 @@
         let chosen_meta1
         let chosen_meta2
         let selectedRowName
-    
+
         // This is for storing COLORS CHOSEN BY USER
         let colorScaleValues = {};
 
@@ -1685,9 +1685,9 @@
                                 colorInput.name = category + "_" + value; // Use a unique name for each color input
 
                                 // Assign specific colors for "female" and "male"
-                                if(false){
+                                if (false) {
 
-                                } else if(false){
+                                } else if (false) {
 
                                 } else if (value.toLowerCase().includes("female")) {
                                     colorInput.value = d3.schemeSet1[7]; // Eighth color of the schemeSet1 for "female"
@@ -6096,20 +6096,35 @@
             // Extract metadata categories from the values of the first column
             var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
             console.log("Metadata categories:", metadataCategories);
+            var orderedCategories = Object.keys(colorScaleValues);
+            console.log("Ordered categories:", orderedCategories);
 
             // Initialize y scale object
             var y = {};
 
-            // Iterate through metadata categories to create y scales
-            metadataCategories.forEach((category, i) => {
-                var values = Object.values(metadata[i]); // Extract values for the current category
-                values.shift(); // Remove the first value (Sample_source_name_ch1)
-                var uniqueValues = [...new Set(values)]; // Filter out duplicate
-                console.log("Values for", category, ":", uniqueValues);
+            // Iterate through ordered categories to create y scales
+            orderedCategories.forEach((category) => {
+                var values = Object.keys(colorScaleValues[category]); // Extract values for the current category
+                console.log("Values for", category, ":", values);
                 y[category] = d3.scaleOrdinal()
-                    .domain(uniqueValues) // Use unique values for the current category
-                    .range([...Array(uniqueValues.length).keys()].map(i => height - i * (height / (uniqueValues.length - 1))));
+                    .domain(values) // Use unique values for the current category
+                    .range([...Array(values.length).keys()].map(i => i * (height / (values.length - 1))));
             });
+
+            // Now y scales are ordered according to colorScaleValues
+            console.log("Y scales:", y);
+
+
+            // Iterate through metadata categories to create y scales
+            // metadataCategories.forEach((category, i) => {
+            //     var values = Object.values(metadata[i]); // Extract values for the current category
+            //     values.shift(); // Remove the first value (Sample_source_name_ch1)
+            //     var uniqueValues = [...new Set(values)]; // Filter out duplicate
+            //     console.log("Values for", category, ":", uniqueValues);
+            //     y[category] = d3.scaleOrdinal()
+            //         .domain(uniqueValues) // Use unique values for the current category
+            //         .range([...Array(uniqueValues.length).keys()].map(i => height - i * (height / (uniqueValues.length - 1))));
+            // });
 
             for (var i in geneselected) {
                 var name = geneselected[i];
@@ -6160,21 +6175,21 @@
             console.log(selectedVariable)
 
             function getColorScale(selectedVariable) {
-    // Retrieve the predefined colors for the selected variable
-    var variableColors = colorScaleValues[selectedVariable];
+                // Retrieve the predefined colors for the selected variable
+                var variableColors = colorScaleValues[selectedVariable];
 
-    // Get the unique values (keys) and their corresponding colors
-    var uniqueValues = Object.keys(variableColors);
-    var colors = uniqueValues.map(value => variableColors[value]);
+                // Get the unique values (keys) and their corresponding colors
+                var uniqueValues = Object.keys(variableColors);
+                var colors = uniqueValues.map(value => variableColors[value]);
 
-    // Generate a color scale using the predefined colors
-    colorScale = d3.scaleOrdinal()
-        .domain(uniqueValues)
-        .range(colors);
+                // Generate a color scale using the predefined colors
+                colorScale = d3.scaleOrdinal()
+                    .domain(uniqueValues)
+                    .range(colors);
 
-    // Log the domain and range of the color scale
-    console.log("Color scale domain (unique values):", colorScale.domain());
-    console.log("Color scale range (assigned colors):", colorScale.range());
+                // Log the domain and range of the color scale
+                console.log("Color scale domain (unique values):", colorScale.domain());
+                console.log("Color scale range (assigned colors):", colorScale.range());
 
                 return colorScale;
             }
