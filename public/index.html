@@ -718,6 +718,10 @@
         let chosen_meta1
         let chosen_meta2
         let selectedRowName
+    
+        // This is for storing COLORS CHOSEN BY USER
+        let colorScaleValues = {};
+
         let case_number
         let normal_number
         let variation_data;
@@ -1626,9 +1630,6 @@
                     selectColorContent.innerHTML = "<h2>Select Colors</h2><p>Select a color for each unique value in the metadata categories:</p>";
                     console.log(data2)
 
-                    // Define an object to store the color scale values with category information
-                    var colorScaleValues = {};
-
                     // Create color inputs for each unique value in metadata categories
                     data2.forEach(function (category, i) {
                         var rowData = Object.values(data2[i]); // Get the values of the selected row
@@ -1684,7 +1685,11 @@
                                 colorInput.name = category + "_" + value; // Use a unique name for each color input
 
                                 // Assign specific colors for "female" and "male"
-                                if (value.toLowerCase().includes("female")) {
+                                if(false){
+
+                                } else if(false){
+
+                                } else if (value.toLowerCase().includes("female")) {
                                     colorInput.value = d3.schemeSet1[7]; // Eighth color of the schemeSet1 for "female"
                                 } else if (value.toLowerCase().includes("male")) {
                                     colorInput.value = d3.schemeSet1[1]; // Second color of the schemeSet1 for "male"
@@ -6152,30 +6157,24 @@
             }
 
             var colorScale
+            console.log(selectedVariable)
 
             function getColorScale(selectedVariable) {
-                // Initialize an empty array to store unique values
-                var uniqueValues = [];
+    // Retrieve the predefined colors for the selected variable
+    var variableColors = colorScaleValues[selectedVariable];
 
-                // Iterate over each object in transposedData
-                Object.values(transposedData).forEach(function (obj) {
-                    // Get the value of the selected variable for this object
-                    var value = obj[selectedVariable];
+    // Get the unique values (keys) and their corresponding colors
+    var uniqueValues = Object.keys(variableColors);
+    var colors = uniqueValues.map(value => variableColors[value]);
 
-                    // If the value is not already in the uniqueValues array, add it
-                    if (value && !uniqueValues.includes(value)) {
-                        uniqueValues.push(value);
-                    }
-                });
+    // Generate a color scale using the predefined colors
+    colorScale = d3.scaleOrdinal()
+        .domain(uniqueValues)
+        .range(colors);
 
-                // Generate a color scale with a unique color for each value
-                colorScale = d3.scaleOrdinal()
-                    .domain(uniqueValues)
-                    .range(d3.schemeSet2); // You can use any color scheme here
-
-                // Log the domain and range of the color scale
-                console.log("Color scale domain (unique values):", colorScale.domain());
-                console.log("Color scale range (assigned colors):", colorScale.range());
+    // Log the domain and range of the color scale
+    console.log("Color scale domain (unique values):", colorScale.domain());
+    console.log("Color scale range (assigned colors):", colorScale.range());
 
                 return colorScale;
             }
