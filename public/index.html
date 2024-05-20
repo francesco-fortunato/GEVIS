@@ -1062,6 +1062,39 @@
             document.getElementById("loadDatasetOverlay").style.display = "none";
         }
 
+
+        // File paths
+        const filePath1 = 'example/matrix.csv';
+        const filePath2 = 'example/metadata.csv';
+
+        // Fetch file data and create File objects
+        function preloadFile(filePath, inputElement) {
+            fetch(filePath)
+                .then(response => response.blob())
+                .then(blob => {
+                    // Create a File object from the blob
+                    const file = new File([blob], filePath, { type: blob.type });
+
+                    // Create a DataTransfer to hold the File object
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(file);
+
+                    // Assign the File object to the file input
+                    inputElement.files = dataTransfer.files;
+                })
+                .catch(error => console.error('Error preloading file:', error));
+        }
+
+        // Preload the files into the file inputs
+        document.addEventListener('DOMContentLoaded', () => {
+            const fileInput1 = document.getElementById('fileInput1');
+            const fileInput2 = document.getElementById('fileInput2');
+
+            preloadFile(filePath1, fileInput1);
+            preloadFile(filePath2, fileInput2);
+        });
+
+
         document.getElementById("loadCsvBtn").addEventListener("click", function () {
             var fileInput1 = document.getElementById("fileInput1");
             var fileInput2 = document.getElementById("fileInput2");
@@ -1452,7 +1485,7 @@
                                                                 heatmap_data.push(newObj);
                                                             })
                                                             // Display the newData array
-                                                            //console.log(pca_data);
+                                                            console.log("PCA first computing", pca_data);
 
 
                                                             pca(pca_data);
@@ -2397,7 +2430,7 @@
                                                                     console.log("Metadata categories:", metadataCategories);
 
                                                                     // Initialize pca_data array
-                                                                    var pca_data = [];
+                                                                    pca_data = [];
 
                                                                     // Iterate over each object in the JSON array
                                                                     json.scores_df.forEach(function (obj) {
@@ -2447,7 +2480,7 @@
                                                                         heatmap_data.push(newObj);
                                                                     })
                                                                     // Display the newData array
-                                                                    //console.log(pca_data);
+                                                                    console.log("PCA, first try ", pca_data);
 
 
                                                                     pca(pca_data);
@@ -3624,7 +3657,7 @@
 
 
 
-                        updateParallel(selectedGeneData, data_copy_pval, dataC_copy_pval, dataN_copy_pval, first_dims)
+                        dynamicParallel(selectedGeneData, data_copy_pval, dataC_copy_pval, dataN_copy_pval, first_dims)
                         updateCounter()
                         var pc1Values = [];
                         var pc2Values = [];
@@ -3660,6 +3693,11 @@
                                     });
                                     // console.log(pc1Values)
 
+                                    // Extract metadata categories from the values of the first column
+                                    var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
+                                    console.log("Metadata categories:", metadataCategories);
+
+                                    // Initialize pca_data array
                                     pca_data = [];
 
                                     // Iterate over each object in the JSON array
@@ -3667,10 +3705,6 @@
                                         // Retrieve additional data from metadata based on _row
                                         var gsm = obj._row;
                                         var group = obj.Group;
-
-                                        // Retrieve smokerclass, stage, pc1, and pc2 from metadata
-                                        var smokerclass = metadata['Cigarette Smoking Status:ch1'][metadata.geo_accession.indexOf(gsm)];
-                                        var stage = metadata['Stage:ch1'][metadata.geo_accession.indexOf(gsm)];
                                         var pc1 = obj.PC1;
                                         var pc2 = obj.PC2;
 
@@ -3678,17 +3712,18 @@
                                         var newObj = {
                                             GSM: gsm,
                                             group: group,
-                                            smokerclass: smokerclass,
-                                            stage: stage,
                                             pc1: pc1,
                                             pc2: pc2
                                         };
 
-                                        // Push the new object to the newData array
+                                        // Add metadata values for each category to the newObj
+                                        metadataCategories.forEach((category, index) => {
+                                            newObj[category] = metadata[index][gsm];
+                                        });
+
+                                        // Push the new object to the pca_data array
                                         pca_data.push(newObj);
-
                                     });
-
 
                                     heatmap_data = []
                                     json.scores_var.forEach(function (obj) {
@@ -3816,7 +3851,7 @@
 
                         console.log(selectedGeneData)
 
-                        updateParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
+                        dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
 
                         const ind = old_p_adj.reduce((result, entry, index) => {
 
@@ -3858,7 +3893,7 @@
 
                             console.log(selectedGeneData)
 
-                            updateParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
+                            dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
 
                             console.log(dataN_copy.length)
                         }
@@ -3898,6 +3933,11 @@
                                     });
                                     // console.log(pc1Values)
 
+                                    // Extract metadata categories from the values of the first column
+                                    var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
+                                    console.log("Metadata categories:", metadataCategories);
+
+                                    // Initialize pca_data array
                                     pca_data = [];
 
                                     // Iterate over each object in the JSON array
@@ -3905,10 +3945,6 @@
                                         // Retrieve additional data from metadata based on _row
                                         var gsm = obj._row;
                                         var group = obj.Group;
-
-                                        // Retrieve smokerclass, stage, pc1, and pc2 from metadata
-                                        var smokerclass = metadata['Cigarette Smoking Status:ch1'][metadata.geo_accession.indexOf(gsm)];
-                                        var stage = metadata['Stage:ch1'][metadata.geo_accession.indexOf(gsm)];
                                         var pc1 = obj.PC1;
                                         var pc2 = obj.PC2;
 
@@ -3916,13 +3952,16 @@
                                         var newObj = {
                                             GSM: gsm,
                                             group: group,
-                                            smokerclass: smokerclass,
-                                            stage: stage,
                                             pc1: pc1,
                                             pc2: pc2
                                         };
 
-                                        // Push the new object to the newData array
+                                        // Add metadata values for each category to the newObj
+                                        metadataCategories.forEach((category, index) => {
+                                            newObj[category] = metadata[index][gsm];
+                                        });
+
+                                        // Push the new object to the pca_data array
                                         pca_data.push(newObj);
                                     });
 
@@ -4057,6 +4096,11 @@
                             });
                             // console.log(pc1Values)
 
+                            // Extract metadata categories from the values of the first column
+                            var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
+                            console.log("Metadata categories:", metadataCategories);
+
+                            // Initialize pca_data array
                             pca_data = [];
 
                             // Iterate over each object in the JSON array
@@ -4064,10 +4108,6 @@
                                 // Retrieve additional data from metadata based on _row
                                 var gsm = obj._row;
                                 var group = obj.Group;
-
-                                // Retrieve smokerclass, stage, pc1, and pc2 from metadata
-                                var smokerclass = metadata['Cigarette Smoking Status:ch1'][metadata.geo_accession.indexOf(gsm)];
-                                var stage = metadata['Stage:ch1'][metadata.geo_accession.indexOf(gsm)];
                                 var pc1 = obj.PC1;
                                 var pc2 = obj.PC2;
 
@@ -4075,17 +4115,18 @@
                                 var newObj = {
                                     GSM: gsm,
                                     group: group,
-                                    smokerclass: smokerclass,
-                                    stage: stage,
                                     pc1: pc1,
                                     pc2: pc2
                                 };
 
-                                // Push the new object to the newData array
+                                // Add metadata values for each category to the newObj
+                                metadataCategories.forEach((category, index) => {
+                                    newObj[category] = metadata[index][gsm];
+                                });
+
+                                // Push the new object to the pca_data array
                                 pca_data.push(newObj);
-
                             });
-
 
                             heatmap_data = []
                             json.scores_var.forEach(function (obj) {
@@ -4141,6 +4182,8 @@
             groupValues = []
             smokerValues = []
             stageValues = []
+
+            console.log(pca_data)
 
             // Iterate over the newData array
             pca_data.forEach(function (obj) {
@@ -4319,7 +4362,7 @@
                 // Define legend items
 
                 // Update parallel plot or any other function with the updated GSM list
-                updateParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims, ordering);
+                dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims, ordering);
 
 
                 updateBoxPlot(last_box, parsedLogFC, dataN_copy, dataC_copy)
@@ -5639,7 +5682,8 @@
                         synchronizeAnimations();
 
                         // Call necessary update functions
-                        updateParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims, ordering);
+                        dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims, ordering);
+                        console.log("PCA DATA IN BOXPLOT", pca_data)
                         pca(pca_data);
 
 
@@ -5945,6 +5989,7 @@
                             return gsmList.includes(d.GSM) ? 3 : 1;
                         })
                         .on("click", function (d) {
+                            console.log(d)
                             var selectedGSM = d.GSM;
                             var isSelected = gsmList.includes(selectedGSM);
                             // console.log(isSelected);
@@ -5963,7 +6008,8 @@
                                 .attr("stroke-width", isSelected ? 1 : 2);
                             synchronizeAnimations()
                             // Call necessary update functions
-                            updateParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims, ordering);
+                            dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims, ordering);
+                            console.log("PCA DATA IN BOXPLOT", pca_data)
                             pca(pca_data);
                         });
 
@@ -6229,7 +6275,7 @@
                 .append("path")
                 .attr("class", function (d) {
                     // Add the pulse-red class if the GSM is in the gsmList
-                    return gsmList.includes(d.GSM) ? "gsm-path pulse-red" : "gsm-path";
+                    return gsmList.includes(d) ? "gsm-path pulse-red" : "gsm-path";
                 })
                 .attr("d", function (d) {
                     // Construct the path string using the order of dimensions specified by metadataCategories
@@ -6258,7 +6304,8 @@
             }
 
             gsmPaths.on("click", function (d) {
-                var clickedGSM = d.GSM; // Get the GSM value of the clicked path
+                console.log(d)
+                var clickedGSM = d; // Get the GSM value of the clicked path
 
                 // Check if the clicked GSM is already in gsmList
                 var index = gsmList.indexOf(clickedGSM);
@@ -6270,11 +6317,13 @@
                     // If already in the list, remove it
                     gsmList.splice(index, 1);
                 }
+                console.log(gsmList)
 
                 // Update the class of the clicked path based on its presence in gsmList
                 d3.select(this)
                     .classed("pulse-red", gsmList.includes(clickedGSM));
 
+                console.log("PCA DATA IN PARRALLEL", pca_data)
 
                 pca(pca_data)
 
@@ -6291,7 +6340,7 @@
             svg.selectAll(".gsm-path").each(function (data, i) {
                 // Reorder the SVG elements to bring paths with selected GSM to the front
                 gsmPaths.each(function () {
-                    var selectedGSM = d3.select(this).datum().GSM;
+                    var selectedGSM = d3.select(this).datum();
                     if (gsmList.includes(selectedGSM)) {
                         this.parentNode.appendChild(this); // Append to the parent node to bring it to the front
                     }
@@ -6650,7 +6699,7 @@
                 // Pulsing effect for paths with GSM in gsmList
                 d3.selectAll(".gsm-path")
                     .filter(function (data) {
-                        return !gsmList.includes(data.GSM);
+                        return !gsmList.includes(data);
                     })
                     .classed("pulse-red", false);
             }
