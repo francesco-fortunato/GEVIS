@@ -1718,11 +1718,7 @@
                                 colorInput.name = category + "_" + value; // Use a unique name for each color input
 
                                 // Assign specific colors for "female" and "male"
-                                if (false) {
-
-                                } else if (false) {
-
-                                } else if (value.toLowerCase().includes("female")) {
+                                if (value.toLowerCase().includes("female")) {
                                     colorInput.value = d3.schemeSet1[7]; // Eighth color of the schemeSet1 for "female"
                                 } else if (value.toLowerCase().includes("male")) {
                                     colorInput.value = d3.schemeSet1[1]; // Second color of the schemeSet1 for "male"
@@ -1734,21 +1730,24 @@
                                 colorInput.classList.add("color-input");
                                 inputWrapper.appendChild(colorInput);
 
+                                // Add an event listener to update colorScaleValues on color change
+                                colorInput.addEventListener('input', updateColorScaleValues);
+
                                 // Add the wrapper div to the color input container
                                 colorInputContainer.appendChild(inputWrapper);
 
                                 // Add the color input container to the category container
                                 categoryContainer.appendChild(colorInputContainer);
 
-                                // Add the color input container to the category container
-                                categoryColors[value] = colorInput.value;
-
                                 // Store the category information in the colorScaleValues object
-                                colorScaleValues[rowName] = categoryColors;
+                                categoryColors[value] = colorInput.value;
                             });
 
                             // Add the category container to the selectColorContent element
                             selectColorContent.appendChild(categoryContainer);
+
+                            // Store the initial colors for the category
+                            colorScaleValues[rowName] = categoryColors;
                         }
                     });
 
@@ -1783,8 +1782,11 @@
                         });
                     }
 
+                    // Add the overlay to the body
+                    document.body.appendChild(selectColorOverlay);
+                    selectColorOverlay.appendChild(selectColorContent);
 
-                    console.log(colorScaleValues)
+                    console.log(colorScaleValues);
                     // Add a back button to go back to the previous step
                     var backBtn = document.createElement("button");
                     backBtn.textContent = "Back";
@@ -1867,10 +1869,9 @@
                         nextStepBtn.addEventListener("click", function () {
 
                             document.getElementById("selectMetadataOverlay").style.display = "none";
-
                             document.getElementById("loadingOverlay").style.display = "block";
-                            // Assuming you have already obtained the selected row index and values from data2
 
+                            // Your time-consuming operations here
                             // Create two new arrays to hold the filtered datasets
                             // Extract the selected value from data2
                             var selectedValue = group1[0]; // or group2[0] depending on which group represents the selected value
@@ -6242,6 +6243,64 @@
 
 
             getColorScale(selectedVariable)
+
+            var legend = d3.select("#parallelLegend");
+            legend.html(""); // Clear previous legend content
+
+            // Define legend dimensions and position
+            var legendWidth = 550;
+            var legendHeight = 60;
+            var legendX = 20;
+            var legendY = 10;
+
+
+            // Create legend
+            legend = d3.select("#parallelLegend")
+                .append("svg")
+                .attr("width", legendWidth)
+                .attr("height", legendHeight)
+                .append("g")
+                .attr("class", "legendOrdinal")
+                .attr("transform", "translate(" + legendX + "," + legendY + ")");
+
+            // Define legend color scale
+            var legendColor = d3.legendColor()
+                .shapeWidth(60) // Adjust shape width as needed
+                .orient('horizontal')
+                .labelWrap(30)
+                .scale(colorScale);
+
+            // Append legend to the SVG
+            legend.call(legendColor);
+
+            // Truncate labels and add tooltips for full text
+            legend.selectAll(".label")
+                .each(function (d) {
+                    var self = d3.select(this);
+                    console.log(self.node.childNodes)
+                    var textNode = self.node().childNodes[0]; // Get the text node
+                    var text = textNode.textContent; // Get the text content
+                    console.log(text)
+                    var maxLength = 7; // Set the maximum length for the label before truncating
+                    if (this.textContent.length > maxLength) {
+                        var truncatedText = text.slice(0, maxLength) + '...';
+                        self.text(truncatedText);
+                        self.append("title").text(textNode.textContent); // Add full text as a tooltip
+                    }
+                });
+
+
+
+            // Set legend label color and style
+            legend.selectAll(".label")
+                .style("fill", "white") // Set label color to white
+                .style("font-size", "14px")  // Adjust font size
+                .style("white-space", "pre")
+
+            // Adjust label position
+            legend.selectAll("text")
+                .attr("dy", "-0.35em"); // Adjust vertical alignment
+
 
 
             // Build the X scale -> it finds the best position for each Y axis
