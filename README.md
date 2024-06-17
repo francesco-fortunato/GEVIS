@@ -29,29 +29,11 @@ This project implements a dashboard for conducting a differential gene expressio
     ```
     cd GEVIS
     ```
-4. Install dependencies by running:
+4.  Run the following command
     ```
-    npm install
+    docker-compose up --build
     ```
-5. Open a new terminal, pull the opencpu/rstudio image and launch a Docker container named "mybox" with the OpenCPU/RStudio image using the command:
-    ```
-    docker pull opencpu/rstudio
-    docker run --name mybox -t -p 80:80 opencpu/rstudio
-    ```
-6. Open another terminal window, then execute the following commands:
-    ```
-    docker exec -i -t mybox /bin/bash
-    sudo -i
-    apt-get update
-    apt-get install cmake
-    ```
-7. Access RStudio by visiting localhost/rstudio/ (login credentials: username - opencpu, password - opencpu).
-8. Create a package, calling it "GEVIS", and paste inside the hello.R function the content of the file that you will find [here](GEVIS/R/hello.R). On the right lower panel, select all the library used (BiocManager, EnrichR, GEOQuery). To build the project, press Ctrl+Shift+B.
-9. Back in the terminal from step 4, run the command:
-    ```
-    node ./server.js
-    ```
-10. Open localhost:3000 in your web browser to access the GEVIS dashboard. Utilize the interactive sliders and graphs to explore gene expression data and identify differentially expressed genes.
+5. Open localhost:3000 in your web browser to access the GEVIS dashboard. Utilize the interactive sliders and graphs to explore gene expression data and identify differentially expressed genes.
 
 ## Docs
 
