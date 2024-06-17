@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  nodeapp:
+    build: .
+    ports:
+      - "3000:3000"
+    depends_on:
+      - ocpu
+    networks:
+      - my-network
+
+  ocpu:
+    image: frafortu/ocpu:latest
+    ports:
+      - "8004:8004"
+    networks:
+      - my-network
+
+networks:
+  my-network:
+    driver: bridge
