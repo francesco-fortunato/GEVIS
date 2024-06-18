@@ -453,6 +453,40 @@
             margin-right: 16px;
             /* Move the button 16px to the left */
         }
+
+        .dropdown-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            /* Space between each category block */
+        }
+
+        .radio-label {
+            flex-shrink: 0;
+            margin-right: 20px;
+            /* Space between the label and the dropdowns */
+        }
+
+        .dropdowns-container {
+            display: flex;
+            align-items: center;
+            flex-grow: 1;
+        }
+
+        .dropdowns-container select {
+            margin: 0 5px;
+        }
+
+        .vs-text {
+            margin: 0 10px;
+        }
+
+        /* Additional styles for dropdowns if needed */
+        select[name="dropdown1"],
+        select[name="dropdown2"] {
+            min-width: 150px;
+            /* Ensure dropdowns have a minimum width */
+        }
     </style>
 </head>
 
@@ -1655,15 +1689,27 @@
                 selectMetadataOverlay.setAttribute("style", "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 1000; display: flex; justify-content: center; align-items: center;");
                 document.body.appendChild(selectMetadataOverlay);
 
-                var selectMetadataContent = document.createElement("div");
-                selectMetadataContent.setAttribute("style", "background-color: white; padding: 20px; border-radius: 5px;");
 
                 // Here you can add the logic to display the rows of metadata from the second file
                 // For now, let's just display a message
-                selectMetadataContent.innerHTML = "<h2>Select Metadata Rows</h2><p>Select one metadata row from the second file:</p>";
+                var selectMetadataContent = document.createElement("div");
+                selectMetadataContent.setAttribute("style", "background-color: white; padding: 20px; border-radius: 5px; width: 600px;");
+                selectMetadataContent.innerHTML = "<h2>Select Metadata Category</h2><p>Please choose the category within the metadata that contains binary classifications (e.g., case vs. normal, male vs. female) for conducting the Differential Expression Gene (DEG) analysis:</p>";
 
-                // Create radio buttons for each row in data2
+                // Create an array to keep track of all dropdown pairs
+                var dropdownPairs = [];
+
+                // Variables to store the selected values from the dropdowns
+                var selectedValue1 = "";
+                var selectedValue2 = "";
+
+
+                // Create dropdown menus for each row in data2
                 data2.forEach(function (row, index) {
+                    var dropdownContainer = document.createElement("div");
+                    dropdownContainer.classList.add("dropdown-container");
+
+                    // Create radio button label
                     var radioLabel = document.createElement("label");
                     var radioButton = document.createElement("input");
                     radioButton.setAttribute("type", "radio");
@@ -1674,9 +1720,134 @@
                     }
                     radioLabel.appendChild(radioButton);
                     radioLabel.appendChild(document.createTextNode(row[Object.keys(row)[0]])); // Display the value of the first column
-                    selectMetadataContent.appendChild(radioLabel);
+                    dropdownContainer.appendChild(radioLabel);
+                    selectMetadataContent.appendChild(dropdownContainer);
+                    selectMetadataContent.appendChild(document.createElement("br")); // Add line break
+
+                    // Get the values of the selected row
+                    var rowData = Object.values(data2[index]);
+                    var values = rowData.slice(1); // Exclude the first value (name of the row)
+                    var uniqueValues = Array.from(new Set(values)); // Convert Set to array for easier manipulation
+
+                    // Create the first dropdown menu (dropdown1)
+                    var dropdown1 = document.createElement("select");
+                    dropdown1.setAttribute("name", "dropdown1");
+                    dropdown1.setAttribute("style", "margin-left:20px"); // Example styling
+                    dropdown1.setAttribute("style", "width:150px"); // Example styling
+
+                    // Create options for dropdown1
+                    uniqueValues.forEach(function (value) {
+                        var option = document.createElement("option");
+                        option.textContent = value;
+                        option.setAttribute("value", value);
+                        dropdown1.appendChild(option);
+                    });
+
+                    // Set the first value as selected in dropdown1
+                    dropdown1.selectedIndex = 0;
+                    if (index === 0) {
+                        selectedValue1 = dropdown1.options[0].value
+                    }
+
+                    // Create the second dropdown menu (dropdown2)
+                    var dropdown2 = document.createElement("select");
+                    dropdown2.setAttribute("name", "dropdown2");
+                    dropdown2.setAttribute("style", "width:150px"); // Example styling
+
+                    // Create options for dropdown2 (same options as dropdown1)
+                    uniqueValues.forEach(function (value) {
+                        var option = document.createElement("option");
+                        option.textContent = value;
+                        option.setAttribute("value", value);
+                        dropdown2.appendChild(option);
+                    });
+
+                    // Set the second value as selected in dropdown2
+                    dropdown2.selectedIndex = 1;
+
+                    if (index === 0) {
+                        selectedValue2 = dropdown2.options[1].value
+
+                    }
+
+                    // Disable dropdowns initially (except for the first pair)
+                    if (index !== 0) {
+                        dropdown1.disabled = true;
+                        dropdown2.disabled = true;
+                    }
+
+                    // Add event listeners to synchronize dropdown values
+                    dropdown1.addEventListener("change", function () {
+                        selectedValue1 = dropdown1.value;
+                        synchronizeDropdowns(dropdown1, dropdown2);
+                    });
+
+                    dropdown2.addEventListener("change", function () {
+                        selectedValue2 = dropdown2.value;
+
+                        synchronizeDropdowns(dropdown2, dropdown1);
+                    });
+
+                    // Function to synchronize dropdown values
+                    function synchronizeDropdowns(dropdown1n, dropdown2n) {
+                        var selectedValue = dropdown1n.value;
+                        var selectedValuesec = dropdown2n.value;
+                        if (selectedValuesec === selectedValue) {
+                            console.log(selectedValuesec, selectedValue)
+                            dropdown2n.selectedIndex = (dropdown2n.selectedIndex + 1) % dropdown2n.options.length;
+                            selectedValue2 = dropdown2n.value;
+                        }
+                    }
+
+
+                    // Add event listener to radio button to enable/disable dropdowns
+                    radioButton.addEventListener("change", function () {
+                        if (radioButton.checked) {
+                            enableDropdowns(index);
+                        }
+                    });
+
+                    // Function to enable/disable dropdowns based on radio button selection
+                    // Function to enable/disable dropdowns based on radio button selection
+                    function enableDropdowns(selectedIndex) {
+                        dropdownPairs.forEach(function (pair, i) {
+                            var isSelected = (i === selectedIndex);
+                            pair.dropdown1.disabled = !isSelected;
+                            pair.dropdown2.disabled = !isSelected;
+                            if (isSelected) {
+                                // Update the selected values
+                                selectedValue1 = pair.dropdown1.value;
+                                selectedValue2 = pair.dropdown2.value;
+                                console.log("Selected Value 1:", selectedValue1);
+                                console.log("Selected Value 2:", selectedValue2);
+                            }
+                        });
+                    }
+
+                    // Create a span for the "vs" text
+                    var vsText = document.createElement("span");
+                    vsText.textContent = " vs ";
+                    vsText.style.marginLeft = "5px";
+                    vsText.style.marginRight = "5px";
+                    // Add some padding between the label and the dropdowns
+                    radioLabel.style.paddingRight = "10px";
+
+                    dropdownContainer.appendChild(dropdown1);
+                    dropdownContainer.appendChild(vsText); // Add "vs" text between dropdowns
+                    dropdownContainer.appendChild(dropdown2);
+
+                    dropdownPairs.push({ dropdown1: dropdown1, dropdown2: dropdown2 });
+
                     selectMetadataContent.appendChild(document.createElement("br")); // Add line break
                 });
+                console.log(selectedValue1)
+                console.log(selectedValue2)
+
+                var selectRowBtn = document.createElement("button");
+                selectRowBtn.textContent = "Perform DEG with t-test \n(This may take a while. Don't panic if it seems stuck)";
+                selectRowBtn.style.marginLeft = "10px"; // Adjust the value to move it more to the left
+                selectRowBtn.style.width = "300px"; // Set an appropriate width to fit the text content
+                selectRowBtn.disabled = true; // Disable the button initially
 
                 var selectColors = document.createElement("button");
                 selectColors.textContent = "Select color";
@@ -1892,48 +2063,23 @@
                     console.log(colorScaleValues);
                     // Add a back button to go back to the previous step
                     var backBtn = document.createElement("button");
-                    backBtn.textContent = "Back";
+                    backBtn.textContent = "Save";
                     backBtn.addEventListener("click", function () {
-                        // console.log(colorScaleValues)
-                        // Remove the current overlay and display the previous one
                         selectColorOverlay.remove();
+                        selectRowBtn.disabled = false; // Enable the button once colors are confirmed
                         document.body.appendChild(selectMetadataOverlay); // Assuming selectMetadataOverlay is defined earlier
                     });
+
                     selectColorContent.appendChild(backBtn);
 
-
-                    // Add a button to continue with the selected colors
-                    var continueBtn = document.createElement("button");
-                    continueBtn.textContent = "Continue";
-                    continueBtn.addEventListener("click", async function () {
-                        // Get selected colors and continue with your logic
-                        var selectedColors = {};
-                        metadataCategories.forEach(function (category) {
-                            selectedColors[category] = {};
-                            data2.forEach(function (row) {
-                                var value = row[category];
-                                var colorInput = document.querySelector('input[name="' + category + '_' + value + '"]');
-                                selectedColors[category][value] = colorInput.value;
-                            });
-                        });
-                        // console.log("Selected colors:", selectedColors);
-                        // Continue with your logic here
-                        // Close the overlay
-                        selectColorOverlay.remove();
-                    });
-
-                    selectColorContent.appendChild(continueBtn);
                     selectColorOverlay.appendChild(selectColorContent);
                     document.body.appendChild(selectColorOverlay);
                 });
 
-
-                // Add a button to select the chosen metadata row
-                var selectRowBtn = document.createElement("button");
-                selectRowBtn.textContent = "Check Row (This may take a while. Don't panic if it seems stuck)";
                 // console.log(data2)
                 // console.log(data1)
                 selectRowBtn.addEventListener("click", async function () {
+                    event.stopPropagation(); // Prevent event bubbling
                     var selectedRowIndex = document.querySelector('input[name="metadataRow"]:checked').value;
                     var rowData = Object.values(data2[selectedRowIndex]); // Get the values of the selected row
                     selectedRowName = rowData[0]
@@ -1942,220 +2088,184 @@
                     first_dims = [selectedRowName]
                     var values = rowData.slice(1); // Exclude the first value (name of the row)
 
-                    // Separate values into two groups
-                    var group1 = [];
-                    var group2 = [];
+                    console.log("Two groups of values found:\SelectedValue 1: " + selectedValue1 + "\SelectedValue 2: " + selectedValue2);
 
-                    loop: for (var i = 0; i < values.length; i++) {
-                        var value = values[i];
-                        if (group1.length === 0 && group2.length === 0) {
-                            group1.push(value);
-                        } else if (!group1.includes(value) && (group2.length === 0 || group2.includes(value))) {
-                            group2.push(value);
-                        } else if (group1.includes(value)) {
-                            group1.push(value);
-                        } else {
-                            alert("Error: More than two groups of values found:\nGroup 1: " + group1[0] + "\nGroup 2: " + group2[0] + "\nValue that does not match with no group: " + value);
-                            group1 = [];
-                            group2 = [];
-                            break loop;
+                    var selectedValue = selectedValue1; // or group2[0] depending on which group represents the selected value
+                    chosen_meta1 = selectedValue1
+                    chosen_meta2 = selectedValue2
+                    // console.log("Selected value " + selectedValue)
+
+                    // Assuming you have already obtained the selected row index and values from data2
+
+                    // Create two new arrays to hold the filtered datasets
+                    var dataC = [];
+                    var dataN = [];
+
+                    // Loop through each object in data1
+                    for (var i = 0; i < data1.length; i++) {
+                        var obj = data1[i];
+                        var gene = obj[Object.keys(obj)[0]]; // Get the gene name from the first property of the object
+
+                        // Create new objects for dataC and dataN
+                        var newObjC = { "gene": gene };
+                        var newObjN = { "gene": gene };
+
+                        // Loop through the keys in the object and add values to newObjC and newObjN accordingly
+                        for (var key in obj) {
+                            if (key !== Object.keys(obj)[0]) { // Skip the first key (gene name)
+                                // Check if the value in data2 matches the selected value
+                                if (data2[selectedRowIndex][key] === selectedValue) {
+                                    newObjC[key] = obj[key]; // Add value to newObjC
+                                } else {
+                                    newObjN[key] = obj[key]; // Add value to newObjN
+                                }
+                            }
                         }
+
+                        // Push the new objects to dataC and dataN
+                        dataC.push(newObjC);
+                        dataN.push(newObjN);
                     }
-                    // Check if there are exactly two groups of values
-                    if (group1.length > 0 && group2.length > 0) {
-                        console.log("Two groups of values found:\nGroup 1: " + group1[0] + "\nGroup 2: " + group2[0]);
 
-                        var selectedValue = group1[0]; // or group2[0] depending on which group represents the selected value
-                        chosen_meta1 = group1[0]
-                        chosen_meta2 = group2[0]
-                        // console.log("Selected value " + selectedValue)
+                    // Create a new array to hold the reordered data
+                    var reorderedData = [];
 
-                        // Assuming you have already obtained the selected row index and values from data2
+                    // Loop through each object in data1
+                    for (var i = 0; i < data1.length; i++) {
+                        var obj = data1[i];
+                        var gene = obj[Object.keys(obj)[0]]; // Get the first value of the object
 
-                        // Create two new arrays to hold the filtered datasets
-                        var dataC = [];
-                        var dataN = [];
+                        // Find the corresponding row in dataC and dataN
+                        var rowDataN = dataN.find(row => row.gene === gene);
+                        var rowDataC = dataC.find(row => row.gene === gene);
 
-                        // Loop through each object in data1
-                        for (var i = 0; i < data1.length; i++) {
-                            var obj = data1[i];
-                            var gene = obj[Object.keys(obj)[0]]; // Get the gene name from the first property of the object
+                        // Construct the new object with the desired structure
+                        var reorderedObj = { "gene": gene };
 
-                            // Create new objects for dataC and dataN
-                            var newObjC = { "gene": gene };
-                            var newObjN = { "gene": gene };
 
-                            // Loop through the keys in the object and add values to newObjC and newObjN accordingly
-                            for (var key in obj) {
-                                if (key !== Object.keys(obj)[0]) { // Skip the first key (gene name)
-                                    // Check if the value in data2 matches the selected value
-                                    if (data2[selectedRowIndex][key] === selectedValue) {
-                                        newObjC[key] = obj[key]; // Add value to newObjC
-                                    } else {
-                                        newObjN[key] = obj[key]; // Add value to newObjN
-                                    }
-                                }
+                        // Add GSM values from dataN to reorderedObj
+                        for (var key in rowDataN) {
+                            if (key !== "gene") { // Skip the gene key
+                                reorderedObj[key] = rowDataN[key];
                             }
-
-                            // Push the new objects to dataC and dataN
-                            dataC.push(newObjC);
-                            dataN.push(newObjN);
                         }
 
-                        // Create a new array to hold the reordered data
-                        var reorderedData = [];
-
-                        // Loop through each object in data1
-                        for (var i = 0; i < data1.length; i++) {
-                            var obj = data1[i];
-                            var gene = obj[Object.keys(obj)[0]]; // Get the first value of the object
-
-                            // Find the corresponding row in dataC and dataN
-                            var rowDataN = dataN.find(row => row.gene === gene);
-                            var rowDataC = dataC.find(row => row.gene === gene);
-
-                            // Construct the new object with the desired structure
-                            var reorderedObj = { "gene": gene };
-
-
-                            // Add GSM values from dataN to reorderedObj
-                            for (var key in rowDataN) {
-                                if (key !== "gene") { // Skip the gene key
-                                    reorderedObj[key] = rowDataN[key];
-                                }
+                        // Add GSM values from dataC to reorderedObj
+                        for (var key in rowDataC) {
+                            if (key !== "gene") { // Skip the gene key
+                                reorderedObj[key] = rowDataC[key];
                             }
-
-                            // Add GSM values from dataC to reorderedObj
-                            for (var key in rowDataC) {
-                                if (key !== "gene") { // Skip the gene key
-                                    reorderedObj[key] = rowDataC[key];
-                                }
-                            }
-
-                            // Push the new object to the reorderedData array
-                            reorderedData.push(reorderedObj);
                         }
 
-                        // Now, reorderedData contains the desired structure
-                        // console.log(reorderedData);
-
-
-                        data1 = reorderedData
-
-                        case_number = Object.keys(dataC[0]).length - 1
-                        normal_number = Object.keys(dataN[0]).length - 1
-
-                        // console.log(Object.keys(dataC[0]).length - 1)
-                        // console.log(Object.keys(dataN[0]).length - 1)
-
-                        // Assuming you have obtained genes from data1
-                        var genes = data1.map(obj => obj[Object.keys(obj)[0]]);
-
-                        // Calculate overall mean for data1
-                        var overall_mean = data1.map(obj => {
-                            var values = Object.values(obj).slice(1).map(parseFloat);
-                            return values.reduce((acc, val) => acc + val, 0) / values.length;
-                        });
-
-                        // Filter out rows with overall mean equal to 0
-                        var ind = overall_mean.reduce((acc, val, index) => {
-                            if (val === 0) { console.log("VALUE 0"); acc.push(index); }
-                            return acc;
-                        }, []);
-
-                        // console.log(ind)
-
-                        // Check if ind is not empty
-                        if (ind.length > 0) {
-                            dataN = dataN.filter((_, index) => !ind.includes(index));
-                            dataC = dataC.filter((_, index) => !ind.includes(index));
-                            data1 = data1.filter((_, index) => !ind.includes(index));
-                            genes = genes.filter((_, index) => !ind.includes(index));
-                        }
-
-                        // Step 2.1: Logarithmic transformation
-                        dataN = dataN.map(obj => {
-                            var newObj = {};
-                            for (var key in obj) {
-                                if (key !== "gene") {
-                                    newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
-                                }
-                            }
-                            newObj["gene"] = obj["gene"];
-
-                            return newObj;
-                        });
-
-                        dataC = dataC.map(obj => {
-                            var newObj = {};
-                            for (var key in obj) {
-                                if (key !== "gene") {
-                                    newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
-                                }
-                            }
-                            newObj["gene"] = obj["gene"];
-
-                            return newObj;
-                        });
-
-                        data1 = data1.map(obj => {
-                            var newObj = {};
-                            for (var key in obj) {
-                                if (key !== Object.keys(obj)[0]) {
-                                    newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
-                                }
-                            }
-                            newObj["gene"] = obj[Object.keys(obj)[0]]; // Add the gene key-value pair at the end
-                            return newObj;
-                        });
-
-                        // console.log(data1)
-
-                        // messageDiv.parentNode.removeChild(messageDiv); // Remove the message element
-
-
-
-
-                        // Add a button for the next step
-                        var nextStepBtn = document.createElement("button");
-                        nextStepBtn.textContent = "Continue";
-
-                        selectMetadataContent.appendChild(nextStepBtn);
-                        nextStepBtn.addEventListener("click", function () {
-
-                            event.stopPropagation(); // Prevent event bubbling
-                            // Hide the overlay
-                            var selectMetadataOverlay = document.getElementById("selectMetadataOverlay");
-                            if (selectMetadataOverlay) {
-                                selectMetadataOverlay.style.display = "none";
-                                selectMetadataOverlay.style.visibility = "hidden"; // Optional, if necessary
-                                // Alternatively: $("selectMetadataOverlay").hide(); if using jQuery
-                                selectMetadataOverlay.remove(); // Remove from the DOM
-                            }
-
-                            // Show the loading overlay
-                            document.getElementById("loadingOverlay").style.display = "block";
-
-                            // Start the next step
-                            start(data1, data2, group1, group2, selectedRowIndex, dataC, dataN);
-
-                        });
-
+                        // Push the new object to the reorderedData array
+                        reorderedData.push(reorderedObj);
                     }
-                    else if (group1.length > 0 && group2.length === 0) {
-                        alert("Error: just one group of values found:\nGroup 1: " + group1[0]);
+
+                    // Now, reorderedData contains the desired structure
+                    // console.log(reorderedData);
+
+
+                    data1 = reorderedData
+
+                    case_number = Object.keys(dataC[0]).length - 1
+                    normal_number = Object.keys(dataN[0]).length - 1
+
+                    // console.log(Object.keys(dataC[0]).length - 1)
+                    // console.log(Object.keys(dataN[0]).length - 1)
+
+                    // Assuming you have obtained genes from data1
+                    var genes = data1.map(obj => obj[Object.keys(obj)[0]]);
+
+                    // Calculate overall mean for data1
+                    var overall_mean = data1.map(obj => {
+                        var values = Object.values(obj).slice(1).map(parseFloat);
+                        return values.reduce((acc, val) => acc + val, 0) / values.length;
+                    });
+
+                    // Filter out rows with overall mean equal to 0
+                    var ind = overall_mean.reduce((acc, val, index) => {
+                        if (val === 0) { console.log("VALUE 0"); acc.push(index); }
+                        return acc;
+                    }, []);
+
+                    // console.log(ind)
+
+                    // Check if ind is not empty
+                    if (ind.length > 0) {
+                        dataN = dataN.filter((_, index) => !ind.includes(index));
+                        dataC = dataC.filter((_, index) => !ind.includes(index));
+                        data1 = data1.filter((_, index) => !ind.includes(index));
+                        genes = genes.filter((_, index) => !ind.includes(index));
                     }
+
+                    // Step 2.1: Logarithmic transformation
+                    dataN = dataN.map(obj => {
+                        var newObj = {};
+                        for (var key in obj) {
+                            if (key !== "gene") {
+                                newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
+                            }
+                        }
+                        newObj["gene"] = obj["gene"];
+
+                        return newObj;
+                    });
+
+                    dataC = dataC.map(obj => {
+                        var newObj = {};
+                        for (var key in obj) {
+                            if (key !== "gene") {
+                                newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
+                            }
+                        }
+                        newObj["gene"] = obj["gene"];
+
+                        return newObj;
+                    });
+
+                    data1 = data1.map(obj => {
+                        var newObj = {};
+                        for (var key in obj) {
+                            if (key !== Object.keys(obj)[0]) {
+                                newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
+                            }
+                        }
+                        newObj["gene"] = obj[Object.keys(obj)[0]]; // Add the gene key-value pair at the end
+                        return newObj;
+                    });
+
+                    // console.log(data1)
+
+                    // messageDiv.parentNode.removeChild(messageDiv); // Remove the message element
+
+
+                    // Hide the overlay
+                    var selectMetadataOverlay = document.getElementById("selectMetadataOverlay");
+                    if (selectMetadataOverlay) {
+                        selectMetadataOverlay.style.display = "none";
+                        selectMetadataOverlay.style.visibility = "hidden"; // Optional, if necessary
+                        // Alternatively: $("selectMetadataOverlay").hide(); if using jQuery
+                        selectMetadataOverlay.remove(); // Remove from the DOM
+                    }
+
+                    // Show the loading overlay
+                    document.getElementById("loadingOverlay").style.display = "block";
+
+                    // Start the next step
+                    start(data1, data2, selectedRowIndex, dataC, dataN);
+
                 });
                 selectMetadataContent.appendChild(selectColors);
 
                 selectMetadataContent.appendChild(selectRowBtn);
 
                 selectMetadataOverlay.appendChild(selectMetadataContent);
+
             });
         }
 
 
-        function start(data1, data2, group1, group2, selectedRowIndex, dataC, dataN) {
+        function start(data1, data2, selectedRowIndex, dataC, dataN) {
 
 
             // Your time-consuming operations here
@@ -6276,12 +6386,28 @@
             var y = {};
 
             // Iterate through ordered categories to create y scales
-            orderedCategories.forEach((category) => {
-                var values = Object.keys(colorScaleValues[category]); // Extract values for the current category
-                console.log("Values for", category, ":", values);
-                y[category] = d3.scaleOrdinal()
-                    .domain(values) // Use unique values for the current category
-                    .range([...Array(values.length).keys()].map(i => i * (height / (values.length - 1))));
+            metadataCategories.forEach((category, i) => {
+                if (colorScaleValues[category]) {
+                    var values = Object.keys(colorScaleValues[category]); // Extract values for the current category
+                    console.log("Values for", category, ":", values);
+                    y[category] = d3.scaleOrdinal()
+                        .domain(values) // Use unique values for the current category
+                        .range([...Array(values.length).keys()].map(i => i * (height / (values.length - 1))));
+                } else {
+                    var values = Object.values(metadata[i]); // Extract values for the current category
+                    values.shift(); // Remove the first value (Sample_source_name_ch1)
+                    var uniqueValues = [...new Set(values)]; // Filter out duplicate
+                    uniqueValues.sort()
+                    uniqueValues.reverse()
+                    console.log("Values for", category, ":", values);
+                    // Calculate the step size for placing values on the y-axis
+                    var stepSize = height / (uniqueValues.length + 1); // Adjust +1 to leave some space at the top
+
+                    // Create ordinal scale using D3.js
+                    y[category] = d3.scaleOrdinal()
+                        .domain(uniqueValues) // Use unique values for the current category
+                        .range([...Array(uniqueValues.length).keys()].map(i => (i + 1) * stepSize)); // Adjust the range
+                }
             });
 
             // Now y scales are ordered according to colorScaleValues
