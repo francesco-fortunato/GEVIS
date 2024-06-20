@@ -5,8 +5,8 @@ name: gevis
 services:
   node:
     build: .
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     depends_on:
       - ocpu
     networks:
@@ -14,8 +14,20 @@ services:
 
   ocpu:
     image: frafortu/ocpu:latest
+    expose:
+      - "8004"
+    networks:
+      - my-network
+
+  nginx:
+    image: nginx:latest
     ports:
-      - "8004:8004"
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - node
+      - ocpu
     networks:
       - my-network
 
