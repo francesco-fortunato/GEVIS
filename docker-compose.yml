@@ -1,7 +1,9 @@
 version: '3.8'
 
+name: gevis
+
 services:
-  nodeapp:
+  node:
     build: .
     ports:
       - "3000:3000"
