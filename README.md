@@ -33,7 +33,7 @@ This project implements a dashboard for conducting a differential gene expressio
     ```
     docker-compose up --build
     ```
-5. Open localhost:3000 in your web browser to access the GEVIS dashboard. Utilize the interactive sliders and graphs to explore gene expression data and identify differentially expressed genes.
+5. Go on localhost in your web browser to access the GEVIS dashboard. Utilize the interactive sliders and graphs to explore gene expression data and identify differentially expressed genes.
 
 ## Docs
 
