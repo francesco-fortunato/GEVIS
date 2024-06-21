@@ -2079,6 +2079,7 @@
                 // console.log(data2)
                 // console.log(data1)
                 selectRowBtn.addEventListener("click", async function () {
+
                     event.stopPropagation(); // Prevent event bubbling
                     var selectedRowIndex = document.querySelector('input[name="metadataRow"]:checked').value;
                     var rowData = Object.values(data2[selectedRowIndex]); // Get the values of the selected row
@@ -2089,6 +2090,18 @@
                     var values = rowData.slice(1); // Exclude the first value (name of the row)
 
                     console.log("Two groups of values found:\SelectedValue 1: " + selectedValue1 + "\SelectedValue 2: " + selectedValue2);
+
+                    // Hide the overlay
+                    var selectMetadataOverlay = document.getElementById("selectMetadataOverlay");
+                    if (selectMetadataOverlay) {
+                        selectMetadataOverlay.style.display = "none";
+                        selectMetadataOverlay.style.visibility = "hidden"; // Optional, if necessary
+                        // Alternatively: $("selectMetadataOverlay").hide(); if using jQuery
+                        selectMetadataOverlay.remove(); // Remove from the DOM
+                    }
+
+                    // Show the loading overlay
+                    document.getElementById("loadingOverlay").style.display = "block";
 
                     var selectedValue = selectedValue1; // or group2[0] depending on which group represents the selected value
                     chosen_meta1 = selectedValue1
@@ -2170,6 +2183,8 @@
                     case_number = Object.keys(dataC[0]).length - 1
                     normal_number = Object.keys(dataN[0]).length - 1
 
+                    console.log(case_number, normal_number)
+
                     // console.log(Object.keys(dataC[0]).length - 1)
                     // console.log(Object.keys(dataN[0]).length - 1)
 
@@ -2237,19 +2252,6 @@
                     // console.log(data1)
 
                     // messageDiv.parentNode.removeChild(messageDiv); // Remove the message element
-
-
-                    // Hide the overlay
-                    var selectMetadataOverlay = document.getElementById("selectMetadataOverlay");
-                    if (selectMetadataOverlay) {
-                        selectMetadataOverlay.style.display = "none";
-                        selectMetadataOverlay.style.visibility = "hidden"; // Optional, if necessary
-                        // Alternatively: $("selectMetadataOverlay").hide(); if using jQuery
-                        selectMetadataOverlay.remove(); // Remove from the DOM
-                    }
-
-                    // Show the loading overlay
-                    document.getElementById("loadingOverlay").style.display = "block";
 
                     // Start the next step
                     start(data1, data2, selectedRowIndex, dataC, dataN);
