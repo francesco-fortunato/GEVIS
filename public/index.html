@@ -206,12 +206,11 @@
 
         body {
             background-color: black;
-            height: 100%;
-            width: 100%;
-            overflow-y: hidden;
-
+            margin: 0;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
         }
-
 
         #style_scatter {
             border: 2px solid #ddd;
@@ -776,6 +775,7 @@
 
         let case_number
         let normal_number
+        let genes
         let variation_data;
         let variation_data_copy;
         let initial_num_genes;
@@ -1678,7 +1678,7 @@
 
             $('#csvTableData1_wrapper').css('margin-right', '40px');
 
-            document.getElementById("selectMetadataBtn").addEventListener("click", async function () {
+            document.getElementById("selectMetadataBtn").addEventListener("click", function () {
 
                 // Hide the current overlay
                 document.getElementById("displayCsvOverlay").style.display = "none";
@@ -2097,164 +2097,403 @@
                         selectMetadataOverlay.style.display = "none";
                         selectMetadataOverlay.style.visibility = "hidden"; // Optional, if necessary
                         // Alternatively: $("selectMetadataOverlay").hide(); if using jQuery
-                        selectMetadataOverlay.remove(); // Remove from the DOM
                     }
 
                     // Show the loading overlay
                     document.getElementById("loadingOverlay").style.display = "block";
 
+                    console.log("REMOVED")
+
+                    await new Promise(resolve => setTimeout(resolve, 100)); // Simulating async operation
+
                     var selectedValue = selectedValue1; // or group2[0] depending on which group represents the selected value
                     chosen_meta1 = selectedValue1
                     chosen_meta2 = selectedValue2
-                    // console.log("Selected value " + selectedValue)
 
-                    // Assuming you have already obtained the selected row index and values from data2
 
-                    // Create two new arrays to hold the filtered datasets
+                    // Show the loading // Assuming you have already obtained the selected row index and values from data2
                     var dataC = [];
                     var dataN = [];
 
-                    // Loop through each object in data1
-                    for (var i = 0; i < data1.length; i++) {
-                        var obj = data1[i];
-                        var gene = obj[Object.keys(obj)[0]]; // Get the gene name from the first property of the object
+                    // // Function to perform data transformations asynchronously
+                    // async function performDataTransformations() {
+                    //     // Perform data transformations for dataC and dataN
+                    //     await new Promise(resolve => setTimeout(resolve, 0)); // Simulate async operation
 
-                        // Create new objects for dataC and dataN
-                        var newObjC = { "gene": gene };
-                        var newObjN = { "gene": gene };
+                    //     // Loop through each object in data1
+                    //     for (var i = 0; i < data1.length; i++) {
+                    //         var obj = data1[i];
+                    //         var gene = obj[Object.keys(obj)[0]]; // Get the gene name from the first property of the object
 
-                        // Loop through the keys in the object and add values to newObjC and newObjN accordingly
-                        for (var key in obj) {
-                            if (key !== Object.keys(obj)[0]) { // Skip the first key (gene name)
-                                // Check if the value in data2 matches the selected value
-                                if (data2[selectedRowIndex][key] === selectedValue) {
-                                    newObjC[key] = obj[key]; // Add value to newObjC
-                                } else {
-                                    newObjN[key] = obj[key]; // Add value to newObjN
+                    //         // Create new objects for dataC and dataN
+                    //         var newObjC = { "gene": gene };
+                    //         var newObjN = { "gene": gene };
+
+                    //         // Loop through the keys in the object and add values to newObjC and newObjN accordingly
+                    //         for (var key in obj) {
+                    //             if (key !== Object.keys(obj)[0]) { // Skip the first key (gene name)
+                    //                 // Check if the value in data2 matches the selected value
+                    //                 if (data2[selectedRowIndex][key] === selectedValue) {
+                    //                     newObjC[key] = obj[key]; // Add value to newObjC
+                    //                 } else {
+                    //                     newObjN[key] = obj[key]; // Add value to newObjN
+                    //                 }
+                    //             }
+                    //         }
+
+                    //         // Push the new objects to dataC and dataN
+                    //         dataC.push(newObjC);
+                    //         dataN.push(newObjN);
+                    //     }
+
+                    //     // Create a new array to hold the reordered data
+                    //     var reorderedData = [];
+                    //     await new Promise(resolve => setTimeout(resolve, 100)); // Simulating async operation
+
+                    //     // Loop through each object in data1
+                    //     for (var i = 0; i < data1.length; i++) {
+                    //         var obj = data1[i];
+                    //         var gene = obj[Object.keys(obj)[0]]; // Get the first value of the object
+
+                    //         // Find the corresponding row in dataC and dataN
+                    //         var rowDataN = dataN.find(row => row.gene === gene);
+                    //         var rowDataC = dataC.find(row => row.gene === gene);
+
+                    //         // Construct the new object with the desired structure
+                    //         var reorderedObj = { "gene": gene };
+
+
+                    //         // Add GSM values from dataN to reorderedObj
+                    //         for (var key in rowDataN) {
+                    //             if (key !== "gene") { // Skip the gene key
+                    //                 reorderedObj[key] = rowDataN[key];
+                    //             }
+                    //         }
+
+                    //         // Add GSM values from dataC to reorderedObj
+                    //         for (var key in rowDataC) {
+                    //             if (key !== "gene") { // Skip the gene key
+                    //                 reorderedObj[key] = rowDataC[key];
+                    //             }
+                    //         }
+
+                    //         // Push the new object to the reorderedData array
+                    //         reorderedData.push(reorderedObj);
+                    //     }
+                    //     await new Promise(resolve => setTimeout(resolve, 100)); // Simulating async operation
+
+                    //     // Now, reorderedData contains the desired structure
+                    //     // console.log(reorderedData);
+
+
+                    //     data1 = reorderedData
+
+                    //     case_number = Object.keys(dataC[0]).length - 1
+                    //     normal_number = Object.keys(dataN[0]).length - 1
+
+                    //     console.log(case_number, normal_number)
+
+                    //     // console.log(Object.keys(dataC[0]).length - 1)
+                    //     // console.log(Object.keys(dataN[0]).length - 1)
+
+                    //     // Assuming you have obtained genes from data1
+                    //     var genes = data1.map(obj => obj[Object.keys(obj)[0]]);
+
+                    //     // Calculate overall mean for data1
+                    //     var overall_mean = data1.map(obj => {
+                    //         var values = Object.values(obj).slice(1).map(parseFloat);
+                    //         return values.reduce((acc, val) => acc + val, 0) / values.length;
+                    //     });
+
+                    //     // Filter out rows with overall mean equal to 0
+                    //     var ind = overall_mean.reduce((acc, val, index) => {
+                    //         if (val === 0) { console.log("VALUE 0"); acc.push(index); }
+                    //         return acc;
+                    //     }, []);
+
+                    //     // console.log(ind)
+
+                    //     // Check if ind is not empty
+                    //     if (ind.length > 0) {
+                    //         dataN = dataN.filter((_, index) => !ind.includes(index));
+                    //         dataC = dataC.filter((_, index) => !ind.includes(index));
+                    //         data1 = data1.filter((_, index) => !ind.includes(index));
+                    //         genes = genes.filter((_, index) => !ind.includes(index));
+                    //     }
+                    //     await new Promise(resolve => setTimeout(resolve, 100)); // Simulating async operation
+
+                    //     // Step 2.1: Logarithmic transformation
+                    //     dataN = dataN.map(obj => {
+                    //         var newObj = {};
+                    //         for (var key in obj) {
+                    //             if (key !== "gene") {
+                    //                 newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
+                    //             }
+                    //         }
+                    //         newObj["gene"] = obj["gene"];
+
+                    //         return newObj;
+                    //     });
+
+                    //     dataC = dataC.map(obj => {
+                    //         var newObj = {};
+                    //         for (var key in obj) {
+                    //             if (key !== "gene") {
+                    //                 newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
+                    //             }
+                    //         }
+                    //         newObj["gene"] = obj["gene"];
+
+                    //         return newObj;
+                    //     });
+
+                    //     data1 = data1.map(obj => {
+                    //         var newObj = {};
+                    //         for (var key in obj) {
+                    //             if (key !== Object.keys(obj)[0]) {
+                    //                 newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
+                    //             }
+                    //         }
+                    //         newObj["gene"] = obj[Object.keys(obj)[0]]; // Add the gene key-value pair at the end
+                    //         return newObj;
+                    //     });
+
+
+                    //     console.log(data1);
+                    // }
+
+                    // // Call the asynchronous function to perform data transformations
+                    // await performDataTransformations();
+
+                    // Convert function to string to create the worker
+                    const workerCode = `
+                        // Function to perform data transformations
+                        function performDataTransformations(data1, data2, selectedRowIndex, selectedValue) {
+                            var dataC = [];
+                            var dataN = [];
+
+                            // console.log(data1, data2, selectedRowIndex, selectedValue)
+
+                            // Loop through each object in data1
+                            for (var i = 0; i < data1.length; i++) {
+                                var obj = data1[i];
+                                var gene = obj[Object.keys(obj)[0]]; // Get the gene name from the first property of the object
+
+                                // Create new objects for dataC and dataN
+                                var newObjC = { "gene": gene };
+                                var newObjN = { "gene": gene };
+
+                                // Loop through the keys in the object and add values to newObjC and newObjN accordingly
+                                for (var key in obj) {
+                                    if (key !== Object.keys(obj)[0]) {
+                                        // Check if the value in data2 matches the selected value
+                                        if (data2[selectedRowIndex][key] === selectedValue) {
+                                            newObjC[key] = obj[key]; // Add value to newObjC
+                                        } else {
+                                            newObjN[key] = obj[key]; // Add value to newObjN
+                                        }
+                                    }
                                 }
+
+                                // Push the new objects to dataC and dataN
+                                dataC.push(newObjC);
+                                dataN.push(newObjN);
                             }
+
+                            // Create a new array to hold the reordered data
+                            var reorderedData = [];
+
+                            // Loop through each object in data1
+                            for (var i = 0; i < data1.length; i++) {
+                                var obj = data1[i];
+                                var gene = obj[Object.keys(obj)[0]]; // Get the first value of the object
+
+                                // Find the corresponding row in dataC and dataN
+                                var rowDataN = dataN.find(row => row.gene === gene);
+                                var rowDataC = dataC.find(row => row.gene === gene);
+
+                                // Construct the new object with the desired structure
+                                var reorderedObj = { "gene": gene };
+
+                                // Add GSM values from dataN to reorderedObj
+                                for (var key in rowDataN) {
+                                    if (key !== "gene") { // Skip the gene key
+                                        reorderedObj[key] = rowDataN[key];
+                                    }
+                                }
+
+                                // Add GSM values from dataC to reorderedObj
+                                for (var key in rowDataC) {
+                                    if (key !== "gene") { // Skip the gene key
+                                        reorderedObj[key] = rowDataC[key];
+                                    }
+                                }
+
+                                // Push the new object to the reorderedData array
+                                reorderedData.push(reorderedObj);
+                            }
+
+                            // Now, reorderedData contains the desired structure
+
+                            data1 = reorderedData
+
+                            case_number = Object.keys(dataC[0]).length - 1
+                            normal_number = Object.keys(dataN[0]).length - 1
+
+                            // console.log(case_number, normal_number)
+
+                            // console.log(Object.keys(dataC[0]).length - 1)
+                            // console.log(Object.keys(dataN[0]).length - 1)
+
+                            // Assuming you have obtained genes from data1
+                            var genes = data1.map(obj => obj[Object.keys(obj)[0]]);
+
+
+                            // Calculate overall mean for data1
+                            var overall_mean = data1.map(obj => {
+                                var values = Object.values(obj).slice(1).map(parseFloat);
+                                return values.reduce((acc, val) => acc + val, 0) / values.length;
+                            });
+
+                            // Filter out rows with overall mean equal to 0
+                            var ind = overall_mean.reduce((acc, val, index) => {
+                                if (val === 0) {
+                                    console.log("VALUE 0");
+                                    acc.push(index);
+                                }
+                                return acc;
+                            }, []);
+
+                            // Filter dataC, dataN, data1, and genes based on ind
+                            if (ind.length > 0) {
+                                dataN = dataN.filter((_, index) => !ind.includes(index));
+                                dataC = dataC.filter((_, index) => !ind.includes(index));
+                                data1 = data1.filter((_, index) => !ind.includes(index));
+                                genes = genes.filter((_, index) => !ind.includes(index));
+                            }
+
+                            // Logarithmic transformation for dataN, dataC, and data1
+                            dataN = dataN.map(obj => {
+                                var newObj = {};
+                                for (var key in obj) {
+                                    if (key !== "gene") {
+                                        newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
+                                    }
+                                }
+                                newObj["gene"] = obj["gene"];
+                                return newObj;
+                            });
+
+                            dataC = dataC.map(obj => {
+                                var newObj = {};
+                                for (var key in obj) {
+                                    if (key !== "gene") {
+                                        newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
+                                    }
+                                }
+                                newObj["gene"] = obj["gene"];
+                                return newObj;
+                            });
+
+                            data1 = data1.map(obj => {
+                                var newObj = {};
+                                for (var key in obj) {
+                                    if (key !== "gene") {
+                                        newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
+                                    }
+                                }
+                                newObj["gene"] = obj["gene"];
+                                return newObj;
+                            });
+
+                            console.log("CIAO")
+
+                            // Return the processed data
+                            return {
+                                dataC: dataC,
+                                dataN: dataN,
+                                data1: data1,
+                                genes: genes, // Assuming genes are extracted from data1
+                                case_number: case_number,
+                                normal_number: normal_number
+                            };
                         }
 
-                        // Push the new objects to dataC and dataN
-                        dataC.push(newObjC);
-                        dataN.push(newObjN);
+                        // Listen for messages from the main thread
+                        self.addEventListener('message', function(e) {
+                            // Retrieve data from the message
+                            var { data1, data2, selectedRowIndex, selectedValue } = e.data;
+
+                            // Perform data transformations
+                            var result = performDataTransformations(data1, data2, selectedRowIndex, selectedValue);
+
+                            // Send the result back to the main thread
+                            postMessage(result);
+                        }, false);
+                    `;
+
+                    // Create a Blob object from the worker code string
+                    const blob = new Blob([workerCode], { type: 'application/javascript' });
+
+                    // Create a URL for the blob object
+                    const blobURL = URL.createObjectURL(blob);
+
+                    // Create a new web worker from the blob URL
+                    const worker = new Worker(blobURL);
+
+                    // Promisify the web worker
+                    function runWorker(worker, message) {
+                        return new Promise((resolve, reject) => {
+                            worker.onmessage = resolve;
+                            worker.onerror = reject;
+                            worker.postMessage(message);
+                        });
                     }
 
-                    // Create a new array to hold the reordered data
-                    var reorderedData = [];
+                    // Start the data transformation process in the worker
+                    runWorker(worker, {
+                        data1: data1,
+                        data2: data2,
+                        selectedRowIndex: selectedRowIndex,
+                        selectedValue: selectedValue1 // Change this to selectedValue2 if needed
+                    }).then(result => {
+                        console.log(result)
+                        // Process the returned data
+                        dataC  = result.data.dataC;
+                        dataN  = result.data.dataN;
+                        data1  = result.data.data1;
+                        case_number  = result.data.case_number;
+                        normal_number  = result.data.normal_number;
+                        genes  = result.data.genes;
+                        // dataC, dataN, data1, genes, case_number, normal_number = result.data;
 
-                    // Loop through each object in data1
-                    for (var i = 0; i < data1.length; i++) {
-                        var obj = data1[i];
-                        var gene = obj[Object.keys(obj)[0]]; // Get the first value of the object
+                        // Update your UI or further process the data as needed
+                        console.log(dataC);
+                        console.log(dataN);
+                        console.log(data1);
+                        console.log(genes);
+                        console.log(case_number);
+                        console.log(normal_number);
 
-                        // Find the corresponding row in dataC and dataN
-                        var rowDataN = dataN.find(row => row.gene === gene);
-                        var rowDataC = dataC.find(row => row.gene === gene);
+                        // Hide the loading overlay after all operations are complete
+                        document.getElementById("loadingOverlay").style.display = "none";
 
-                        // Construct the new object with the desired structure
-                        var reorderedObj = { "gene": gene };
+                        // Terminate the web worker
+                        worker.terminate();
 
+                        // Start the next step
+                        start(data1, data2, selectedRowIndex, dataC, dataN);
 
-                        // Add GSM values from dataN to reorderedObj
-                        for (var key in rowDataN) {
-                            if (key !== "gene") { // Skip the gene key
-                                reorderedObj[key] = rowDataN[key];
-                            }
-                        }
+                    }).catch(error => {
+                        console.error('Error in web worker:', error);
 
-                        // Add GSM values from dataC to reorderedObj
-                        for (var key in rowDataC) {
-                            if (key !== "gene") { // Skip the gene key
-                                reorderedObj[key] = rowDataC[key];
-                            }
-                        }
+                        // Hide the loading overlay on error
+                        document.getElementById("loadingOverlay").style.display = "none";
 
-                        // Push the new object to the reorderedData array
-                        reorderedData.push(reorderedObj);
-                    }
-
-                    // Now, reorderedData contains the desired structure
-                    // console.log(reorderedData);
-
-
-                    data1 = reorderedData
-
-                    case_number = Object.keys(dataC[0]).length - 1
-                    normal_number = Object.keys(dataN[0]).length - 1
-
-                    console.log(case_number, normal_number)
-
-                    // console.log(Object.keys(dataC[0]).length - 1)
-                    // console.log(Object.keys(dataN[0]).length - 1)
-
-                    // Assuming you have obtained genes from data1
-                    var genes = data1.map(obj => obj[Object.keys(obj)[0]]);
-
-                    // Calculate overall mean for data1
-                    var overall_mean = data1.map(obj => {
-                        var values = Object.values(obj).slice(1).map(parseFloat);
-                        return values.reduce((acc, val) => acc + val, 0) / values.length;
+                        // Terminate the web worker
+                        worker.terminate();
                     });
 
-                    // Filter out rows with overall mean equal to 0
-                    var ind = overall_mean.reduce((acc, val, index) => {
-                        if (val === 0) { console.log("VALUE 0"); acc.push(index); }
-                        return acc;
-                    }, []);
-
-                    // console.log(ind)
-
-                    // Check if ind is not empty
-                    if (ind.length > 0) {
-                        dataN = dataN.filter((_, index) => !ind.includes(index));
-                        dataC = dataC.filter((_, index) => !ind.includes(index));
-                        data1 = data1.filter((_, index) => !ind.includes(index));
-                        genes = genes.filter((_, index) => !ind.includes(index));
-                    }
-
-                    // Step 2.1: Logarithmic transformation
-                    dataN = dataN.map(obj => {
-                        var newObj = {};
-                        for (var key in obj) {
-                            if (key !== "gene") {
-                                newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
-                            }
-                        }
-                        newObj["gene"] = obj["gene"];
-
-                        return newObj;
-                    });
-
-                    dataC = dataC.map(obj => {
-                        var newObj = {};
-                        for (var key in obj) {
-                            if (key !== "gene") {
-                                newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
-                            }
-                        }
-                        newObj["gene"] = obj["gene"];
-
-                        return newObj;
-                    });
-
-                    data1 = data1.map(obj => {
-                        var newObj = {};
-                        for (var key in obj) {
-                            if (key !== Object.keys(obj)[0]) {
-                                newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
-                            }
-                        }
-                        newObj["gene"] = obj[Object.keys(obj)[0]]; // Add the gene key-value pair at the end
-                        return newObj;
-                    });
-
-                    // console.log(data1)
-
-                    // messageDiv.parentNode.removeChild(messageDiv); // Remove the message element
-
-                    // Start the next step
-                    start(data1, data2, selectedRowIndex, dataC, dataN);
 
                 });
                 selectMetadataContent.appendChild(selectColors);
@@ -2268,19 +2507,6 @@
 
 
         function start(data1, data2, selectedRowIndex, dataC, dataN) {
-
-
-            // Your time-consuming operations here
-            // Create two new arrays to hold the filtered datasets
-            // Extract the selected value from data2
-
-            // console.log(dataC);
-            // console.log(dataN);
-
-            // At this point, dataC contains objects where the corresponding column matches the selected value
-            // And dataN contains objects where the corresponding column does not match the selected value
-
-            // You can now use these datasets as needed
 
             dataC_original = dataC
             dataN_original = dataN
@@ -2479,8 +2705,6 @@
                                             var mostDownregulatedGeneName = mostDownregulatedGene.Gene
                                             //var secondMostDownregulatedGeneName = secondMostDownregulatedGene.Gene
 
-
-                                            genes = [mostUpregulatedGeneName, mostDownregulatedGeneName]
 
                                             selectedGeneData.push(mostUpregulatedGeneName)
                                             selectedGeneData.push(mostDownregulatedGeneName)
