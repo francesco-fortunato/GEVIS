@@ -618,6 +618,7 @@
                     <div id="scatterPlot"></div>
                     <button id="resetButton" class="btn btn-secondary">Reset
                         Zoom</button>
+                    <button id="switchButton">Switch Plot</button>
                     <label for="thresholdSelect">
                         <p style="color: #ddd;">Select
                             Threshold:</p>
@@ -847,6 +848,8 @@
         let square;
 
         let selectedVariable = "case"
+        // Flag to track the current plot
+        let currentPlot = 'volcano';
 
         showOverlay()
 
@@ -2529,7 +2532,7 @@
                         console.log(data1)
 
                         // Extract variation values from the inner JSON array
-                        const variation_data = innerData.map(obj => obj.Variation);
+                        variation_data = innerData.map(obj => obj.Variation);
 
                         // Now you have an array of variation values, you can use it as needed
                         console.log(variation_data);
@@ -4042,8 +4045,10 @@
             document.getElementById("loadingOverlay").style.display = "block";
 
             console.log("data copy in iqr prima di chiamare pval", data_copy)
-            var req = ocpu.call("hello", {
-                data: data_copy
+            var req = ocpu.call("pval", {
+                data: data_copy,
+                N: normal_number,
+                M: case_number
             }, function (session) {
                 var filteredDataURL = session.loc + "/R/.val/json";
                 console.log(session);
@@ -4051,15 +4056,21 @@
                 fetch(filteredDataURL)
                     .then(response => response.json())
                     .then(data => {
+                        // Convert pval_adj values back to numbers if needed
+                        data.forEach(entry => {
+                            entry.pval_adj = parseFloat(entry.pval_adj); // Convert string to number if necessary
+                        });
 
                         old_p_adj = data
 
                         averageExpressions10C = calculateAverageLog10Expressions(dataC_copy1);
                         averageExpressions10N = calculateAverageLog10Expressions(dataN_copy1);
 
-                        updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin, old_p_adj)
-
-
+                        if (currentPlot === 'volcano') {
+                            updateVolcanoPlot(parsedLogFC_origin1, old_p_adj, log_thr_fc)
+                        } else {
+                            updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
+                        }
 
 
 
@@ -4301,8 +4312,10 @@
             updateCounter()
 
 
-            var req = ocpu.call("hello", {
-                data: data_copy
+            var req = ocpu.call("pval", {
+                data: data_copy,
+                N: normal_number,
+                M: case_number
             }, function (session) {
                 var filteredDataURL = session.loc + "/R/.val/json";
                 console.log(session);
@@ -4310,12 +4323,21 @@
                 fetch(filteredDataURL)
                     .then(response => response.json())
                     .then(data => {
+                        // Convert pval_adj values back to numbers if needed
+                        data.forEach(entry => {
+                            entry.pval_adj = parseFloat(entry.pval_adj); // Convert string to number if necessary
+                        });
+
                         old_p_adj = data
 
                         averageExpressions10C = calculateAverageLog10Expressions(dataC_copy1);
                         averageExpressions10N = calculateAverageLog10Expressions(dataN_copy1);
 
-                        updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin, old_p_adj)
+                        if (currentPlot === 'volcano') {
+                            updateVolcanoPlot(parsedLogFC_origin1, old_p_adj, log_thr_fc)
+                        } else {
+                            updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
+                        }
 
                         selectedGeneData = selectedGeneData.filter(function (gene) {
                             // Check if the gene is present in dataC_copy or dataN_copy
@@ -4511,8 +4533,11 @@
                 return result;
             }, []);
 
-            updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
-            // dataC_copy_pval=dataC_copy
+            if (currentPlot === 'volcano') {
+                updateVolcanoPlot(parsedLogFC_origin1, old_p_adj, log_thr_fc)
+            } else {
+                updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
+            }            // dataC_copy_pval=dataC_copy
             // dataN_copy_pval=dataN_copy
             // data_copy_pval=data_copy
 
@@ -4906,6 +4931,7 @@
         }
 
         function updateHistogram(variation_data) {
+            console.log(variation_data)
             // Filter data based on the threshold
             const filteredData = variation_data.filter(variation => variation >= thr_prc);
 
@@ -5375,7 +5401,10 @@
 
             // Create x and y scales
             var xScale = d3.scaleLinear()
-                .domain(d3.extent(mergedData, d => d.logFC))
+                .domain([
+                    d3.min(mergedData, d => d.logFC) - 0.5,
+                    d3.max(mergedData, d => d.logFC) + 0.5
+                ])
                 .range([0, width]);
 
             var yScale = d3.scaleLinear()
@@ -5464,12 +5493,15 @@
             var tooltip = d3.select("#tooltip");
 
             svg.select("#scatter").selectAll("*").remove();
-            scatter.selectAll("circle")
-                .data(mergedData)
-                .enter().append("circle")
+
+            var circles = scatter.selectAll("circle")
+                .data(mergedData);
+
+            // Enter new circles
+            circles.enter().append("circle")
                 .attr("cx", d => xScale(d.logFC))
                 .attr("cy", d => yScale(-Math.log10(d.pval_adj.toExponential(20))))
-                .attr("r", 3)
+                .attr("r", 0) // Start with radius 0 for initial transition effect
                 .style("fill", d => {
                     if (d.pval_adj < threshold) {
                         if (d.logFC >= log_thr_fc) {
@@ -5497,11 +5529,7 @@
                     }
                 })
                 .classed('pulse', d => {
-                    if (selectedGeneData.some(selectedGene => selectedGene === d.Gene)) {
-                        return true;
-                    } else {
-                        return false;
-                    }
+                    return selectedGeneData.some(selectedGene => selectedGene === d.Gene);
                 })
                 .on("mouseover", function (d) {
                     d3.select(this)
@@ -5538,21 +5566,19 @@
                     var isHighlighted = selectedElement.style("fill") === "green";
 
                     if (isHighlighted) {
-                        console.log("sono verde")
                         // If already highlighted, remove the highlighting
                         selectedElement.style("fill", d => {
-                            // Check if logFC is greater than or equal to the threshold
                             if (d.logFC >= log_thr_fc && d.pval_adj <= threshold) {
                                 return "darkred";
-                            } else if (d.logFC <= -(log_thr_fc) && d.pval_adj <= threshold) {
+                            } else if (d.logFC <= -log_thr_fc && d.pval_adj <= threshold) {
                                 return "royalblue";
                             } else {
                                 return "grey";
                             }
-
                         })
                             .classed('pulse', false)
                             .classed("pulse1", false);
+
                         selectedGeneData = selectedGeneData.filter(gene => gene !== d.Gene);
 
                         // Find and remove the corresponding option from the select element
@@ -5566,24 +5592,22 @@
                             }
                         }
 
-                        dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
+                        dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
                     } else {
                         // If not highlighted, apply the highlighting
                         selectedElement
                             .style("fill", "green")
                             .style("stroke-width", 2)
                             .classed('pulse', true)
-                            .classed('pulse1', false)
-                        //.attr("data-initial-fill","green")    
+                            .classed('pulse1', false);
+
                         // Find the corresponding scatterplot circle and toggle its selection
-
-
                         var correspondingSquare = square
                             .filter(function (squaredata) {
                                 return squaredata.gene === d.Gene;
                             });
-                        console.log(correspondingSquare)
-                        correspondingSquare.style("stroke", "none")
+
+                        correspondingSquare.style("stroke", "none");
 
                         // On click, filter data for the selected gene
                         selectedGeneData.push(d.Gene);
@@ -5604,10 +5628,53 @@
                         synchronizeAnimations(this);
 
                         // Call a function to create parallel coordinates plot using selectedGeneData
-                        dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
+                        dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
                     }
-                });
+                })
+                .merge(circles) // Merge enter and update selections
+                .transition()
+                .duration(750)
+                .attr("r", 3);
 
+            // Update existing circles with transition
+            circles.transition()
+                .duration(750)
+                .attr("cx", d => xScale(d.logFC))
+                .attr("cy", d => yScale(-Math.log10(d.pval_adj.toExponential(20))))
+                .style("fill", d => {
+                    if (d.pval_adj < threshold) {
+                        if (d.logFC >= log_thr_fc) {
+                            return "darkred"; // Upregulated
+                        } else if (d.logFC <= -log_thr_fc) {
+                            return "royalblue"; // Downregulated
+                        } else {
+                            return "grey"; // Not significant
+                        }
+                    } else {
+                        return "grey"; // Not significant
+                    }
+                })
+                .attr("data-initial-fill", d => {
+                    if (d.pval_adj < threshold) {
+                        if (d.logFC >= log_thr_fc) {
+                            return "darkred"; // Upregulated
+                        } else if (d.logFC <= -log_thr_fc) {
+                            return "royalblue"; // Downregulated
+                        } else {
+                            return "grey"; // Not significant
+                        }
+                    } else {
+                        return "grey"; // Not significant
+                    }
+                })
+                .attr("r", 3);
+
+            // Exit old circles
+            circles.exit()
+                .transition()
+                .duration(750)
+                .attr("r", 0)
+                .remove();
 
             function synchronizeAnimations(targetElement) {
                 // Retrieve all elements with the class 'pulse'
@@ -5755,7 +5822,7 @@
                 .attr("y", 0);
 
             // Create the scatter variable: where both the circles and the brush take place
-            svg.select("#scatter").selectAll("*").remove();
+            // svg.select("#scatter").selectAll("*").remove();
             scatter = svg.append('g')
                 .attr("id", "scatter")
                 .attr("clip-path", "url(#clip)");
@@ -5962,27 +6029,14 @@
             // Add circles to the scatter plot
             var tooltip = d3.select("#tooltip");
             //console.log(data)
-            svg.select("#scatter").selectAll("*").remove();
-            scatter.selectAll("circle")
-                .data(data)
-                .enter().append("circle")
+            // svg.select("#scatter").selectAll("*").remove();
+            var circles = scatter.selectAll("circle")
+                .data(data);
+
+            circles.enter().append("circle")
                 .attr("cx", d => xScale(d.Normal))
                 .attr("cy", d => yScale(d.Case))
-                .attr("r", d => {
-                    if (d.logFC >= log_thr_fc && d.pval_adj <= threshold && d.gene != mostUpregulatedGeneName && d.gene != mostDownregulatedGeneName) {
-                        return "2";
-                    }
-                    else if (d.logFC <= -(log_thr_fc) && d.pval_adj <= threshold && d.gene != mostUpregulatedGeneName && d.gene != mostDownregulatedGeneName) {
-                        return "2";
-                    } else if (d.gene != mostUpregulatedGeneName && d.gene != mostDownregulatedGeneName) {
-                        return "2";
-                    } else if (d.logFC >= log_thr_fc && d.pval_adj <= threshold && d.gene == mostUpregulatedGeneName && d.gene != mostDownregulatedGeneName) {
-                        return "4"
-                    }
-                    else if (d.logFC <= -(log_thr_fc) && d.pval_adj <= threshold && d.gene != mostUpregulatedGeneName && d.gene == mostDownregulatedGeneName) {
-                        return "4"
-                    }
-                })
+                .attr("r", 0)
                 .style("fill", d => {
 
                     // Check if logFC is greater than or equal to the threshold
@@ -6023,9 +6077,7 @@
                         currentCircleFill = "royalblue"
                         return "royalblue";
                     }
-                }
-
-                )
+                })
                 .classed('pulse', d => {
                     // Check if logFC is greater than or equal to the threshold
                     if (d.logFC >= log_thr_fc && d.pval_adj <= threshold && selectedGeneData.some(selectedGene => selectedGene === d.gene)) {
@@ -6036,7 +6088,6 @@
                     } else {
                         return false;
                     }
-
                 })
                 .on("mouseover", function (d) {
                     // Highlight the gene on mouseover
@@ -6143,7 +6194,89 @@
                         // Call a function to create parallel coordinates plot using selectedGeneData
                         dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
                     }
-                });
+                })
+                .transition()
+                .duration(750)
+                .attr("r", d => {
+                    if (d.logFC >= log_thr_fc && d.pval_adj <= threshold && d.gene != mostUpregulatedGeneName && d.gene != mostDownregulatedGeneName) {
+                        return "2";
+                    }
+                    else if (d.logFC <= -(log_thr_fc) && d.pval_adj <= threshold && d.gene != mostUpregulatedGeneName && d.gene != mostDownregulatedGeneName) {
+                        return "2";
+                    } else if (d.gene != mostUpregulatedGeneName && d.gene != mostDownregulatedGeneName) {
+                        return "2";
+                    } else if (d.logFC >= log_thr_fc && d.pval_adj <= threshold && d.gene == mostUpregulatedGeneName && d.gene != mostDownregulatedGeneName) {
+                        return "4"
+                    }
+                    else if (d.logFC <= -(log_thr_fc) && d.pval_adj <= threshold && d.gene != mostUpregulatedGeneName && d.gene == mostDownregulatedGeneName) {
+                        return "4"
+                    }
+                })
+
+
+            // Update existing circles with transition
+            circles.transition()
+                .duration(750)
+                .attr("cx", d => xScale(d.Normal))
+                .attr("cy", d => yScale(d.Case))
+                .attr("r", d => {
+                    if (d.logFC >= log_thr_fc && d.pval_adj <= threshold && d.gene != mostUpregulatedGeneName && d.gene != mostDownregulatedGeneName) {
+                        return "2";
+                    }
+                    else if (d.logFC <= -(log_thr_fc) && d.pval_adj <= threshold && d.gene != mostUpregulatedGeneName && d.gene != mostDownregulatedGeneName) {
+                        return "2";
+                    } else if (d.gene != mostUpregulatedGeneName && d.gene != mostDownregulatedGeneName) {
+                        return "2";
+                    } else if (d.logFC >= log_thr_fc && d.pval_adj <= threshold && d.gene == mostUpregulatedGeneName && d.gene != mostDownregulatedGeneName) {
+                        return "4"
+                    }
+                    else if (d.logFC <= -(log_thr_fc) && d.pval_adj <= threshold && d.gene != mostUpregulatedGeneName && d.gene == mostDownregulatedGeneName) {
+                        return "4"
+                    }
+                })
+                .style("fill", d => {
+
+                    // Check if logFC is greater than or equal to the threshold
+                    if (d.logFC >= log_thr_fc && d.pval_adj <= threshold && selectedGeneData.some(selectedGene => selectedGene === d.gene)) {
+
+                        return "green";
+                    }
+                    else if (d.logFC <= -(log_thr_fc) && d.pval_adj <= threshold && selectedGeneData.some(selectedGene => selectedGene === d.gene)) {
+
+                        return "green";
+                    }
+                    else if (d.logFC >= log_thr_fc && d.pval_adj <= threshold) {
+
+                        return "darkred";
+                    } else if (d.logFC <= -(log_thr_fc) && d.pval_adj <= threshold) {
+
+                        return "royalblue";
+                    }
+                    else {
+                        return "grey";
+                    }
+                })
+                .attr("data-initial-fill", d => {
+
+                    // Check if logFC is greater than or equal to the threshold
+                    if (d.logFC >= log_thr_fc && d.pval_adj <= threshold && selectedGeneData.some(selectedGene => selectedGene === d.gene)) {
+                        currentCircleFill = "green"
+                        return "green";
+                    }
+                    else if (d.logFC <= -(log_thr_fc) && d.pval_adj <= threshold && selectedGeneData.some(selectedGene => selectedGene === d.gene)) {
+                        currentCircleFill = "green"
+                        return "green";
+                    }
+                    else if (d.logFC >= log_thr_fc && d.pval_adj <= threshold) {
+                        currentCircleFill = "darkred"
+                        return "darkred";
+                    } else if (d.logFC <= -(log_thr_fc) && d.pval_adj <= threshold) {
+                        currentCircleFill = "royalblue"
+                        return "royalblue";
+                    }
+                })
+
+            circles.exit().remove();
 
             function synchronizeAnimations(targetElement) {
                 // Retrieve all elements with the class 'pulse'
@@ -7469,8 +7602,11 @@
                 // Redraw the parallel coordinates plot
                 // Call updateParallel or relevant function here with updated dimensions
                 dynamicParallel(geneselectedOrder, data, dataC, dataN, metadataOrder, totalOrder);
-                updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin, old_p_adj)
-                d3.selectAll(".axis-label").classed("dragging", false);
+                if (currentPlot === 'volcano') {
+                    updateVolcanoPlot(parsedLogFC_origin1, old_p_adj, log_thr_fc)
+                } else {
+                    updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
+                } d3.selectAll(".axis-label").classed("dragging", false);
 
             }
             var newPositions = [];
@@ -8113,8 +8249,11 @@
                 // Redraw the parallel coordinates plot
                 // Call updateParallel or relevant function here with updated dimensions
                 updateParallel(geneselectedOrder, data, dataC, dataN, metadataOrder, totalOrder);
-                updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin, old_p_adj)
-                d3.selectAll(".axis-label").classed("dragging", false);
+                if (currentPlot === 'volcano') {
+                    updateVolcanoPlot(parsedLogFC_origin1, old_p_adj, log_thr_fc)
+                } else {
+                    updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
+                } d3.selectAll(".axis-label").classed("dragging", false);
 
             }
             var newPositions = [];
@@ -8894,6 +9033,18 @@
                 hideLoadCsvOverlay();
             }
         }
+
+        // Switch button logic
+        d3.select("#switchButton").on("click", function () {
+            if (currentPlot === 'volcano') {
+                currentPlot = 'scatter';
+                updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
+            } else {
+                currentPlot = 'volcano';
+                updateVolcanoPlot(parsedLogFC_origin1, old_p_adj, log_thr_fc)
+            }
+        });
+
 
 
 

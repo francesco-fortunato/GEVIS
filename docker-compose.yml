@@ -13,7 +13,7 @@ services:
       - my-network
 
   ocpu:
-    image: frafortu/ocpu:latest
+    image: frafortu/ocpu:v1.0.2
     expose:
       - "8004"
     ports:
