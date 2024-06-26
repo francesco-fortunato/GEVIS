@@ -16,6 +16,8 @@ services:
     image: frafortu/ocpu:latest
     expose:
       - "8004"
+    ports:
+      - "8004:8004"
     networks:
       - my-network
 
