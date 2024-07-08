@@ -893,14 +893,38 @@
             DEG(data_copy_pval, parsedLogFC_pval, old_p_adj);
         }
 
+
+        document.getElementById("openModalBtn").addEventListener("click", function () {
+            const data = { data_copy_pval, parsedLogFC_pval, old_p_adj }; // Assuming you have these arrays defined elsewhere
+
+            // Send data to server using fetch
+            fetch('/enrichment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ data: data })
+            })
+                .then(response => response.json())
+                .then(response => {
+                    // Redirect to /enrichment with unique identifier (sessionId)
+                    window.open(`/enrichment?sessionId=${response.sessionId}`, '_blank');
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to store enrichment data');
+                });
+        });
+
+
         // When the user clicks the button, open the modal and create the dot plot inside it
-        btn.onclick = function () {
-            modal.style.display = "block";
-            // Display loading message inside the modal
-            showLoadingMessage();
-            // Call function to create dot plot inside modal
-            createDotPlotInsideModal();
-        }
+        // btn.onclick = function () {
+        //     modal.style.display = "block";
+        //     // Display loading message inside the modal
+        //     showLoadingMessage();
+        //     // Call function to create dot plot inside modal
+        //     createDotPlotInsideModal();
+        // }
 
         // When the user clicks on <span> (x), close the modal
         span.onclick = function () {
@@ -6939,7 +6963,7 @@
                         d3.max(data, d => d.logFC) + 0.5
                     ]);
 
-                    yScale.domain([0, d3.max(data.filter(d => !isNaN(d.pval_adj) && d.pval_adj !== null), d => -Math.log10(d.pval_adj.toExponential(20)))]);
+                    yScale.domain([0, d3.max(data.filter(d => !isNaN(d.pval_adj) && d.pval_adj !== null), d => -Math.log10(d.pval_adj.toExponential(20))) + 1]);
 
                     // Reset zoom (assuming resetZoom is a function you have defined elsewhere)
                     resetZoom();
@@ -6977,6 +7001,10 @@
                     var dot = svg
                         .selectAll('circle')
                         .data(structure)
+                    dot.enter().append("circle").merge(dot)
+                        .classed('pulse', d => {
+                            return selectedGeneData.some(selectedGene => selectedGene === d.gene);
+                        })
                     // Remove existing circles
                     dot.exit().remove();
 
@@ -7102,7 +7130,7 @@
                                 return yScale(-Math.log10(d.pval_adj.toExponential(20)))
                             }
                         })
-                        .attr("r", 2) // Start with radius 0 for initial transition effect
+                        .attr("r", 3)
                         .style("fill", d => {
                             if (d.pval_adj < threshold) {
                                 if (d.logFC >= log_thr_fc) {
@@ -7256,8 +7284,14 @@
                     var dot = svg
                         .selectAll('circle')
                         .data(structure)
+
+                    dot.enter().append("circle").merge(dot)
+                        .classed('pulse', d => {
+                            return selectedGeneData.some(selectedGene => selectedGene === d.gene);
+                        })
+
                     // Remove existing circles
-                    //dot.exit().remove();
+                    dot.exit().remove();
 
                     dot.enter().append("circle").merge(dot)
                         .classed('pulse', d => {
@@ -7372,8 +7406,6 @@
                                 // Call a function to create parallel coordinates plot using selectedGeneData
                                 dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
                             }
-
-
                         })
                         .transition()
                         .duration(1000)

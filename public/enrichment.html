@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GEVIS - Enrichment Results</title>
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <script src="d3.v7.8.5.min.js"></script>
+  <script src="//code.jquery.com/jquery-1.11.1.min.js"></script>
+  <script src="//cdn.opencpu.org/opencpu-0.4.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/simple-statistics/7.0.0/simple-statistics.min.js"></script>
+  <script src='https://cdn.jsdelivr.net/gh/kdpsingh/rjs@master/r.js'></script>
+  <script src="https://d3js.org/d3.v4.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.js"
+    integrity="sha512-5mCB0Kvv97yTzqo0174qxPjMisck/WlK51+mw/RV7UfYbtHI8LuLR82BzZuxHUKSfbh75u9cZHgUcqrZDaBJuA=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+    integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.3/dist/umd/popper.min.js"
+    integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
+    crossorigin="anonymous"></script>
+
+  <link rel="stylesheet" type="text/css" href="css/bootstrap.css">
+  <script src="css/bootstrap.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-color/3.0.0/d3-color.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-interpolate/1.5.0/d3-interpolate.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-scale/3.2.2/d3-scale.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-scale-chromatic/1.6.0/d3-scale-chromatic.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.datatables.net/2.0.7/css/dataTables.dataTables.css" />
+  <script src="https://cdn.datatables.net/2.0.7/js/dataTables.js"></script>
+
+  <style>
+    body {
+      background-color: #0e0d0d;
+      color: white;
+    }
+
+    .container {
+      margin-top: 20px;
+    }
+
+    .flex-container {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+
+    .dotplot-container {
+      width: 48%;
+    }
+
+    .loading-message {
+      text-align: center;
+      font-size: 18px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Enrichment Results</h1>
+    <table id="dataTable" class="table table-striped table-bordered">
+      <thead>
+        <tr>
+          <th>Gene</th>
+          <th>pval adj</th>
+          <th>logFC</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Table rows will be dynamically populated -->
+      </tbody>
+    </table>
+  </div>
+  
+  <div class="flex-container">
+    <div class="dotplot-container">
+      <div id="dotplot">
+        <div class="loading-message" id="loadingMessage">Waiting for enrichment result...</div>
+      </div>
+      <div id="slider_dot_plot"></div>
+      <div id="select_dot"></div>
+    </div>
+
+    <div class="dotplot-container">
+      <div id="dotplot1">
+        <div class="loading-message" id="loadingMessage1">Waiting for enrichment result...</div>
+      </div>
+      <div id="slider_dot_plot1"></div>
+      <div id="select_dot1"></div>
+    </div>
+  </div>
+
+
+  <script>
+    try {
+      ocpu.seturl("//localhost/ocpu/lib/GEVIS/R");
+    } catch (error) {
+      // If an error occurs (e.g., ocpu is not defined), reload the page
+      window.location.reload();
+    }
+
+
+    // Function to parse URL query parameters
+    function getUrlParameter(name) {
+      name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+      var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+      var results = regex.exec(location.search);
+      return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+    }
+
+    // Retrieve sessionId from query parameter
+    const sessionId = getUrlParameter('sessionId');
+
+    // Retrieve data from server based on sessionId
+    if (sessionId) {
+      // Send a fetch request to retrieve data
+      fetch(`/retrieveData?sessionId=${sessionId}`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          return response.json();
+        })
+        .then(data => {
+          // Process the data and populate DataTable
+          populateDataTable(data);
+          // Perform DEG analysis and enrichment
+          DEG(data.data_copy_pval, data.parsedLogFC_pval, data.old_p_adj);
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('Failed to retrieve data for enrichment');
+        });
+    } else {
+      alert('Session ID not found');
+    }
+
+    // Function to populate DataTable with retrieved data
+    function populateDataTable(data) {
+      const tableData = data.data_copy_pval.map((item, index) => ({
+        gene: item.gene,
+        pval_adj: data.old_p_adj[index].pval_adj, // Assuming old_p_adj is aligned with data_copy_pval
+        logFC: data.parsedLogFC_pval[index].logFC // Assuming parsedLogFC_pval is aligned with data_copy_pval
+      }));
+
+      const dataTable = $('#dataTable').DataTable({
+        "data": tableData,
+        "columns": [
+          { "data": "gene" },
+          { "data": "pval_adj" },
+          { "data": "logFC" }
+        ],
+        "paging": true,
+        "searching": true,
+        "ordering": true,
+        "info": true
+      });
+    }
+
+    // DEG function to analyze differentially expressed genes
+    function DEG(data, logFC, pval_adj) {
+      var result = [];
+
+      for (var i = 0; i < logFC.length; i++) {
+        var geneData = {
+          gene: logFC[i].Gene,
+          pval_adj: null,
+          logFC: logFC[i].logFC,
+          direction: logFC[i].logFC >= 0 ? 'UP' : 'DOWN'
+        };
+
+        for (var j = 0; j < pval_adj.length; j++) {
+          if (pval_adj[j].Gene === logFC[i].Gene) {
+            geneData.pval_adj = pval_adj[j].pval_adj;
+            break;
+          }
+        }
+
+        result.push(geneData);
+      }
+
+      console.log(result); // Log the final structure
+      enrichment(result); // Call enrichment function with the processed data
+    }
+
+    // Function to perform enrichment analysis using OpenCPU
+    function enrichment(list) {
+      // Call OpenCPU for 'UP' direction
+      var reqUp = ocpu.call("enrichment", {
+        data: list,
+        direction: 'UP'
+      }, function (session) {
+        console.log(session); // Log the session object
+        var filteredDataURL = session.loc + "/R/.val/json"; // Extract JSON data URL
+        d3.json(filteredDataURL, function (data) {
+          createDotPlot(data); // Process data and create dot plot
+        });
+      }).fail(function () {
+        console.log("Error: OpenCPU call failed.");
+        showError("EnrichR takes too much to respond. Please try again!!");
+      });
+
+      // Call OpenCPU for 'DOWN' direction
+      var reqDown = ocpu.call("enrichment", {
+        data: list,
+        direction: 'DOWN'
+      }, function (session) {
+        console.log(session); // Log the session object
+        var filteredDataURL = session.loc + "/R/.val/json"; // Extract JSON data URL
+        d3.json(filteredDataURL, function (data) {
+          createDotPlot1(data); // Process data and create dot plot
+        });
+      }).fail(function () {
+        console.log("Error: OpenCPU call failed.");
+        showError("EnrichR takes too much to respond. Please try again!!");
+      });
+
+      function showError(message) {
+        alert(message); // Display error message to the user
+      }
+    }
+
+    function createDotPlot(data) {
+      document.getElementById("loadingMessage").style.display = 'none';
+
+            data_disgen = data.annotation_top
+            var minValue = d3.min(data_disgen, function (d) { return d['Adjusted.P.value']; });
+            var maxValue = d3.max(data_disgen, function (d) { return d['Adjusted.P.value']; });
+            data_disgen.sort((a, b) => b.Gene_count - a.Gene_count);
+
+            // Define a linear color scale from red to blue based on the calculated domain
+            var colorScale = d3.scaleLinear()
+                .domain([minValue, maxValue])
+                .range(["red", "blue"]);
+
+            var options = ["DisGenNet", "Bio. Process", "Molecular function", "KEGG"]
+
+            // Create the select element
+            var selectDot = d3.select("#select_dot").append('select');
+
+            // Bind the data to options and enter the new options
+            selectDot.selectAll('myOptions') // Next 4 lines add 6 options = 6 colors
+                .data(options)
+                .enter()
+                .append('option')
+                .text(function (d) { return d; }) // text showed in the menu
+                .attr("value", function (d) { return d; }) // corresponding value returned by the button
+
+            // Define dimensions and margins
+            var margin = { top: 20, right: 120, bottom: 50, left: 220 },
+                width = 650 - margin.left - margin.right,
+                height = 400 - margin.top - margin.bottom;
+
+            // Append SVG to the dotplot div
+            var svg = d3.select("#dotplot")
+                .html("")
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            // Define scales
+            var x = d3.scaleLinear()
+                .domain([0, d3.max(data_disgen, function (d) { return d.Gene_count; })])
+                .range([0, width]);
+
+            var y = d3.scaleBand()
+                .domain(data_disgen.map(function (d) { return d.Term; }))
+                .range([0, height])
+                .padding(0.1);
+
+
+            // Define axes
+            var xAxis = svg.append("g")
+                .attr("class", "x axis")
+                .attr("transform", "translate(0," + height + ")")
+                .call(d3.axisBottom(x)
+                    .tickSize(-height) // Add gridlines along the x-axis
+                );
+
+            var yAxis = svg.append("g")
+                .attr("class", "y axis")
+                .call(d3.axisLeft(y)
+                    .tickSize(-width) // Add gridlines along the y-axis
+                );
+
+            // Add title
+            var title = svg.append("text")
+                .attr("x", width / 2)
+                .attr("y", -3)
+                .attr("text-anchor", "middle")
+                .style("font-size", "18px")
+                .text("UP Genes DisGenNet ")
+                .style("fill", "white");
+
+
+            // Add label for x-axis
+            svg.append("text")
+                .attr("class", "x-axis-label")
+                .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.top + 20) + ")")
+                .style("text-anchor", "middle")
+                .style("fill", "white") // Set text color to white
+                .text("Gene Count");
+
+
+
+            // Style axes and gridlines
+            svg.selectAll(".axis line")
+                .style("stroke", "white");
+
+            svg.selectAll(".axis path")
+                .style("stroke", "white");
+
+            yAxis.selectAll(".tick line")
+                .style("fill", "white");
+
+            yAxis.selectAll("text")
+                .style("fill", "white");
+
+            xAxis.selectAll(".tick line")
+                .style("fill", "white");
+
+            xAxis.selectAll("text")
+                .style("fill", "white");
+
+            // Sort the data array based on gene count in descending order
+
+            console.log(data)
+            // Define a scaling factor that the user can adjust
+            var scalingFactor = 20; // Default scaling factor
+
+            // Add an input element for the user to adjust the scaling factor
+            var scalingFactorInput = d3.select("#slider_dot_polot")
+                .html("")
+                .append("input")
+                .attr("type", "range")
+                .attr("min", 0) // Minimum scaling factor
+                .attr("max", 100) // Maximum scaling factor
+                .attr("value", scalingFactor) // Default scaling factor
+                .on("input", function () {
+                    scalingFactor = +this.value;
+                    updateDots(); // Update the dots with the new scaling factor
+                });
+
+            // Function to update the dots with the new scaling factor
+            function updateDots() {
+                svg.selectAll(".dot")
+                    .attr("r", function (d) { return d.Gene_ratio * scalingFactor; }); // Adjust radius based on scaling factor
+            }
+
+            // Add dots with tooltips
+            var dot = svg.selectAll(".dot")
+                .data(data_disgen)
+                .enter().append("circle")
+                .attr("class", "dot")
+                .attr("cx", function (d) { return x(d.Gene_count); })
+                .attr("cy", function (d) { return y(d.Term) + y.bandwidth() / 2; })
+                .attr("r", function (d) { return d.Gene_ratio * scalingFactor; }) // Adjust radius as per Gene_ratio and scaling factor
+                .style("fill", function (d) {
+                    // Access the Adjusted.P.value property using bracket notation
+                    adjustedPValue = d['Adjusted.P.value'];
+
+                    // Interpolate color using the color scale
+                    return colorScale(adjustedPValue);
+                })
+                .on("mouseover", function (d) {
+                    // Show tooltip on mouseover
+                    tooltip.transition()
+                        .duration(200)
+                        .style("opacity", .9);
+                    tooltip.html("Gene Ratio: " + d.Gene_ratio)
+                        .style("left", (d3.event.pageX) + "px")
+                        .style("top", (d3.event.pageY - 28) + "px")
+                        .style("color", "white");
+
+                    // Add black stroke on mouseover
+                    d3.select(this).style("stroke", "black")
+                        .style("stroke-width", "2px");
+                })
+                .on("mouseout", function (d) {
+                    // Hide tooltip on mouseout
+                    tooltip.transition()
+                        .duration(500)
+                        .style("opacity", 0);
+
+                    // Remove black stroke on mouseout
+                    d3.select(this).style("stroke", "none");
+                });
+
+            // Append tooltip to the body
+            var tooltip = d3.select("body").append("div")
+                .attr("class", "tooltip")
+                .style("opacity", 0);
+
+
+
+
+            // Define the legend dimensions and margins
+            var legendWidth = 20,
+                legendHeight = 150,
+                legendMargin = { top: 20, right: 10, bottom: 30, left: 10 };
+
+            // Append the legend SVG
+            var legend = svg.append("g")
+                .attr("class", "legend")
+                .attr("transform", "translate(" + (width + legendMargin.left + legendMargin.right) + "," + legendMargin.top + ")");
+
+            // Append a defs (for definition) element to your SVG
+            var defs = legend.append("defs");
+
+            // Append a linearGradient element to the defs and give it a unique id
+            var linearGradient = defs.append("linearGradient")
+                .attr("id", "linear-gradient1")
+                .attr("x1", "0%")
+                .attr("y1", "0%")
+                .attr("x2", "0%")
+                .attr("y2", "100%");
+
+            // Add color stops to the linear gradient
+            linearGradient.append("stop")
+                .attr("offset", "0%")
+                .attr("stop-color", "blue");
+
+            linearGradient.append("stop")
+                .attr("offset", "100%")
+                .attr("stop-color", "red");
+
+            // Draw the rectangle and fill with the linear gradient
+            legend.append("rect")
+                .attr("width", legendWidth)
+                .attr("height", legendHeight)
+                .style("fill", "url(#linear-gradient1)");
+
+            console.log(minValue, maxValue)
+            // Define the scale for the legend axis
+            var legendScale = d3.scaleLinear()
+                .domain([minValue, maxValue])
+                .range([legendHeight, 0]);
+
+            // Define the scale for the legend axis
+            var legendScale = d3.scaleLinear()
+                .domain([minValue, maxValue])
+                .range([legendHeight, 0]);
+
+            // Generate tick values for the legend axis
+            var tickValues = [minValue, maxValue];
+
+            // Append and style the legend axis
+            var legendAxis = d3.axisRight(legendScale)
+                .tickValues(tickValues)
+                .tickFormat(d3.format(".2e")); // Preserve scientific notation with two decimal places
+
+
+            var axis = legend.append("g")
+                .attr("class", "legend-axis")
+                .attr("transform", "translate(" + (legendWidth + 2) + ",0)") // Adjust position as needed
+                .call(legendAxis);
+
+
+
+            // Apply style to axis ticks to make them white
+            axis.selectAll("text").style("fill", "white").style("font-size", "13px")
+            axis.selectAll("line").style("stroke", "white");
+
+            // Remove the domain path
+            axis.select(".domain").remove();
+
+
+
+            function update(selectedGroup, data) {
+                var minValue;
+                var maxValue;
+                // Adjust data based on selected group
+                if (selectedGroup == 'DisGenNet') {
+                    data = data.annotation_top;
+                    data.sort((a, b) => b.Gene_count - a.Gene_count);
+                    minValue = d3.min(data, function (d) { return d['Adjusted.P.value']; });
+                    maxValue = d3.max(data, function (d) { return d['Adjusted.P.value']; });
+                } else if (selectedGroup == 'Bio. Process') {
+                    data = data.annotation_top1;
+                    data.sort((a, b) => b.Gene_count - a.Gene_count);
+                    minValue = d3.min(data, function (d) { return d['Adjusted.P.value']; });
+                    maxValue = d3.max(data, function (d) { return d['Adjusted.P.value']; });
+                } else if (selectedGroup == 'Molecular function') {
+                    data = data.annotation_top2;
+                    data.sort((a, b) => b.Gene_count - a.Gene_count);
+                    minValue = d3.min(data, function (d) { return d['Adjusted.P.value']; });
+                    maxValue = d3.max(data, function (d) { return d['Adjusted.P.value']; });
+                }
+                else if (selectedGroup == 'KEGG') {
+                    data = data.annotation_top3;
+                    data.sort((a, b) => b.Gene_count - a.Gene_count);
+                    minValue = d3.min(data, function (d) { return d['Adjusted.P.value']; });
+                    maxValue = d3.max(data, function (d) { return d['Adjusted.P.value']; });
+                }
+                title.text("UP Genes " + selectedGroup);
+
+
+
+                // Define a scaling factor that the user can adjust
+                var scalingFactor = 20; // Default scaling factor
+
+                // Add an input element for the user to adjust the scaling factor
+                var scalingFactorInput = d3.select("#slider_dot_polot")
+                    .html("")
+                    .append("input")
+                    .attr("type", "range")
+                    .attr("min", 0) // Minimum scaling factor
+                    .attr("max", 100) // Maximum scaling factor
+                    .attr("value", scalingFactor) // Default scaling factor
+                    .on("input", function () {
+                        scalingFactor = +this.value;
+                        updateDots(); // Update the dots with the new scaling factor
+                    });
+
+                var colorScale = d3.scaleLinear()
+                    .domain([minValue, maxValue])
+                    .range(["red", "blue"]);
+
+                // Update x scale
+                var x = d3.scaleLinear()
+                    .domain([0, d3.max(data, function (d) { return d.Gene_count; })])
+                    .range([0, width]);
+
+                // Update y scale
+                var y = d3.scaleBand()
+                    .domain(data.map(function (d) { return d.Term; }))
+                    .range([0, height])
+                    .padding(0.1);
+
+                // Update x-axis
+                xAxis.transition()
+                    .duration(1000)
+                    .call(d3.axisBottom(x)
+                        .tickSize(-height) // Add gridlines along the x-axis
+                    );
+
+                // Update y-axis
+                yAxis.transition()
+                    .duration(1000)
+                    .call(d3.axisLeft(y)
+                        .tickSize(-width) // Add gridlines along the y-axis
+                    );
+
+                // Style axes and gridlines
+                svg.selectAll(".axis line")
+                    .style("stroke", "white");
+
+                svg.selectAll(".axis path")
+                    .style("stroke", "white");
+
+                yAxis.selectAll(".tick line")
+                    .style("fill", "white");
+
+                yAxis.selectAll("text")
+                    .style("fill", "white");
+
+                xAxis.selectAll(".tick line")
+                    .style("fill", "white");
+
+                xAxis.selectAll("text")
+                    .style("fill", "white");
+
+
+                // Update dots
+                var dots = svg.selectAll("circle")
+                    .data(data);
+
+                // Remove existing circles
+                dots.exit().remove();
+
+                // Append new circles for any new data points
+                dots.enter().append("circle")
+                    .transition()
+                    .duration(1000)
+                    .attr("cx", function (d) { return x(d.Gene_count); })
+                    .attr("cy", function (d) { return y(d.Term) + y.bandwidth() / 2; })
+                    .attr("r", function (d) { return d.Gene_ratio * scalingFactor; }) // Adjust radius as per Gene_ratio and scaling factor
+                    .style("fill", function (d) {
+                        // Access the Adjusted.P.value property using bracket notation
+                        adjustedPValue = d['Adjusted.P.value'];
+
+                        // Interpolate color using the color scale
+                        return colorScale(adjustedPValue);
+                    });
+
+                // Transition existing circles to new positions
+                dots.transition()
+                    .duration(1000)
+                    .attr("cx", function (d) { return x(d.Gene_count); })
+                    .attr("cy", function (d) { return y(d.Term) + y.bandwidth() / 2; })
+                    .attr("r", function (d) { return d.Gene_ratio * scalingFactor; }) // Adjust radius as per Gene_ratio and updated scaling factor
+                    .style("fill", function (d) {
+                        // Access the Adjusted.P.value property using bracket notation
+                        adjustedPValue = d['Adjusted.P.value'];
+
+                        // Interpolate color using the color scale
+                        return colorScale(adjustedPValue);
+                    });
+
+
+                // Update legend
+                legendScale.domain([d3.min(data, function (d) { return d['Adjusted.P.value']; }), d3.max(data, function (d) { return d['Adjusted.P.value']; })]);
+                var tickValues = [d3.min(data, function (d) { return d['Adjusted.P.value']; }), d3.max(data, function (d) { return d['Adjusted.P.value']; })];
+                legendAxis.tickValues(tickValues);
+                axis.call(legendAxis);
+
+                // Apply style to axis ticks to make them white
+                axis.selectAll("text").style("fill", "white").style("font-size", "13px");
+                axis.selectAll("line").style("stroke", "white");
+
+                // Remove the domain path
+                axis.select(".domain").remove();
+                // Function to update the dots with the new scaling factor
+                function updateDots() {
+                    svg.selectAll("circle")
+                        .attr("r", function (d) { return d.Gene_ratio * scalingFactor; }); // Adjust radius based on scaling factor
+                }
+            }
+
+            // Define the event handler for the change event
+            selectDot.on("change", function () {
+                var selectedOption = d3.select(this).property("value");
+                update(selectedOption, data);
+            });
+        }
+
+        function createDotPlot1(data) {
+          document.getElementById("loadingMessage1").style.display = 'none';
+
+            data_disgen = data.annotation_top
+            var minValue = d3.min(data_disgen, function (d) { return d['Adjusted.P.value']; });
+            var maxValue = d3.max(data_disgen, function (d) { return d['Adjusted.P.value']; });
+            data_disgen.sort((a, b) => b.Gene_count - a.Gene_count);
+
+            // Define a linear color scale from red to blue based on the calculated domain
+            var colorScale = d3.scaleLinear()
+                .domain([minValue, maxValue])
+                .range(["red", "blue"]);
+
+            var options = ["DisGenNet", "Bio. Process", "Molecular function", "KEGG"]
+
+            // Create the select element
+            var selectDot = d3.select("#select_dot1").append('select');
+
+            // Bind the data to options and enter the new options
+            selectDot.selectAll('myOptions') // Next 4 lines add 6 options = 6 colors
+                .data(options)
+                .enter()
+                .append('option')
+                .text(function (d) { return d; }) // text showed in the menu
+                .attr("value", function (d) { return d; }) // corresponding value returned by the button
+
+            // Define dimensions and margins
+            var margin = { top: 20, right: 120, bottom: 50, left: 220 },
+                width = 650 - margin.left - margin.right,
+                height = 400 - margin.top - margin.bottom;
+
+            // Append SVG to the dotplot div
+            var svg = d3.select("#dotplot1")
+                .html("")
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            // Define scales
+            var x = d3.scaleLinear()
+                .domain([0, d3.max(data_disgen, function (d) { return d.Gene_count; })])
+                .range([0, width]);
+
+            var y = d3.scaleBand()
+                .domain(data_disgen.map(function (d) { return d.Term; }))
+                .range([0, height])
+                .padding(0.1);
+
+
+            // Define axes
+            var xAxis = svg.append("g")
+                .attr("class", "x axis")
+                .attr("transform", "translate(0," + height + ")")
+                .call(d3.axisBottom(x)
+                    .tickSize(-height) // Add gridlines along the x-axis
+                );
+
+            var yAxis = svg.append("g")
+                .attr("class", "y axis")
+                .call(d3.axisLeft(y)
+                    .tickSize(-width) // Add gridlines along the y-axis
+                );
+
+            // Add title
+            var title = svg.append("text")
+                .attr("x", width / 2)
+                .attr("y", -3)
+                .attr("text-anchor", "middle")
+                .style("font-size", "18px")
+                .text("DOWN Genes DisGenNet ")
+                .style("fill", "white");
+
+
+            // Add label for x-axis
+            svg.append("text")
+                .attr("class", "x-axis-label")
+                .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.top + 20) + ")")
+                .style("text-anchor", "middle")
+                .style("fill", "white") // Set text color to white
+                .text("Gene Count");
+
+
+
+            // Style axes and gridlines
+            svg.selectAll(".axis line")
+                .style("stroke", "white");
+
+            svg.selectAll(".axis path")
+                .style("stroke", "white");
+
+            yAxis.selectAll(".tick line")
+                .style("fill", "white");
+
+            yAxis.selectAll("text")
+                .style("fill", "white");
+
+            xAxis.selectAll(".tick line")
+                .style("fill", "white");
+
+            xAxis.selectAll("text")
+                .style("fill", "white");
+
+            // Sort the data array based on gene count in descending order
+
+            console.log(data)
+            // Define a scaling factor that the user can adjust
+            var scalingFactor = 20; // Default scaling factor
+
+            // Add an input element for the user to adjust the scaling factor
+            var scalingFactorInput = d3.select("#slider_dot_polot1")
+                .html("")
+                .append("input")
+                .attr("type", "range")
+                .attr("min", 0) // Minimum scaling factor
+                .attr("max", 100) // Maximum scaling factor
+                .attr("value", scalingFactor) // Default scaling factor
+                .on("input", function () {
+                    scalingFactor = +this.value;
+                    updateDots(); // Update the dots with the new scaling factor
+                });
+
+            // Function to update the dots with the new scaling factor
+            function updateDots() {
+                svg.selectAll(".dot")
+                    .attr("r", function (d) { return d.Gene_ratio * scalingFactor; }); // Adjust radius based on scaling factor
+            }
+
+            // Add dots with tooltips
+            var dot = svg.selectAll(".dot")
+                .data(data_disgen)
+                .enter().append("circle")
+                .attr("class", "dot")
+                .attr("cx", function (d) { return x(d.Gene_count); })
+                .attr("cy", function (d) { return y(d.Term) + y.bandwidth() / 2; })
+                .attr("r", function (d) { return d.Gene_ratio * scalingFactor; }) // Adjust radius as per Gene_ratio and scaling factor
+                .style("fill", function (d) {
+                    // Access the Adjusted.P.value property using bracket notation
+                    adjustedPValue = d['Adjusted.P.value'];
+
+                    // Interpolate color using the color scale
+                    return colorScale(adjustedPValue);
+                })
+                .on("mouseover", function (d) {
+                    // Show tooltip on mouseover
+                    tooltip.transition()
+                        .duration(200)
+                        .style("opacity", .9);
+                    tooltip.html("Gene Ratio: " + d.Gene_ratio)
+                        .style("left", (d3.event.pageX) + "px")
+                        .style("top", (d3.event.pageY - 28) + "px")
+                        .style("color", "white");
+
+                    // Add black stroke on mouseover
+                    d3.select(this).style("stroke", "black")
+                        .style("stroke-width", "2px");
+                })
+                .on("mouseout", function (d) {
+                    // Hide tooltip on mouseout
+                    tooltip.transition()
+                        .duration(500)
+                        .style("opacity", 0);
+
+                    // Remove black stroke on mouseout
+                    d3.select(this).style("stroke", "none");
+                });
+
+            // Append tooltip to the body
+            var tooltip = d3.select("body").append("div")
+                .attr("class", "tooltip")
+                .style("opacity", 0);
+
+
+
+
+            // Define the legend dimensions and margins
+            var legendWidth = 20,
+                legendHeight = 150,
+                legendMargin = { top: 20, right: 10, bottom: 30, left: 10 };
+
+            // Append the legend SVG
+            var legend = svg.append("g")
+                .attr("class", "legend")
+                .attr("transform", "translate(" + (width + legendMargin.left + legendMargin.right) + "," + legendMargin.top + ")");
+
+            // Append a defs (for definition) element to your SVG
+            var defs = legend.append("defs");
+
+            // Append a linearGradient element to the defs and give it a unique id
+            var linearGradient = defs.append("linearGradient")
+                .attr("id", "linear-gradient1")
+                .attr("x1", "0%")
+                .attr("y1", "0%")
+                .attr("x2", "0%")
+                .attr("y2", "100%");
+
+            // Add color stops to the linear gradient
+            linearGradient.append("stop")
+                .attr("offset", "0%")
+                .attr("stop-color", "blue");
+
+            linearGradient.append("stop")
+                .attr("offset", "100%")
+                .attr("stop-color", "red");
+
+            // Draw the rectangle and fill with the linear gradient
+            legend.append("rect")
+                .attr("width", legendWidth)
+                .attr("height", legendHeight)
+                .style("fill", "url(#linear-gradient1)");
+
+            console.log(minValue, maxValue)
+            // Define the scale for the legend axis
+            var legendScale = d3.scaleLinear()
+                .domain([minValue, maxValue])
+                .range([legendHeight, 0]);
+
+            // Define the scale for the legend axis
+            var legendScale = d3.scaleLinear()
+                .domain([minValue, maxValue])
+                .range([legendHeight, 0]);
+
+            // Generate tick values for the legend axis
+            var tickValues = [minValue, maxValue];
+
+            // Append and style the legend axis
+            var legendAxis = d3.axisRight(legendScale)
+                .tickValues(tickValues)
+                .tickFormat(d3.format(".2e")); // Preserve scientific notation with two decimal places
+
+
+            var axis = legend.append("g")
+                .attr("class", "legend-axis")
+                .attr("transform", "translate(" + (legendWidth + 2) + ",0)") // Adjust position as needed
+                .call(legendAxis);
+
+
+
+            // Apply style to axis ticks to make them white
+            axis.selectAll("text").style("fill", "white").style("font-size", "13px")
+            axis.selectAll("line").style("stroke", "white");
+
+            // Remove the domain path
+            axis.select(".domain").remove();
+
+
+
+            function update(selectedGroup, data) {
+                var minValue;
+                var maxValue;
+
+                // Adjust data based on selected group
+                if (selectedGroup == 'DisGenNet') {
+                    data = data.annotation_top;
+                    data.sort((a, b) => b.Gene_count - a.Gene_count);
+                    minValue = d3.min(data, function (d) { return d['Adjusted.P.value']; });
+                    maxValue = d3.max(data, function (d) { return d['Adjusted.P.value']; });
+                } else if (selectedGroup == 'Bio. Process') {
+                    data = data.annotation_top1;
+                    data.sort((a, b) => b.Gene_count - a.Gene_count);
+                    minValue = d3.min(data, function (d) { return d['Adjusted.P.value']; });
+                    maxValue = d3.max(data, function (d) { return d['Adjusted.P.value']; });
+                } else if (selectedGroup == 'Molecular function') {
+                    data = data.annotation_top2;
+                    console.log("MOLECULAR FUNCTION", data)
+                    data.sort((a, b) => b.Gene_count - a.Gene_count);
+                    minValue = d3.min(data, function (d) { return d['Adjusted.P.value']; });
+                    maxValue = d3.max(data, function (d) { return d['Adjusted.P.value']; });
+                }
+                else if (selectedGroup == 'KEGG') {
+                    data = data.annotation_top3;
+                    data.sort((a, b) => b.Gene_count - a.Gene_count);
+                    minValue = d3.min(data, function (d) { return d['Adjusted.P.value']; });
+                    maxValue = d3.max(data, function (d) { return d['Adjusted.P.value']; });
+                }
+                title.text("DOWN Genes " + selectedGroup);
+
+                // Define a scaling factor that the user can adjust
+                var scalingFactor = 20; // Default scaling factor
+
+                // Add an input element for the user to adjust the scaling factor
+                var scalingFactorInput = d3.select("#slider_dot_polot1")
+                    .html("")
+                    .append("input")
+                    .attr("type", "range")
+                    .attr("min", 0) // Minimum scaling factor
+                    .attr("max", 100) // Maximum scaling factor
+                    .attr("value", scalingFactor) // Default scaling factor
+                    .on("input", function () {
+                        scalingFactor = +this.value;
+                        updateDots(); // Update the dots with the new scaling factor
+                    });
+
+                var colorScale = d3.scaleLinear()
+                    .domain([minValue, maxValue])
+                    .range(["red", "blue"]);
+
+                // Update x scale
+                var x = d3.scaleLinear()
+                    .domain([0, d3.max(data, function (d) { return d.Gene_count; })])
+                    .range([0, width]);
+
+                // Update y scale
+                var y = d3.scaleBand()
+                    .domain(data.map(function (d) { return d.Term; }))
+                    .range([0, height])
+                    .padding(0.1);
+
+                // Update x-axis
+                xAxis.transition()
+                    .duration(1000)
+                    .call(d3.axisBottom(x)
+                        .tickSize(-height) // Add gridlines along the x-axis
+                    );
+
+                // Update y-axis
+                yAxis.transition()
+                    .duration(1000)
+                    .call(d3.axisLeft(y)
+                        .tickSize(-width) // Add gridlines along the y-axis
+                    );
+
+                // Style axes and gridlines
+                svg.selectAll(".axis line")
+                    .style("stroke", "white");
+
+                svg.selectAll(".axis path")
+                    .style("stroke", "white");
+
+                yAxis.selectAll(".tick line")
+                    .style("fill", "white");
+
+                yAxis.selectAll("text")
+                    .style("fill", "white");
+
+                xAxis.selectAll(".tick line")
+                    .style("fill", "white");
+
+                xAxis.selectAll("text")
+                    .style("fill", "white");
+
+
+                // Update dots
+                var dots = svg.selectAll("circle")
+                    .data(data);
+
+                // Remove existing circles
+                dots.exit().remove();
+
+                // Append new circles for any new data points
+                dots.enter().append("circle")
+                    .transition()
+                    .duration(1000)
+                    .attr("cx", function (d) { return x(d.Gene_count); })
+                    .attr("cy", function (d) { return y(d.Term) + y.bandwidth() / 2; })
+                    .attr("r", function (d) { return d.Gene_ratio * scalingFactor; }) // Adjust radius as per Gene_ratio and scaling factor
+                    .style("fill", function (d) {
+                        // Access the Adjusted.P.value property using bracket notation
+                        adjustedPValue = d['Adjusted.P.value'];
+
+                        // Interpolate color using the color scale
+                        return colorScale(adjustedPValue);
+                    });
+
+                // Transition existing circles to new positions
+                dots.transition()
+                    .duration(1000)
+                    .attr("cx", function (d) { return x(d.Gene_count); })
+                    .attr("cy", function (d) { return y(d.Term) + y.bandwidth() / 2; })
+                    .attr("r", function (d) { return d.Gene_ratio * scalingFactor; }) // Adjust radius as per Gene_ratio and updated scaling factor
+                    .style("fill", function (d) {
+                        // Access the Adjusted.P.value property using bracket notation
+                        adjustedPValue = d['Adjusted.P.value'];
+
+                        // Interpolate color using the color scale
+                        return colorScale(adjustedPValue);
+                    });
+
+                // Update legend
+                legendScale.domain([d3.min(data, function (d) { return d['Adjusted.P.value']; }), d3.max(data, function (d) { return d['Adjusted.P.value']; })]);
+                var tickValues = [d3.min(data, function (d) { return d['Adjusted.P.value']; }), d3.max(data, function (d) { return d['Adjusted.P.value']; })];
+                legendAxis.tickValues(tickValues);
+                axis.call(legendAxis);
+
+                // Apply style to axis ticks to make them white
+                axis.selectAll("text").style("fill", "white").style("font-size", "13px");
+                axis.selectAll("line").style("stroke", "white");
+
+                // Remove the domain path
+                axis.select(".domain").remove();
+
+                function updateDots() {
+                    svg.selectAll("circle")
+                        .attr("r", function (d) { return d.Gene_ratio * scalingFactor; }); // Adjust radius based on scaling factor
+                }
+            }
+
+            // Define the event handler for the change event
+            selectDot.on("change", function () {
+                var selectedOption = d3.select(this).property("value");
+                update(selectedOption, data);
+            });
+        }
+
+
+
+
+  </script>
+</body>
+
+</html>
