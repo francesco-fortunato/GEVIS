@@ -490,6 +490,39 @@
             min-width: 150px;
             /* Ensure dropdowns have a minimum width */
         }
+
+        #controlPanel {
+            display: flex;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .search-container {
+            display: flex;
+            align-items: center;
+            margin-left: 10px;
+            position: relative;
+        }
+
+        #searchInput {
+            width: 150px;
+        }
+
+        #searchButton {
+            margin-left: 10px;
+        }
+
+        #searchResultsDropdown {
+            position: absolute;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            max-height: 200px;
+            display: none;
+
+            overflow-y: auto;
+            z-index: 2;
+        }
     </style>
 </head>
 
@@ -619,20 +652,29 @@
         <div>
             <div class="flex-container" style="margin-top : 6px;">
                 <div id="style_scatter">
-                    <div id="scatterPlot"></div>
-                    <button id="resetButton" class="btn btn-secondary">Reset
-                        Zoom</button>
-                    <button id="switchButton">Switch Plot</button>
-                    <label for="thresholdSelect">
-                        <p style="color: #ddd;">Select
-                            Threshold:</p>
-                    </label>
-                    <select id="thresholdSelect" class="btn btn-secondary dropdown-toggle">
-                        <option value="0.05" selected>0.05</option>
-                        <option value="0.01">0.01</option>
-                    </select>
+                    <div id="scatterPlot" style="position: relative">
+                    </div>
+                    <div id="controlPanel">
+                        <button id="resetButton" class="btn btn-secondary">Reset Zoom</button>
+                        <button id="switchButton" class="btn btn-secondary">Switch Plot</button>
+                        <label for="thresholdSelect">
+                            <p style="color: #ddd;">Select Threshold:</p>
+                        </label>
+                        <select id="thresholdSelect" class="btn btn-secondary dropdown-toggle">
+                            <option value="0.05" selected>0.05</option>
+                            <option value="0.01">0.01</option>
+                        </select>
+                        <div class="search-container">
+                            <div id="searchInputContainer" style="position: relative;">
+                                <input type="text" id="searchInput" class="form-control" placeholder="Search">
+                                <div id="searchResults" class="dropdown-content"
+                                    style="display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 1000000; background-color: white;">
+                                </div>
+                            </div>
+                            <button id="searchButton" class="btn btn-primary">Search</button>
+                        </div>
+                    </div>
                 </div>
-
                 <div id="style_scatter">
                     <div class="flex">
                         <div id="checkboxContainer"
@@ -762,7 +804,7 @@
     <script>
 
         try {
-            ocpu.seturl("//localhost/ocpu/lib/GEVIS/R");
+            ocpu.seturl("//localhost:8004/ocpu/lib/GEVIS/R");
         } catch (error) {
             // If an error occurs (e.g., ocpu is not defined), reload the page
             window.location.reload();
@@ -1880,6 +1922,12 @@
                 selectRowBtn.style.width = "300px"; // Set an appropriate width to fit the text content
                 selectRowBtn.disabled = true; // Disable the button initially
 
+                var selectRowBtn2 = document.createElement("button");
+                selectRowBtn2.textContent = "Perform DEG with limma \n(This may take a while. Don't panic if it seems stuck)";
+                selectRowBtn2.style.marginLeft = "10px"; // Adjust the value to move it more to the left
+                selectRowBtn2.style.width = "300px"; // Set an appropriate width to fit the text content
+                selectRowBtn2.disabled = true; // Disable the button initially
+
                 var selectColors = document.createElement("button");
                 selectColors.textContent = "Select color";
                 selectMetadataContent.appendChild(selectColors)
@@ -2098,6 +2146,7 @@
                     backBtn.addEventListener("click", function () {
                         selectColorOverlay.remove();
                         selectRowBtn.disabled = false; // Enable the button once colors are confirmed
+                        selectRowBtn2.disabled = false; // Enable the button once colors are confirmed
                         document.body.appendChild(selectMetadataOverlay); // Assuming selectMetadataOverlay is defined earlier
                     });
 
@@ -2109,6 +2158,136 @@
 
                 // console.log(data2)
                 // console.log(data1)
+
+                selectRowBtn2.addEventListener("click", async function () {
+                    event.stopPropagation(); // Prevent event bubbling
+                    var selectedRowIndex = document.querySelector('input[name="metadataRow"]:checked').value;
+                    var rowData = Object.values(data2[selectedRowIndex]); // Get the values of the selected row
+                    selectedRowName = rowData[0]
+                    selectedVariable = selectedRowName
+                    // console.log(selectedRowName)
+                    first_dims = [selectedRowName]
+                    var values = rowData.slice(1); // Exclude the first value (name of the row)
+
+                    console.log("Two groups of values found:\SelectedValue 1: " + selectedValue1 + "\SelectedValue 2: " + selectedValue2);
+
+                    // Hide the overlay
+                    var selectMetadataOverlay = document.getElementById("selectMetadataOverlay");
+                    if (selectMetadataOverlay) {
+                        selectMetadataOverlay.style.display = "none";
+                        selectMetadataOverlay.style.visibility = "hidden"; // Optional, if necessary
+                        // Alternatively: $("selectMetadataOverlay").hide(); if using jQuery
+                    }
+
+                    // Show the loading overlay
+                    document.getElementById("loadingOverlay").style.display = "block";
+
+                    console.log("REMOVED")
+
+                    await new Promise(resolve => setTimeout(resolve, 100)); // Simulating async operation
+
+                    var selectedValue = selectedValue1; // or group2[0] depending on which group represents the selected value
+                    chosen_meta1 = selectedValue1
+                    chosen_meta2 = selectedValue2
+
+
+                    // Show the loading // Assuming you have already obtained the selected row index and values from data2
+                    var dataC = [];
+                    var dataN = [];
+
+                    var dataC = [];
+                    var dataN = [];
+
+                    // console.log(data1, data2, selectedRowIndex, selectedValue)
+
+                    // Loop through each object in data1
+                    for (var i = 0; i < data1.length; i++) {
+                        var obj = data1[i];
+                        var gene = obj[Object.keys(obj)[0]]; // Get the gene name from the first property of the object
+
+                        // Create new objects for dataC and dataN
+                        var newObjC = { "gene": gene };
+                        var newObjN = { "gene": gene };
+
+                        // Loop through the keys in the object and add values to newObjC and newObjN accordingly
+                        for (var key in obj) {
+                            if (key !== Object.keys(obj)[0]) {
+                                // Check if the value in data2 matches the selected value
+                                if (data2[selectedRowIndex][key] === selectedValue) {
+                                    newObjC[key] = obj[key]; // Add value to newObjC
+                                } else {
+                                    newObjN[key] = obj[key]; // Add value to newObjN
+                                }
+                            }
+                        }
+
+                        // Push the new objects to dataC and dataN
+                        dataC.push(newObjC);
+                        dataN.push(newObjN);
+                    }
+
+                    // Create a new array to hold the reordered data
+                    var reorderedData = [];
+
+                    // Loop through each object in data1
+                    for (var i = 0; i < data1.length; i++) {
+                        var obj = data1[i];
+                        var gene = obj[Object.keys(obj)[0]]; // Get the first value of the object
+
+                        // Find the corresponding row in dataC and dataN
+                        var rowDataN = dataN.find(row => row.gene === gene);
+                        var rowDataC = dataC.find(row => row.gene === gene);
+
+                        // Construct the new object with the desired structure
+                        var reorderedObj = { "gene": gene };
+
+                        // Add GSM values from dataN to reorderedObj
+                        for (var key in rowDataN) {
+                            if (key !== "gene") { // Skip the gene key
+                                reorderedObj[key] = rowDataN[key];
+                            }
+                        }
+
+                        // Add GSM values from dataC to reorderedObj
+                        for (var key in rowDataC) {
+                            if (key !== "gene") { // Skip the gene key
+                                reorderedObj[key] = rowDataC[key];
+                            }
+                        }
+
+                        // Push the new object to the reorderedData array
+                        reorderedData.push(reorderedObj);
+                    }
+
+                    data1 = reorderedData
+                    case_number = Object.keys(dataC[0]).length - 1
+                    normal_number = Object.keys(dataN[0]).length - 1
+
+                    console.log(dataC)
+                    console.log(dataN)
+
+                    var req = ocpu.call("limmaDE", {
+                        dataC: dataC,  // Pass your processed case data
+                        dataN: dataN   // Pass your processed normal data
+                    }, function (session) {
+                        var resultURL = session.loc + "/R/.val/json";
+
+                        // Fetch the result from the URL
+                        fetch(resultURL)
+                            .then(response => response.json())
+                            .then(data => {
+                                // Handle the returned JSON data (e.g., log results)
+                                console.log(data);
+
+                                // Further processing or displaying of results
+                            })
+                            .catch(error => {
+                                console.error('Error fetching result:', error);
+                            });
+                    });
+
+                })
+
                 selectRowBtn.addEventListener("click", async function () {
 
                     event.stopPropagation(); // Prevent event bubbling
@@ -2530,6 +2709,7 @@
                 selectMetadataContent.appendChild(selectColors);
 
                 selectMetadataContent.appendChild(selectRowBtn);
+                selectMetadataContent.appendChild(selectRowBtn2);
 
                 selectMetadataOverlay.appendChild(selectMetadataContent);
 
@@ -10178,12 +10358,94 @@
             }
         }
 
+        // Function to filter and display search results
+        function filterAndDisplayResults() {
+            const searchTerm = document.getElementById('searchInput').value.trim().toLowerCase();
+            const searchResults = document.getElementById('searchResults');
+
+            // Clear existing results before updating
+            searchResults.innerHTML = '';
+
+            if (searchTerm.length === 0) {
+                searchResults.style.display = 'none';
+                return;
+            }
+
+            const matches = data_copy_pval.filter(item => {
+                // Filter logic based on your data structure
+                // Assuming data_copy_pval is an array of objects with 'gene' property
+                return item.gene.toLowerCase().includes(searchTerm);
+            });
+
+            // Display the matches in the results container
+            for (let i = 0; i < matches.length && i < 5; i++) {
+                const resultElement = document.createElement('a');
+                resultElement.id = `result${i + 1}`;
+                resultElement.classList.add('result-item');
+                resultElement.textContent = matches[i].gene;
+
+                // Handle click on result to select it
+                resultElement.addEventListener('click', (function (gene) {
+                    return function (event) {
+                        event.stopPropagation(); // Stop propagation to prevent other results from triggering
+
+                        document.getElementById('searchInput').value = gene;
+                        // Optionally trigger other functions after selection
+                        selectedGeneData.push(gene);
+                        dynamicParallel(selectedGeneData, data_copy_pval, dataC_copy_pval, dataN_copy, first_dims);
+                        updateBoxPlot(last_box, parsedLogFC, dataN_copy, dataC_copy);
+                        if (currentPlot === 'volcano') {
+                            updateVolcanoPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj);
+                        } else {
+                            updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj);
+                        }
+                        searchResults.style.display = 'none'; // Hide results after selection
+                    };
+                })(matches[i].gene)); // Immediately invoked function to capture current gene value
+
+                searchResults.appendChild(resultElement); // Append each result to the results container
+                searchResults.appendChild(document.createElement('br')); // Add a line break after each result
+            }
+
+            // Show the results container if there are matches
+            if (matches.length > 0) {
+                searchResults.style.display = 'block';
+            } else {
+                searchResults.style.display = 'none';
+            }
+        }
+
+        // Handle input in search input
+        document.getElementById('searchInput').addEventListener('input', function () {
+            filterAndDisplayResults();
+        });
+
+        // Handle focus on search input to show results
+        document.getElementById('searchInput').addEventListener('focus', function () {
+            filterAndDisplayResults();
+        });
+
+        // Handle blur on search input to hide results
+        document.getElementById('searchInput').addEventListener('blur', function () {
+            const searchResults = document.getElementById('searchResults');
+            const relatedTarget = document.activeElement;
+
+            if (!searchResults.contains(relatedTarget)) {
+                searchResults.style.display = 'none';
+            }
+        });
+
+        // Handle click inside search results container to prevent hiding
+        document.getElementById('searchResults').addEventListener('mousedown', function (event) {
+            event.preventDefault(); // Prevents focus change which would trigger blur
+        });
 
 
     </script>
 
     <div id="tooltip"
-        style="position: absolute; opacity: 0; background-color: white; border: 1px solid #ddd; padding: 5px;"></div>
+        style="position: absolute; opacity: 0; background-color: white; border: 1px solid #ddd; padding: 5px;">
+    </div>
     <div id="tTestResults"></div>
 
 </body>

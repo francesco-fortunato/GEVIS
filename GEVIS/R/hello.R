@@ -40,11 +40,8 @@ pval <- function(data, N, M) {
   # Adjustment p-value
   pval_adj <- p.adjust(pval, method="fdr")
 
-  # Convert pval_adj to character (string)
-  pval_adj_str <- as.character(pval_adj)
-
   # Add the column of genes back to the result
-  result <- data.frame(Gene = genes, pval_adj = pval_adj_str)
+  result <- data.frame(Gene = genes, pval_adj = pval_adj)
 
   return(result)
 }
@@ -245,6 +242,48 @@ variation <- function(rawdata) {
   # Return JSON data
   return(json_data)
 }
+
+
+
+limmaDE <- function(dataC, dataN) {
+  library(limma)
+
+  # Convert lists to data frames
+  dataC <- as.data.frame(dataC)
+  dataN <- as.data.frame(dataN)
+
+  # Convert all columns to numeric except for the gene column
+  dataC[-1] <- lapply(dataC[-1], as.numeric)
+  dataN[-1] <- lapply(dataN[-1], as.numeric)
+
+  # Set row names to gene names
+  rownames(dataC) <- dataC$gene
+  rownames(dataN) <- dataN$gene
+
+  # Drop the gene column
+  dataC <- dataC[, -which(names(dataC) == "gene")]
+  dataN <- dataN[, -which(names(dataN) == "gene")]
+
+  # Combine data
+  data_combined <- cbind(dataC, dataN)
+
+  # Create group vector
+  group <- factor(c(rep("Case", ncol(dataC)), rep("Normal", ncol(dataN))))
+
+  # Design matrix
+  design <- model.matrix(~ group)
+
+  # Fit the model
+  fit <- lmFit(data_combined, design)
+  fit <- eBayes(fit)
+
+  # Get the top table
+  results <- topTable(fit, coef=2)
+
+  return(results)
+}
+
+
 
 deseq <- function(expression_data, metadata, group1, group2, metadata_column) {
   library(DESeq2)
