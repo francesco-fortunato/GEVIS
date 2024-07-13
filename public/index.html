@@ -7369,8 +7369,22 @@
                         // update circle position
                         scatter
                             .selectAll("circle")
-                            .attr('cx', function (d) { if (d.pval_adj !== null) { return newX(d.logFC); } })
-                            .attr('cy', function (d) { if (d.pval_adj !== null) { return newY(-Math.log10(d.pval_adj.toExponential(20))); } });
+                            .attr('cx', function (d) {
+                                if (d.pval_adj !== null && !isNaN(d.pval_adj)) {
+                                    return newX(d.logFC);
+                                } else {
+                                    return null;
+                                }
+                            })
+                            .attr('cy', function (d) {
+                                if (d.pval_adj !== null && !isNaN(d.pval_adj)) {
+                                    const pvalAdjLog = -Math.log10(d.pval_adj);
+                                    if (!isNaN(pvalAdjLog)) {
+                                        return newY(pvalAdjLog);
+                                    }
+                                }
+                                return null;
+                            });
                     }
                     xlab.html("")
                     ylab.html("")

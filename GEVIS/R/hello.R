@@ -40,8 +40,11 @@ pval <- function(data, N, M) {
   # Adjustment p-value
   pval_adj <- p.adjust(pval, method="fdr")
 
+  # Convert pval_adj to character (string)
+  pval_adj_str <- as.character(pval_adj)
+
   # Add the column of genes back to the result
-  result <- data.frame(Gene = genes, pval_adj = pval_adj)
+  result <- data.frame(Gene = genes, pval_adj = pval_adj_str)
 
   return(result)
 }
@@ -243,8 +246,6 @@ variation <- function(rawdata) {
   return(json_data)
 }
 
-
-
 limmaDE <- function(dataC, dataN) {
   library(limma)
 
@@ -301,9 +302,9 @@ deseq <- function(expression_data, metadata, group1, group2, metadata_column) {
                                 design = ~ Sample_source_name_ch1)
   dds <- DESeq(dds)
 
-#  group1 <- "Adenocarcinoma of the Lung"
-#  group2 <- "Normal Lung Tissue"
-#  metadata_column <- "Sample_source_name_ch1"
+  #  group1 <- "Adenocarcinoma of the Lung"
+  #  group2 <- "Normal Lung Tissue"
+  #  metadata_column <- "Sample_source_name_ch1"
 
   # Create contrast dynamically
   contrast <- c(metadata_column, group1, group2)
