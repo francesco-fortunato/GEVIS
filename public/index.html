@@ -523,6 +523,28 @@
             overflow-y: auto;
             z-index: 2;
         }
+
+        .result-item {
+            cursor: pointer;
+            /* Change cursor to pointer */
+            background-color: white;
+            transition: background-color 0.3s ease;
+            /* Smooth transition effect */
+            /* padding: 5px; Optional: Add padding for better appearance */
+            display: block;
+            /* Ensures the element behaves like a block-level element */
+            text-decoration: none;
+            /* Remove underline for links if any */
+            color: black;
+            /* Set text color */
+            margin-bottom: 5px;
+            /* Add margin for spacing between items */
+        }
+
+        .result-item:hover {
+            background-color: grey;
+            /* Change background color on hover */
+        }
     </style>
 </head>
 
@@ -671,7 +693,7 @@
                                     style="display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 1000000; background-color: white;">
                                 </div>
                             </div>
-                            <button id="searchButton" class="btn btn-primary">Search</button>
+                            <!-- <button id="searchButton" class="btn btn-primary">Search</button> -->
                         </div>
                     </div>
                 </div>
@@ -8574,7 +8596,6 @@
             legend.selectAll(".label")
                 .each(function (d) {
                     var self = d3.select(this);
-                    console.log(self.node.childNodes)
                     var textNode = self.node().childNodes[0]; // Get the text node
                     var text = textNode.textContent; // Get the text content
                     console.log(text)
@@ -8582,7 +8603,7 @@
                     if (this.textContent.length > maxLength) {
                         var truncatedText = text.slice(0, maxLength) + '...';
                         self.text(truncatedText);
-                        self.append("title").text(textNode.textContent); // Add full text as a tooltip
+                        self.append("title").text(d); // Add full text as a tooltip
                     }
                 });
 
@@ -8757,15 +8778,7 @@
                 .append("g")
                 .attr("transform", function (d) { return "translate(" + x(d) + ")"; })
                 .each(function (d) {
-                    // if (d === "Smoking Status") {
-                    //     // For "Smoking Status" dimension, customize the tick format
-                    //     d3.select(this).call(d3.axisLeft().scale(y[d]).tickFormat(function (d) {
-                    //         // Customize the tick format here
-                    //         return d === "Never Smoked" ? "Never" : d === "Former Smoker" ? "Former" : "Current";
-                    //     }));
-                    // } else {
                     d3.select(this).call(d3.axisLeft().scale(y[d]));
-                    //}
                 });
 
             axis.append("text")
@@ -8786,6 +8799,23 @@
             axis.selectAll(".tick line")
                 .attr("stroke", "white");
 
+            // Add truncated y-axis labels with tooltips
+            axis.selectAll(".tick text")
+                .each(function (d) {
+                    var self = d3.select(this);
+                    var text = d; // Full label text from the data bound
+                    var maxLength = 5; // Set the maximum length for the label before truncating
+
+                    // Add tooltip
+                    self.append("title").text(text); // Add full text as a tooltip
+
+                    // Truncate text if necessary
+                    if (text.length > maxLength) {
+                        var truncatedText = text.slice(0, maxLength) + '...';
+                        self.text(truncatedText);
+                    }
+                });
+
 
             // Define drag behavior
             var drag = d3.drag()
@@ -8801,15 +8831,7 @@
                 .attr("class", "axis-group")
                 .attr("transform", function (d) { return "translate(" + x(d) + ")"; })
                 .each(function (d) {
-                    // if (d === "Smoking Status") {
-                    //     // For "Smoking Status" dimension, customize the tick format
-                    //     d3.select(this).call(d3.axisLeft().scale(y[d]).tickFormat(function (d) {
-                    //         // Customize the tick format here
-                    //         return d === "Never Smoked" ? "Never" : d === "Former Smoker" ? "Former" : "Current";
-                    //     }));
-                    // } else {
                     d3.select(this).call(d3.axisLeft().scale(y[d]));
-                    //}
                 })
                 .call(drag); // Apply drag behavior to each axis group;
 
@@ -8828,8 +8850,26 @@
 
             axisGroups.selectAll(".tick text")
                 .style("fill", "white");
+
             axisGroups.selectAll(".tick line")
                 .attr("stroke", "white");
+
+            // Add truncated y-axis labels with tooltips
+            axisGroups.selectAll(".tick text")
+                .each(function (d) {
+                    var self = d3.select(this);
+                    var text = d; // Full label text from the data bound
+                    var maxLength = 5; // Set the maximum length for the label before truncating
+
+                    // Add tooltip
+                    self.append("title").text(text); // Add full text as a tooltip
+
+                    // Truncate text if necessary
+                    if (text.length > maxLength) {
+                        var truncatedText = text.slice(0, maxLength) + '...';
+                        self.text(truncatedText);
+                    }
+                });
 
 
 
@@ -10404,21 +10444,23 @@
                         event.stopPropagation(); // Stop propagation to prevent other results from triggering
 
                         document.getElementById('searchInput').value = gene;
-                        // Optionally trigger other functions after selection
-                        selectedGeneData.push(gene);
-                        dynamicParallel(selectedGeneData, data_copy_pval, dataC_copy_pval, dataN_copy, first_dims);
-                        updateBoxPlot(last_box, parsedLogFC, dataN_copy, dataC_copy);
-                        if (currentPlot === 'volcano') {
-                            updateVolcanoPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj);
-                        } else {
-                            updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj);
+
+                        // Check if the gene is already in selectedGeneData
+                        if (!selectedGeneData.includes(gene)) {
+                            selectedGeneData.push(gene);
+                            dynamicParallel(selectedGeneData, data_copy_pval, dataC_copy_pval, dataN_copy, first_dims);
+                            updateBoxPlot(last_box, parsedLogFC, dataN_copy, dataC_copy);
+                            if (currentPlot === 'volcano') {
+                                updateVolcanoPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj);
+                            } else {
+                                updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj);
+                            }
                         }
                         searchResults.style.display = 'none'; // Hide results after selection
                     };
                 })(matches[i].gene)); // Immediately invoked function to capture current gene value
 
                 searchResults.appendChild(resultElement); // Append each result to the results container
-                searchResults.appendChild(document.createElement('br')); // Add a line break after each result
             }
 
             // Show the results container if there are matches
