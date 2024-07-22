@@ -5094,9 +5094,6 @@
 
                 updateBoxPlot(last_box, parsedLogFC, dataN_copy, dataC_copy)
 
-
-
-
             }
             var legendItems = [
                 { label: chosen_meta2, color: "green" },
@@ -5136,6 +5133,9 @@
                 d3.select(this).style("cursor", "move");
             });
 
+            // Define maximum length for legend labels before truncating
+            var maxLabelLength = 18; // You can adjust this value as needed
+
             // Append legend circles and text
             legend.selectAll("circle.legend-item")
                 .data(legendItems)
@@ -5152,9 +5152,18 @@
                 .attr("class", "legend-item")
                 .attr("x", 15)
                 .attr("y", function (d, i) { return i * 20 + 10; })
-                .text(function (d) { return d.label; })
+                .text(function (d) {
+                    // Truncate the label if it exceeds the maximum length
+                    var text = d.label;
+                    if (text.length > maxLabelLength) {
+                        return text.slice(0, maxLabelLength) + '...'; // Truncate and add ellipsis
+                    }
+                    return text;
+                })
                 .style("font-size", "12px")
-                .style("fill", "white");
+                .style("fill", "white")
+                .append("title") // Add tooltip with the full text
+                .text(function (d) { return d.label; }); // Full text for tooltip
 
         }
 
