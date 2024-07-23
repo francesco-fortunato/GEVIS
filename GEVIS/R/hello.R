@@ -253,17 +253,17 @@ limmaDE <- function(dataC, dataN) {
   dataC <- as.data.frame(dataC)
   dataN <- as.data.frame(dataN)
 
-  # Convert all columns to numeric except for the gene column
-  dataC[-1] <- lapply(dataC[-1], as.numeric)
-  dataN[-1] <- lapply(dataN[-1], as.numeric)
+  # Convert all columns to numeric except for the last column (which is assumed to be the gene column)
+  dataC[,-ncol(dataC)] <- lapply(dataC[,-ncol(dataC)], as.numeric)
+  dataN[,-ncol(dataN)] <- lapply(dataN[,-ncol(dataN)], as.numeric)
 
-  # Set row names to gene names
-  rownames(dataC) <- dataC$gene
-  rownames(dataN) <- dataN$gene
+  # Set row names to gene names (assuming the gene names are in the last column)
+  rownames(dataC) <- dataC[,ncol(dataC)]
+  rownames(dataN) <- dataN[,ncol(dataN)]
 
   # Drop the gene column
-  dataC <- dataC[, -which(names(dataC) == "gene")]
-  dataN <- dataN[, -which(names(dataN) == "gene")]
+  dataC <- dataC[,-ncol(dataC)]
+  dataN <- dataN[,-ncol(dataN)]
 
   # Combine data
   data_combined <- cbind(dataC, dataN)
@@ -279,10 +279,17 @@ limmaDE <- function(dataC, dataN) {
   fit <- eBayes(fit)
 
   # Get the top table
-  results <- topTable(fit, coef=2)
+  results <- topTable(fit, coef = 2, number = Inf)
+
+  # Rename column
+  colnames(results)[which(colnames(results) == "adj.P.Val")] <- "pval_adj"
+
+  # Convert pval_adj column to character
+  results$pval_adj <- as.character(results$pval_adj)
 
   return(results)
 }
+
 
 
 
