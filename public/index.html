@@ -1293,11 +1293,24 @@
             var lines = contents.split('\n');
             var data = [];
 
-            // Determine the delimiter dynamically
+            // Function to detect the delimiter (assuming this is already defined)
             var delimiter = detectDelimiter(lines[0]);
             console.log("Detected delimiter:", delimiter);
 
+            // Parse headers and apply transformations
             var headers = lines[0].split(delimiter).map(header => header.trim()); // Trim headers
+
+            // Transform headers: Ensure each header starts with 'X' and replace '-' with '.'
+            headers = headers.map(header => {
+                // Replace '-' with '.'
+                header = header.replace(/-/g, '.');
+                // Add 'X' at the beginning if the header starts with a number
+                if (/^\d/.test(header)) {
+                    header = 'X' + header;
+                }
+                return header;
+            });
+
             for (var i = 1; i < lines.length; i++) {
                 var obj = {};
                 var currentline = lines[i].split(delimiter);
@@ -1711,15 +1724,20 @@
                 document.getElementById("totalColumns2").textContent = Object.keys(data2[0]).length;
             }
 
+            // Function to truncate headers longer than 8 characters
+            function truncateHeader(header) {
+                return header.length > 8 ? header.slice(0, 8) + "..." : header;
+            }
+
             // Display headers for data1
             headersData1.forEach(function (key) {
-                tableData1 += "<th>" + key + "</th>";
+                tableData1 += "<th>" + truncateHeader(key) + "</th>";
             });
             tableData1 += "</tr></thead><tbody>";
 
             // Display headers for data2
             headersData2.forEach(function (key) {
-                tableData2 += "<th>" + key + "</th>";
+                tableData2 += "<th>" + truncateHeader(key) + "</th>";
             });
             tableData2 += "</tr></thead><tbody>";
 
@@ -2089,7 +2107,11 @@
                                 colorInput.name = category + "_" + value; // Use a unique name for each color input
 
                                 // Assign specific colors for "female" and "male"
-                                if (value.toLowerCase().includes("female")) {
+                                if (value === selectedValue1){
+                                    colorInput.value = d3.schemeSet1[0]
+                                } else if (value === selectedValue2){
+                                    colorInput.value = d3.schemeSet1[2]
+                                } else if (value.toLowerCase().includes("female")) {
                                     colorInput.value = d3.schemeSet1[7]; // Eighth color of the schemeSet1 for "female"
                                 } else if (value.toLowerCase().includes("male")) {
                                     colorInput.value = d3.schemeSet1[1]; // Second color of the schemeSet1 for "male"
@@ -3096,9 +3118,15 @@
                                                 console.log(parsedLogFC_origin1)
                                                 console.log(old_p_adj)
 
+                                                if (parsedLogFC.length == 0) {
+                                                    alert("No deg found!")
+                                                }
+
                                                 console.log("Promise: al box gli passo parsedlogFC", parsedLogFC.length)
 
                                                 var sortedLogFC = parsedLogFC.slice().sort((a, b) => b.logFC - a.logFC);
+
+                                                console.log(sortedLogFC)
 
                                                 var mostUpregulatedGene = sortedLogFC[0];
                                                 var secondMostUpregulatedGene = sortedLogFC[1];
@@ -3369,8 +3397,6 @@
                                                         })
                                                         // Display the newData array
                                                         console.log("PCA, first try ", pca_data);
-
-
                                                         pca(pca_data);
                                                         heatmap(heatmap_data);
 
@@ -3421,6 +3447,16 @@
                                             });
 
                                             old_p_adj = data
+                                            old_p_adj.sort((a, b) => {
+                                                if (a.Gene < b.Gene) {
+                                                    return -1;
+                                                }
+                                                if (a.Gene > b.Gene) {
+                                                    return 1;
+                                                }
+                                                return 0;
+                                            });
+
                                             const ind = old_p_adj.reduce((result, entry, index) => {
 
                                                 if (entry.pval_adj > threshold) {
@@ -3431,7 +3467,6 @@
 
                                             console.log(old_p_adj)
                                             console.log(ind)
-
 
                                             console.log("geni tolti dal primo filtering del pval", ind.length)
 
@@ -3451,6 +3486,7 @@
                                                 data_copy_pval = data_copy.filter((entry, index) => !ind.includes(index));
 
                                                 console.log("geni rimamenti dal primo filtering", data_copy.length)
+
                                                 // Remove entries corresponding to ind from logFC
                                                 parsedLogFC = parsedLogFC.filter((entry, index) => !ind.includes(index));
 
@@ -3459,11 +3495,18 @@
                                                 console.log(parsedLogFC_origin1)
                                                 console.log(old_p_adj)
 
+                                                if (parsedLogFC.length == 0) {
+                                                    alert("No deg found!")
+                                                }
+
                                                 console.log("Promise: al box gli passo parsedlogFC", parsedLogFC.length)
 
                                                 var sortedLogFC = parsedLogFC.slice().sort((a, b) => b.logFC - a.logFC);
 
+                                                console.log(sortedLogFC)
+
                                                 var mostUpregulatedGene = sortedLogFC[0];
+
                                                 var secondMostUpregulatedGene = sortedLogFC[1];
 
                                                 var mostDownregulatedGene = sortedLogFC[sortedLogFC.length - 1];
@@ -3645,6 +3688,7 @@
                                             var pc1Values = [];
                                             var pc2Values = [];
                                             var groupValues = [];
+                                            console.log(data_copy_pval)
                                             var req = ocpu.call("pca", {
                                                 data: data_copy_pval,
                                                 dataN: dataN_copy_pval,
@@ -5924,9 +5968,9 @@
                     // console.log(selectedRowName)
                     // console.log(d[selectedRowName])
                     if (d[selectedRowName] == chosen_meta1) {
-                        return "red";
+                        return d3.schemeSet1[0];
                     } else {
-                        return "green"
+                        return d3.schemeSet1[2]
                     }
                 })
                 .attr("stroke", function (d) {
@@ -6058,8 +6102,8 @@
 
             }
             var legendItems = [
-                { label: chosen_meta2, color: "green" },
-                { label: chosen_meta1, color: "red" }
+                { label: chosen_meta2, color: d3.schemeSet1[2] },
+                { label: chosen_meta1, color: d3.schemeSet1[0] }
             ];
 
             // Create legend group
@@ -8712,10 +8756,11 @@
                 var geneDataC = dataC.filter(d => d.gene === geneNameUP)
 
 
+                console.log(geneDataC)
 
                 // Extract GSM values for each gene
-                var gsmValuesC = Object.keys(geneDataC[0]).filter(key => key.startsWith('GSM'));
-                var gsmValuesN = Object.keys(geneDataN[0]).filter(key => key.startsWith('GSM'));
+                var gsmValuesC = Object.keys(geneDataC[0]).filter(key => !key.startsWith('gene'));
+                var gsmValuesN = Object.keys(geneDataN[0]).filter(key => !key.startsWith('gene'));
 
 
                 function computeBoxPlotStatistics(data1) {
@@ -9359,9 +9404,17 @@
 
             let structureCombinedData = [];
 
+            console.log(geneselected)
+
             geneselected.forEach(geneName => {
                 var geneDataN = dataN.filter(d => d.gene === geneName);
                 var geneDataC = dataC.filter(d => d.gene === geneName);
+
+                if (geneDataN.length == 0) {
+                    selectedGeneData = [];
+                    geneselected = [];
+                    return;
+                }
 
                 // Extract sample names for each gene
                 var sampleKeysC = Object.keys(geneDataC[0]).filter(key => key !== "gene");
