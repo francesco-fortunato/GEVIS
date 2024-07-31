@@ -647,7 +647,7 @@
 
                 <div id="IQR" style="width: 100%"></div><!--div(4) IQR-->
                 <div> <!--div(3) bottoni IQR-->
-                    <input type="range" id="thresholdSlider" class="range2" min="0.1" max="0.99" step="0.01" value="0.1"
+                    <input type="range" id="thresholdSlider" class="range2" min="0.1" max="0.99" step="0.01" value="0.2"
                         style="width: 200px;">
                     <span id="thresholdValue" style="color: white;">0.1</span>
                 </div><!-- div(3)-->
@@ -851,7 +851,7 @@
         let variation_data_copy;
         let initial_num_genes;
         let data_upd
-        let prc_IQR = 0.1;
+        let prc_IQR = 0.2;
         let thr_prc;
         let filteredData;
         let matrix;
@@ -905,7 +905,7 @@
         var dataC_copy_pval
 
         // Remove entries corresponding to ind from dataN
-        var dataN_copy_pval
+        let dataN_copy_pval
 
 
         var data_copy_pval
@@ -919,7 +919,7 @@
 
         let selectedVariable = "case"
         // Flag to track the current plot
-        let currentPlot = 'scatter';
+        let currentPlot = 'volcano';
 
         showOverlay()
 
@@ -1702,8 +1702,21 @@
             });*/
 
         //**********************     FINE VECCHIA FUNZIONE INIZIALE LOADING DI TUTTI I VARI FILE  ******************************//
+        function isInteger(value) {
+            return Number.isInteger(parseFloat(value));
+        }
+
 
         async function showDisplayCsvOverlay(data1, data2) {
+            console.log(data1)
+            // Create the all_int variable
+            let all_int = data1.every(item => {
+                // Exclude the first field, typically 'ID_REF'
+                return Object.values(item).slice(1).every(isInteger);
+            });
+
+            console.log(all_int); // This will be true if all values (excluding the first) are integers
+
             document.getElementById("displayCsvOverlay").style.display = "block";
 
             // Display the first 10 columns of each CSV data in a table side by side
@@ -1970,6 +1983,12 @@
                 selectRowBtn2.style.width = "300px"; // Set an appropriate width to fit the text content
                 selectRowBtn2.disabled = true; // Disable the button initially
 
+                var selectRowBtn3 = document.createElement("button");
+                selectRowBtn3.textContent = "Perform DEG with deseq2 \n(This may take a while. Don't panic if it seems stuck)";
+                selectRowBtn3.style.marginLeft = "10px"; // Adjust the value to move it more to the left
+                selectRowBtn3.style.width = "300px"; // Set an appropriate width to fit the text content
+                selectRowBtn3.disabled = true; // Disable the button initially
+
                 var selectColors = document.createElement("button");
                 selectColors.textContent = "Select color";
                 selectMetadataContent.appendChild(selectColors)
@@ -2107,9 +2126,9 @@
                                 colorInput.name = category + "_" + value; // Use a unique name for each color input
 
                                 // Assign specific colors for "female" and "male"
-                                if (value === selectedValue1){
+                                if (value === selectedValue1) {
                                     colorInput.value = d3.schemeSet1[0]
-                                } else if (value === selectedValue2){
+                                } else if (value === selectedValue2) {
                                     colorInput.value = d3.schemeSet1[2]
                                 } else if (value.toLowerCase().includes("female")) {
                                     colorInput.value = d3.schemeSet1[7]; // Eighth color of the schemeSet1 for "female"
@@ -2193,6 +2212,7 @@
                         selectColorOverlay.remove();
                         selectRowBtn.disabled = false; // Enable the button once colors are confirmed
                         selectRowBtn2.disabled = false; // Enable the button once colors are confirmed
+                        if (all_int) selectRowBtn3.disabled = false; // Enable the button once colors are confirmed
                         document.body.appendChild(selectMetadataOverlay); // Assuming selectMetadataOverlay is defined earlier
                     });
 
@@ -2338,7 +2358,7 @@
                             // Filter out rows with overall mean equal to 0
                             var ind = overall_mean.reduce((acc, val, index) => {
                                 if (val === 0) {
-                                    console.log("VALUE 0");
+                                    // console.log("VALUE 0");
                                     acc.push(index);
                                 }
                                 return acc;
@@ -2474,28 +2494,277 @@
                         worker.terminate();
                     });
 
+                })
 
-                    // var req = ocpu.call("limmaDE", {
-                    //     dataC: dataC,  // Pass your processed case data
-                    //     dataN: dataN   // Pass your processed normal data
-                    // }, function (session) {
-                    //     var resultURL = session.loc + "/R/.val/json";
+                selectRowBtn3.addEventListener("click", async function () {
+                    chosen_statistic = 'deseq2'
+                    event.stopPropagation(); // Prevent event bubbling
+                    var selectedRowIndex = document.querySelector('input[name="metadataRow"]:checked').value;
+                    var rowData = Object.values(data2[selectedRowIndex]); // Get the values of the selected row
+                    selectedRowName = rowData[0]
+                    selectedVariable = selectedRowName
+                    // console.log(selectedRowName)
+                    first_dims = [selectedRowName]
+                    var values = rowData.slice(1); // Exclude the first value (name of the row)
 
-                    //     // Fetch the result from the URL
-                    //     fetch(resultURL)
-                    //         .then(response => response.json())
-                    //         .then(data => {
-                    //             // Handle the returned JSON data (e.g., log results)
-                    //             console.log(data);
+                    console.log("Two groups of values found:\SelectedValue 1: " + selectedValue1 + "\SelectedValue 2: " + selectedValue2);
 
-                    //             // Further processing or displaying of results
-                    //         })
-                    //         .catch(error => {
-                    //             console.error('Error fetching result:', error);
-                    //         });
-                    // });
+                    // Hide the overlay
+                    var selectMetadataOverlay = document.getElementById("selectMetadataOverlay");
+                    if (selectMetadataOverlay) {
+                        selectMetadataOverlay.style.display = "none";
+                        selectMetadataOverlay.style.visibility = "hidden"; // Optional, if necessary
+                        // Alternatively: $("selectMetadataOverlay").hide(); if using jQuery
+                    }
+
+                    // Show the loading overlay
+                    document.getElementById("loadingOverlay").style.display = "block";
+
+                    console.log("REMOVED")
+
+                    await new Promise(resolve => setTimeout(resolve, 100)); // Simulating async operation
+
+                    var selectedValue = selectedValue1; // or group2[0] depending on which group represents the selected value
+                    chosen_meta1 = selectedValue1
+                    chosen_meta2 = selectedValue2
+
+
+                    // Show the loading // Assuming you have already obtained the selected row index and values from data2
+                    var dataC = [];
+                    var dataN = [];
+
+
+                    // console.log(data1, data2, selectedRowIndex, selectedValue)
+
+                    // Convert function to string to create the worker
+                    const workerCode = `
+                        // Function to perform data transformations
+                        function performDataTransformations(data1, data2, selectedRowIndex, selectedValue) {
+                            var dataC = [];
+                            var dataN = [];
+
+                            // console.log(data1, data2, selectedRowIndex, selectedValue)
+
+                            // Loop through each object in data1
+                            for (var i = 0; i < data1.length; i++) {
+                                var obj = data1[i];
+                                var gene = obj[Object.keys(obj)[0]]; // Get the gene name from the first property of the object
+
+                                // Create new objects for dataC and dataN
+                                var newObjC = { "gene": gene };
+                                var newObjN = { "gene": gene };
+
+                                // Loop through the keys in the object and add values to newObjC and newObjN accordingly
+                                for (var key in obj) {
+                                    if (key !== Object.keys(obj)[0]) {
+                                        // Check if the value in data2 matches the selected value
+                                        if (data2[selectedRowIndex][key] === selectedValue) {
+                                            newObjC[key] = obj[key]; // Add value to newObjC
+                                        } else {
+                                            newObjN[key] = obj[key]; // Add value to newObjN
+                                        }
+                                    }
+                                }
+
+                                // Push the new objects to dataC and dataN
+                                dataC.push(newObjC);
+                                dataN.push(newObjN);
+                            }
+
+                            // Create a new array to hold the reordered data
+                            var reorderedData = [];
+
+                            // Loop through each object in data1
+                            for (var i = 0; i < data1.length; i++) {
+                                var obj = data1[i];
+                                var gene = obj[Object.keys(obj)[0]]; // Get the first value of the object
+
+                                // Find the corresponding row in dataC and dataN
+                                var rowDataN = dataN.find(row => row.gene === gene);
+                                var rowDataC = dataC.find(row => row.gene === gene);
+
+                                // Construct the new object with the desired structure
+                                var reorderedObj = { "gene": gene };
+
+                                // Add GSM values from dataN to reorderedObj
+                                for (var key in rowDataN) {
+                                    if (key !== "gene") { // Skip the gene key
+                                        reorderedObj[key] = rowDataN[key];
+                                    }
+                                }
+
+                                // Add GSM values from dataC to reorderedObj
+                                for (var key in rowDataC) {
+                                    if (key !== "gene") { // Skip the gene key
+                                        reorderedObj[key] = rowDataC[key];
+                                    }
+                                }
+
+                                // Push the new object to the reorderedData array
+                                reorderedData.push(reorderedObj);
+                            }
+
+                            // Now, reorderedData contains the desired structure
+
+                            data1 = reorderedData
+
+                            case_number = Object.keys(dataC[0]).length - 1
+                            normal_number = Object.keys(dataN[0]).length - 1
+
+                            // console.log(case_number, normal_number)
+
+                            // console.log(Object.keys(dataC[0]).length - 1)
+                            // console.log(Object.keys(dataN[0]).length - 1)
+
+                            // Assuming you have obtained genes from data1
+                            var genes = data1.map(obj => obj[Object.keys(obj)[0]]);
+
+                            
+                            // Calculate overall mean for data1
+                            var overall_mean = data1.map(obj => {
+                                var values = Object.values(obj).slice(1).map(parseFloat);
+                                return values.reduce((acc, val) => acc + val, 0) / values.length;
+                            });
+
+                            // Filter out rows with overall mean equal to 0
+                            var ind = overall_mean.reduce((acc, val, index) => {
+                                if (val === 0) {
+                                    // console.log("VALUE 0");
+                                    acc.push(index);
+                                }
+                                return acc;
+                            }, []);
+
+                            // Filter dataC, dataN, data1, and genes based on ind
+                            if (ind.length > 0) {
+                                dataN = dataN.filter((_, index) => !ind.includes(index));
+                                dataC = dataC.filter((_, index) => !ind.includes(index));
+                                data1 = data1.filter((_, index) => !ind.includes(index));
+                                genes = genes.filter((_, index) => !ind.includes(index));
+                            }
+
+                            // Logarithmic transformation for dataN, dataC, and data1
+                            dataN = dataN.map(obj => {
+                                var newObj = {};
+                                for (var key in obj) {
+                                    if (key !== "gene") {
+                                        newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
+                                    }
+                                }
+                                newObj["gene"] = obj["gene"];
+                                return newObj;
+                            });
+
+                            dataC = dataC.map(obj => {
+                                var newObj = {};
+                                for (var key in obj) {
+                                    if (key !== "gene") {
+                                        newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
+                                    }
+                                }
+                                newObj["gene"] = obj["gene"];
+                                return newObj;
+                            });
+
+                            data1 = data1.map(obj => {
+                                var newObj = {};
+                                for (var key in obj) {
+                                    if (key !== "gene") {
+                                        newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
+                                    }
+                                }
+                                newObj["gene"] = obj["gene"];
+                                return newObj;
+                            });
+
+                            // Return the processed data
+                            return {
+                                dataC: dataC,
+                                dataN: dataN,
+                                data1: data1,
+                                genes: genes, // Assuming genes are extracted from data1
+                                case_number: case_number,
+                                normal_number: normal_number
+                            };
+                        }
+
+                        // Listen for messages from the main thread
+                        self.addEventListener('message', function(e) {
+                            // Retrieve data from the message
+                            var { data1, data2, selectedRowIndex, selectedValue } = e.data;
+
+                            // Perform data transformations
+                            var result = performDataTransformations(data1, data2, selectedRowIndex, selectedValue);
+
+                            // Send the result back to the main thread
+                            postMessage(result);
+                        }, false);
+                    `;
+
+                    // Create a Blob object from the worker code string
+                    const blob = new Blob([workerCode], { type: 'application/javascript' });
+
+                    // Create a URL for the blob object
+                    const blobURL = URL.createObjectURL(blob);
+
+                    // Create a new web worker from the blob URL
+                    const worker = new Worker(blobURL);
+
+                    // Promisify the web worker
+                    function runWorker(worker, message) {
+                        return new Promise((resolve, reject) => {
+                            worker.onmessage = resolve;
+                            worker.onerror = reject;
+                            worker.postMessage(message);
+                        });
+                    }
+
+                    // Start the data transformation process in the worker
+                    runWorker(worker, {
+                        data1: data1,
+                        data2: data2,
+                        selectedRowIndex: selectedRowIndex,
+                        selectedValue: selectedValue1 // Change this to selectedValue2 if needed
+                    }).then(result => {
+                        console.log(result)
+                        // Process the returned data
+                        dataC = result.data.dataC;
+                        dataN = result.data.dataN;
+                        data1 = result.data.data1;
+                        case_number = result.data.case_number;
+                        normal_number = result.data.normal_number;
+                        genes = result.data.genes;
+                        // dataC, dataN, data1, genes, case_number, normal_number = result.data;
+
+                        // Update your UI or further process the data as needed
+                        console.log(dataC);
+                        console.log(dataN);
+                        console.log(data1);
+                        console.log(genes);
+                        console.log(case_number);
+                        console.log(normal_number);
+
+                        // Hide the loading overlay after all operations are complete
+                        document.getElementById("loadingOverlay").style.display = "none";
+
+                        // Terminate the web worker
+                        worker.terminate();
+
+                        // Start the next step
+                        start(data1, data2, selectedRowIndex, dataC, dataN, chosen_statistic);
+
+                    }).catch(error => {
+                        console.error('Error in web worker:', error);
+
+                        // Hide the loading overlay on error
+                        document.getElementById("loadingOverlay").style.display = "none";
+
+                        // Terminate the web worker
+                        worker.terminate();
+                    });
 
                 })
+
 
                 selectRowBtn.addEventListener("click", async function () {
 
@@ -2534,156 +2803,6 @@
                     // Show the loading // Assuming you have already obtained the selected row index and values from data2
                     var dataC = [];
                     var dataN = [];
-
-                    // // Function to perform data transformations asynchronously
-                    // async function performDataTransformations() {
-                    //     // Perform data transformations for dataC and dataN
-                    //     await new Promise(resolve => setTimeout(resolve, 0)); // Simulate async operation
-
-                    //     // Loop through each object in data1
-                    //     for (var i = 0; i < data1.length; i++) {
-                    //         var obj = data1[i];
-                    //         var gene = obj[Object.keys(obj)[0]]; // Get the gene name from the first property of the object
-
-                    //         // Create new objects for dataC and dataN
-                    //         var newObjC = { "gene": gene };
-                    //         var newObjN = { "gene": gene };
-
-                    //         // Loop through the keys in the object and add values to newObjC and newObjN accordingly
-                    //         for (var key in obj) {
-                    //             if (key !== Object.keys(obj)[0]) { // Skip the first key (gene name)
-                    //                 // Check if the value in data2 matches the selected value
-                    //                 if (data2[selectedRowIndex][key] === selectedValue) {
-                    //                     newObjC[key] = obj[key]; // Add value to newObjC
-                    //                 } else {
-                    //                     newObjN[key] = obj[key]; // Add value to newObjN
-                    //                 }
-                    //             }
-                    //         }
-
-                    //         // Push the new objects to dataC and dataN
-                    //         dataC.push(newObjC);
-                    //         dataN.push(newObjN);
-                    //     }
-
-                    //     // Create a new array to hold the reordered data
-                    //     var reorderedData = [];
-                    //     await new Promise(resolve => setTimeout(resolve, 100)); // Simulating async operation
-
-                    //     // Loop through each object in data1
-                    //     for (var i = 0; i < data1.length; i++) {
-                    //         var obj = data1[i];
-                    //         var gene = obj[Object.keys(obj)[0]]; // Get the first value of the object
-
-                    //         // Find the corresponding row in dataC and dataN
-                    //         var rowDataN = dataN.find(row => row.gene === gene);
-                    //         var rowDataC = dataC.find(row => row.gene === gene);
-
-                    //         // Construct the new object with the desired structure
-                    //         var reorderedObj = { "gene": gene };
-
-
-                    //         // Add GSM values from dataN to reorderedObj
-                    //         for (var key in rowDataN) {
-                    //             if (key !== "gene") { // Skip the gene key
-                    //                 reorderedObj[key] = rowDataN[key];
-                    //             }
-                    //         }
-
-                    //         // Add GSM values from dataC to reorderedObj
-                    //         for (var key in rowDataC) {
-                    //             if (key !== "gene") { // Skip the gene key
-                    //                 reorderedObj[key] = rowDataC[key];
-                    //             }
-                    //         }
-
-                    //         // Push the new object to the reorderedData array
-                    //         reorderedData.push(reorderedObj);
-                    //     }
-                    //     await new Promise(resolve => setTimeout(resolve, 100)); // Simulating async operation
-
-                    //     // Now, reorderedData contains the desired structure
-                    //     // console.log(reorderedData);
-
-
-                    //     data1 = reorderedData
-
-                    //     case_number = Object.keys(dataC[0]).length - 1
-                    //     normal_number = Object.keys(dataN[0]).length - 1
-
-                    //     console.log(case_number, normal_number)
-
-                    //     // console.log(Object.keys(dataC[0]).length - 1)
-                    //     // console.log(Object.keys(dataN[0]).length - 1)
-
-                    //     // Assuming you have obtained genes from data1
-                    //     var genes = data1.map(obj => obj[Object.keys(obj)[0]]);
-
-                    //     // Calculate overall mean for data1
-                    //     var overall_mean = data1.map(obj => {
-                    //         var values = Object.values(obj).slice(1).map(parseFloat);
-                    //         return values.reduce((acc, val) => acc + val, 0) / values.length;
-                    //     });
-
-                    //     // Filter out rows with overall mean equal to 0
-                    //     var ind = overall_mean.reduce((acc, val, index) => {
-                    //         if (val === 0) { console.log("VALUE 0"); acc.push(index); }
-                    //         return acc;
-                    //     }, []);
-
-                    //     // console.log(ind)
-
-                    //     // Check if ind is not empty
-                    //     if (ind.length > 0) {
-                    //         dataN = dataN.filter((_, index) => !ind.includes(index));
-                    //         dataC = dataC.filter((_, index) => !ind.includes(index));
-                    //         data1 = data1.filter((_, index) => !ind.includes(index));
-                    //         genes = genes.filter((_, index) => !ind.includes(index));
-                    //     }
-                    //     await new Promise(resolve => setTimeout(resolve, 100)); // Simulating async operation
-
-                    //     // Step 2.1: Logarithmic transformation
-                    //     dataN = dataN.map(obj => {
-                    //         var newObj = {};
-                    //         for (var key in obj) {
-                    //             if (key !== "gene") {
-                    //                 newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
-                    //             }
-                    //         }
-                    //         newObj["gene"] = obj["gene"];
-
-                    //         return newObj;
-                    //     });
-
-                    //     dataC = dataC.map(obj => {
-                    //         var newObj = {};
-                    //         for (var key in obj) {
-                    //             if (key !== "gene") {
-                    //                 newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
-                    //             }
-                    //         }
-                    //         newObj["gene"] = obj["gene"];
-
-                    //         return newObj;
-                    //     });
-
-                    //     data1 = data1.map(obj => {
-                    //         var newObj = {};
-                    //         for (var key in obj) {
-                    //             if (key !== Object.keys(obj)[0]) {
-                    //                 newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
-                    //             }
-                    //         }
-                    //         newObj["gene"] = obj[Object.keys(obj)[0]]; // Add the gene key-value pair at the end
-                    //         return newObj;
-                    //     });
-
-
-                    //     console.log(data1);
-                    // }
-
-                    // // Call the asynchronous function to perform data transformations
-                    // await performDataTransformations();
 
                     // Convert function to string to create the worker
                     const workerCode = `
@@ -2778,7 +2897,7 @@
                             // Filter out rows with overall mean equal to 0
                             var ind = overall_mean.reduce((acc, val, index) => {
                                 if (val === 0) {
-                                    console.log("VALUE 0");
+                                    // console.log("VALUE 0");
                                     acc.push(index);
                                 }
                                 return acc;
@@ -2920,6 +3039,7 @@
 
                 selectMetadataContent.appendChild(selectRowBtn);
                 selectMetadataContent.appendChild(selectRowBtn2);
+                selectMetadataContent.appendChild(selectRowBtn3);
 
                 selectMetadataOverlay.appendChild(selectMetadataContent);
 
@@ -2933,6 +3053,10 @@
             dataN_original = dataN
             data_original = data1
             metadata = data2
+
+
+
+
 
 
             var req = ocpu.call("variation", {
@@ -2971,6 +3095,8 @@
                             return result;
                         }, []);
 
+                        console.log(ind)
+
                         if (ind.length > 0) {
 
                             // Remove entries corresponding to ind from dataN
@@ -2981,6 +3107,12 @@
 
                             // Remove entries corresponding to ind from data
                             dataN_copy1 = dataN_original.filter((entry, index) => !ind.includes(index));
+
+                            data_original_cpy = data_copy1
+
+                            dataC_original_cpy = dataC_copy1
+
+                            dataN_original_cpy = dataN_copy1
 
                             // Remove entries corresponding to ind from genes
                             //genes = genes.filter((entry, index) => !ind.includes(index));
@@ -3145,8 +3277,27 @@
                                                 selectedGeneData.push(mostUpregulatedGeneName)
                                                 selectedGeneData.push(mostDownregulatedGeneName)
 
-                                                updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
-                                                //updateVolcanoPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
+                                                // Find the select element
+                                                var selectElement = document.getElementById("selectButton");
+
+                                                // Clear existing options
+                                                selectElement.innerHTML = "";
+
+                                                // Add the new options dynamically
+                                                var option1 = document.createElement("option");
+                                                option1.value = mostUpregulatedGene.Gene;
+                                                option1.text = `Most Upregulated (${mostUpregulatedGene.Gene})`;
+                                                option1.selected = true;
+                                                selectElement.appendChild(option1);
+
+                                                var option2 = document.createElement("option");
+                                                option2.value = mostDownregulatedGene.Gene;
+                                                option2.text = `Most Downregulated (${mostDownregulatedGene.Gene})`;
+                                                selectElement.appendChild(option2);
+
+
+                                                // updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
+                                                updateVolcanoPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
 
                                                 dynamicParallel(selectedGeneData, data_copy_pval, dataC_copy_pval, dataN_copy, first_dims)
 
@@ -3523,10 +3674,456 @@
                                                 selectedGeneData.push(mostUpregulatedGeneName)
                                                 selectedGeneData.push(mostDownregulatedGeneName)
 
-                                                updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
-                                                //updateVolcanoPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
+                                                // Find the select element
+                                                var selectElement = document.getElementById("selectButton");
+
+                                                // Clear existing options
+                                                selectElement.innerHTML = "";
+
+                                                // Add the new options dynamically
+                                                var option1 = document.createElement("option");
+                                                option1.value = mostUpregulatedGene.Gene;
+                                                option1.text = `Most Upregulated (${mostUpregulatedGene.Gene})`;
+                                                option1.selected = true;
+                                                selectElement.appendChild(option1);
+
+                                                var option2 = document.createElement("option");
+                                                option2.value = mostDownregulatedGene.Gene;
+                                                option2.text = `Most Downregulated (${mostDownregulatedGene.Gene})`;
+                                                selectElement.appendChild(option2);
+
+
+                                                // updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
+                                                updateVolcanoPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
 
                                                 dynamicParallel(selectedGeneData, data_copy_pval, dataC_copy_pval, dataN_copy, first_dims)
+                                                console.log(dataN_copy_pval[0])
+
+                                                updateBoxPlot(mostUpregulatedGeneName, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
+
+                                                updateCounter()
+
+                                                scatter.selectAll("circle")
+                                                    .filter(circleData => circleData.Gene === mostUpregulatedGeneName || circleData.Gene === mostDownregulatedGeneName)
+                                                    .style("fill", d => {
+                                                        // Check if logFC is greater than or equal to the threshold
+                                                        return "green";
+
+                                                    })
+                                                    .classed('pulse', true);
+
+                                                // Function to handle checkbox change event
+                                                function handleCheckboxChange(event) {
+                                                    var isChecked = event.target.checked;
+                                                    var category = event.target.value;
+
+                                                    if (isChecked) {
+                                                        // Add category to first_dims array
+                                                        first_dims.unshift(category);
+                                                    } else {
+                                                        // Remove category from first_dims array
+                                                        var index = first_dims.indexOf(category);
+                                                        if (index !== -1) {
+                                                            first_dims.splice(index, 1);
+                                                        }
+                                                    }
+
+                                                    // Log the updated first_dims array
+                                                    console.log("Updated first_dims:", first_dims);
+
+                                                    dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
+                                                }
+
+
+                                                var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
+
+                                                // Get the container element
+                                                var checkboxContainer = document.getElementById("checkboxContainer");
+
+                                                // Initialize a variable to count the number of checkboxes added to the current row
+                                                var checkboxesInRow = 0;
+
+                                                // Iterate through metadataCategories to create checkboxes
+                                                metadataCategories.forEach(function (category) {
+                                                    // Create a checkbox element
+                                                    var checkbox = document.createElement("input");
+                                                    checkbox.type = "checkbox";
+                                                    checkbox.value = category;
+                                                    checkbox.id = "checkbox_" + category; // Set a unique ID for each checkbox
+
+                                                    // Set the checked attribute based on condition
+                                                    if (category === selectedRowName) {
+                                                        checkbox.checked = true;
+                                                    }
+
+                                                    // Create a label for the checkbox
+                                                    var label = document.createElement("label");
+                                                    label.htmlFor = checkbox.id;
+                                                    label.appendChild(document.createTextNode(category));
+
+                                                    // Add event listener to the checkbox to handle change event
+                                                    checkbox.addEventListener("change", handleCheckboxChange);
+
+                                                    // Append the checkbox and label to the container element
+                                                    checkboxContainer.appendChild(checkbox);
+                                                    checkboxContainer.appendChild(label);
+
+                                                    // Increment the count of checkboxes in the row
+                                                    checkboxesInRow++;
+
+                                                    // Add a line break after every two checkboxes
+                                                    if (checkboxesInRow % 2 === 0) {
+                                                        checkboxContainer.appendChild(document.createElement("br"));
+                                                    }
+                                                });
+
+                                                // Initialize a variable to count the number of radio buttons added to the current row
+                                                var radioButtonsInRow = 0;
+                                                // Get the container element
+                                                var radioBoxContainer = document.getElementById("radioBoxContainer");
+
+                                                // Function to handle radio button change event
+                                                function handleRadioButtonChange(event) {
+                                                    // Update selectedVariable with the value of the selected radio button
+                                                    selectedVariable = event.target.value;
+
+                                                    dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims, ordering);
+                                                }
+
+
+                                                // Iterate through metadataCategories to create radio buttons
+                                                // Count the unique values in the metadata category
+                                                function countUniqueValues(cat, j) {
+                                                    var uniqueValues = new Set(); // Use a Set to store unique values
+                                                    // Iterate through metadata categories to create y scales
+                                                    metadataCategories.forEach((category, i) => {
+                                                        if (j === i) {
+                                                            var values = Object.values(metadata[i]); // Extract values for the current category
+                                                            values.shift(); // Remove the first value (Sample_source_name_ch1)
+                                                            var uniqueValues = [...new Set(values)]; // Filter out duplicate
+                                                            console.log("Values for", category, ":", uniqueValues);
+                                                            return uniqueValues.length; // Return the size of the Set, which is the count of unique values
+                                                        }
+                                                    });
+                                                }
+
+                                                // Iterate through metadataCategories to create radio buttons
+                                                metadataCategories.forEach(function (category, i) {
+                                                    // Check if the category has more than 9 unique values
+                                                    var values = Object.values(metadata[i]); // Extract values for the current category
+                                                    values.shift(); // Remove the first value (Sample_source_name_ch1)
+                                                    var uniqueValues = [...new Set(values)]; // Filter out duplicate
+                                                    console.log("Values for", category, ":", uniqueValues);
+                                                    console.log(uniqueValues.length);
+                                                    if (uniqueValues.length >= 9) return
+
+                                                    // Create a radio button element
+                                                    var radioButton = document.createElement("input");
+                                                    radioButton.type = "radio";
+                                                    radioButton.name = "radioButtonGroup"; // Set the same name for all radio buttons in the group
+                                                    radioButton.value = category;
+                                                    radioButton.id = "radioButton_" + category; // Set a unique ID for each radio button
+
+                                                    // Set the checked attribute based on condition
+                                                    if (category === selectedRowName) {
+                                                        radioButton.checked = true;
+                                                    }
+
+                                                    // Create a label for the radio button
+                                                    var label = document.createElement("label");
+                                                    label.htmlFor = radioButton.id;
+                                                    label.appendChild(document.createTextNode(category));
+
+                                                    // Add event listener to the radio button to handle change event
+                                                    radioButton.addEventListener("change", handleRadioButtonChange);
+
+                                                    // Append the radio button and label to the container element
+                                                    radioBoxContainer.appendChild(radioButton);
+                                                    radioBoxContainer.appendChild(label);
+
+                                                    // Increment the count of radio buttons in the row
+                                                    radioButtonsInRow++;
+
+                                                    // Add a line break after every two radio buttons
+                                                    if (radioButtonsInRow % 2 === 0) {
+                                                        radioBoxContainer.appendChild(document.createElement("br"));
+                                                    }
+                                                });
+
+                                                document.getElementById("checkboxContainer").style.visibility = "visible";
+                                                document.getElementById("radioBoxContainer").style.visibility = "visible";
+
+
+                                            }
+                                            console.log(dataN_copy.length)
+                                            var pc1Values = [];
+                                            var pc2Values = [];
+                                            var groupValues = [];
+                                            console.log(data_copy_pval)
+                                            var req = ocpu.call("pca", {
+                                                data: data_copy_pval,
+                                                dataN: dataN_copy_pval,
+                                                dataC: dataC_copy_pval
+                                            }, function (session) {
+                                                var filteredDataURL = session.loc + "/R/.val/json";
+                                                //console.log(session);
+                                                // Fetch the filtered data from the URL
+                                                fetch(filteredDataURL)
+                                                    .then(response => response.json())
+                                                    .then(data => {
+                                                        json = data
+                                                        console.log(filteredDataURL)
+                                                        console.log(json)
+
+                                                        var pc1Key = "PC1";
+                                                        var pc2Key = "PC2";
+                                                        var groupKey = "Group";
+
+                                                        // Arrays to store PC1 and PC2 values
+
+
+                                                        // Iterate over each object in the JSON array
+                                                        json.scores_df.forEach(function (obj) {
+                                                            // Push PC1, PC2, and Group values to the arrays
+                                                            pc1Values.push(obj[pc1Key]);
+                                                            pc2Values.push(obj[pc2Key]);
+                                                            groupValues.push(obj[groupKey]);
+                                                        });
+                                                        // console.log(pc1Values)
+
+                                                        // Extract metadata categories from the values of the first column
+                                                        var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
+                                                        console.log("Metadata categories:", metadataCategories);
+
+                                                        // Initialize pca_data array
+                                                        pca_data = [];
+
+                                                        // Iterate over each object in the JSON array
+                                                        json.scores_df.forEach(function (obj) {
+                                                            // Retrieve additional data from metadata based on _row
+                                                            var gsm = obj._row;
+                                                            var group = obj.Group;
+                                                            var pc1 = obj.PC1;
+                                                            var pc2 = obj.PC2;
+
+                                                            // Create an object with the required fields
+                                                            var newObj = {
+                                                                GSM: gsm,
+                                                                group: group,
+                                                                pc1: pc1,
+                                                                pc2: pc2
+                                                            };
+
+                                                            // Add metadata values for each category to the newObj
+                                                            metadataCategories.forEach((category, index) => {
+                                                                newObj[category] = metadata[index][gsm];
+                                                            });
+
+                                                            // Push the new object to the pca_data array
+                                                            pca_data.push(newObj);
+                                                        });
+
+                                                        heatmap_data = []
+                                                        json.scores_var.forEach(function (obj) {
+                                                            // Push PC1, PC2, and Group values to the arrays
+                                                            var gene = obj._row
+                                                            var pc1 = obj.PC1
+                                                            var pc2 = obj.PC2
+                                                            var pc3 = obj.PC3
+                                                            var pc4 = obj.PC4
+                                                            var pc5 = obj.PC5
+                                                            var pc6 = obj.PC6
+
+                                                            var newObj = {
+                                                                gene: gene,
+                                                                pc1: pc1,
+                                                                pc2: pc2,
+                                                                pc3: pc3,
+                                                                pc4: pc4,
+                                                                pc5: pc5,
+                                                                pc6: pc6
+                                                            };
+                                                            heatmap_data.push(newObj);
+                                                        })
+                                                        // Display the newData array
+                                                        console.log("PCA, first try ", pca_data);
+
+
+                                                        pca(pca_data);
+                                                        heatmap(heatmap_data);
+
+                                                    })
+
+
+
+
+
+                                            })
+                                            // DEG(data_copy_pval,parsedLogFC,old_p_adj)
+                                            // var req = ocpu.call("enrichment", {
+                                            //     data: data_copy
+                                            //     }, function (session) {
+
+                                            // })
+                                        });
+
+
+                                })
+                            } else if (chosen_statistic == 'deseq2') {
+                                console.log(dataC_copy)
+                                console.log(dataN_copy)
+
+                                // Logarithmic transformation for dataN, dataC, and data1
+                                var dataN_or = dataN_original_cpy.map(obj => {
+                                    var newObj = {};
+                                    for (var key in obj) {
+                                        if (key !== "gene") {
+                                            newObj[key] = Math.pow((obj[key]),2)  + 1;
+                                        }
+                                    }
+                                    newObj["gene"] = obj["gene"];
+                                    return newObj;
+                                });
+
+                                var dataC_or = dataC_original_cpy.map(obj => {
+                                    var newObj = {};
+                                    for (var key in obj) {
+                                        if (key !== "gene") {
+                                            newObj[key] = Math.pow((obj[key]),2)  + 1;
+                                        }
+                                    }
+                                    newObj["gene"] = obj["gene"];
+                                    return newObj;
+                                });
+
+                                console.log(dataC_or)
+                                console.log(dataN_or)
+
+                                var req = ocpu.call("deseq2DE", {
+                                    dataC: dataC_or,  // Pass your processed case data
+                                    dataN: dataN_or   // Pass your processed normal data
+                                }, function (session) {
+                                    var filteredDataURL = session.loc + "/R/.val/json";
+                                    //console.log(session);
+                                    // Fetch the filtered data from the URL
+                                    fetch(filteredDataURL)
+                                        .then(response => response.json())
+                                        .then(data => {
+                                            console.log(session);
+                                            // Convert pval_adj values back to numbers if needed
+                                            data.forEach(entry => {
+                                                entry.pval_adj = parseFloat(entry.pval_adj); // Convert string to number if necessary
+                                            });
+
+                                            // Rename '_row' to 'Gene'
+                                            data.forEach(entry => {
+                                                if (entry.hasOwnProperty('_row')) {
+                                                    entry.Gene = entry._row; // Assign '_row' value to 'Gene'
+                                                    delete entry._row; // Remove '_row' property
+                                                }
+                                            });
+
+                                            old_p_adj = data
+                                            old_p_adj.sort((a, b) => {
+                                                if (a.Gene < b.Gene) {
+                                                    return -1;
+                                                }
+                                                if (a.Gene > b.Gene) {
+                                                    return 1;
+                                                }
+                                                return 0;
+                                            });
+
+                                            const ind = old_p_adj.reduce((result, entry, index) => {
+
+                                                if (entry.pval_adj > threshold) {
+                                                    result.push(index);
+                                                }
+                                                return result;
+                                            }, []);
+
+                                            console.log(old_p_adj)
+                                            console.log(ind)
+
+                                            console.log("geni tolti dal primo filtering del pval", ind.length)
+
+                                            if (ind.length > 0) {
+
+                                                //console.log(parsedLogFC.length)
+
+                                                // Remove entries corresponding to ind from dataN
+
+                                                // Remove entries corresponding to ind from dataN
+                                                dataC_copy_pval = dataC_copy.filter((entry, index) => !ind.includes(index));
+
+                                                // Remove entries corresponding to ind from dataN
+                                                dataN_copy_pval = dataN_copy.filter((entry, index) => !ind.includes(index));
+
+                                                data_copy_pval = data_copy.filter((entry, index) => !ind.includes(index));
+
+                                                console.log("geni rimamenti dal primo filtering", data_copy.length)
+
+                                                // Remove entries corresponding to ind from logFC
+                                                parsedLogFC = parsedLogFC.filter((entry, index) => !ind.includes(index));
+
+                                                parsedLogFC_pval = parsedLogFC
+                                                console.log(log_thr_fc)
+                                                console.log(parsedLogFC_origin1)
+                                                console.log(old_p_adj)
+
+                                                if (parsedLogFC.length == 0) {
+                                                    alert("No deg found!")
+                                                }
+
+                                                console.log("Promise: al box gli passo parsedlogFC", parsedLogFC.length)
+
+                                                var sortedLogFC = parsedLogFC.slice().sort((a, b) => b.logFC - a.logFC);
+
+                                                console.log(sortedLogFC)
+
+                                                var mostUpregulatedGene = sortedLogFC[0];
+
+                                                var secondMostUpregulatedGene = sortedLogFC[1];
+
+                                                var mostDownregulatedGene = sortedLogFC[sortedLogFC.length - 1];
+                                                var secondMostDownregulatedGene = sortedLogFC[sortedLogFC.length - 2];
+
+                                                console.log(mostUpregulatedGene)
+
+                                                var mostUpregulatedGeneName = mostUpregulatedGene.Gene
+                                                //var secondMostUpregulatedGeneName = secondMostUpregulatedGene.Gene
+                                                var mostDownregulatedGeneName = mostDownregulatedGene.Gene
+                                                //var secondMostDownregulatedGeneName = secondMostDownregulatedGene.Gene
+
+
+                                                selectedGeneData.push(mostUpregulatedGeneName)
+                                                selectedGeneData.push(mostDownregulatedGeneName)
+
+                                                // Find the select element
+                                                var selectElement = document.getElementById("selectButton");
+
+                                                // Clear existing options
+                                                selectElement.innerHTML = "";
+
+                                                // Add the new options dynamically
+                                                var option1 = document.createElement("option");
+                                                option1.value = mostUpregulatedGene.Gene;
+                                                option1.text = `Most Upregulated (${mostUpregulatedGene.Gene})`;
+                                                option1.selected = true;
+                                                selectElement.appendChild(option1);
+
+                                                var option2 = document.createElement("option");
+                                                option2.value = mostDownregulatedGene.Gene;
+                                                option2.text = `Most Downregulated (${mostDownregulatedGene.Gene})`;
+                                                selectElement.appendChild(option2);
+
+
+                                                // updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
+                                                updateVolcanoPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
+
+                                                dynamicParallel(selectedGeneData, data_copy_pval, dataC_copy_pval, dataN_copy, first_dims)
+
+                                                console.log(dataN_copy_pval[0])
 
                                                 updateBoxPlot(mostUpregulatedGeneName, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
 
@@ -4744,14 +5341,21 @@
             // Calculate the quantile
             thr_prc = ss.quantile(variation_data_copy, prc_IQR);
             updateHistogram(variation_data);
+            console.log(variation_data)
 
             const ind = variation_data_copy.reduce((result, entry, index) => {
 
-                if (entry <= thr_prc) {
+                if (entry < thr_prc) {
                     result.push(index);
                 }
                 return result;
             }, []);
+
+            console.log(ind)
+
+            dataC_copy1 = dataC_original
+            dataN_copy1 = dataN_original
+            data_copy1 = data_original
 
             console.log("geni tolti con IQR", ind.length)
             if (ind.length > 0) {
@@ -4813,6 +5417,11 @@
             // console.log(parsedLogFC_origin)
             // console.log(data_copy1)
 
+            dataC_copy = dataC_copy1
+            dataN_copy = dataN_copy1
+            data_copy = data_copy1
+            parsedLogFC = parsedLogFC_origin
+
             if (ind2.length > 0) {
                 //console.log("ind2")
                 // Remove entries corresponding to ind from dataN
@@ -4870,13 +5479,6 @@
 
                             averageExpressions10C = calculateAverageLog10Expressions(dataC_copy1);
                             averageExpressions10N = calculateAverageLog10Expressions(dataN_copy1);
-
-                            if (currentPlot === 'volcano') {
-                                updateVolcanoPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
-                            } else {
-                                updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
-                            }
-
 
 
                             const ind = old_p_adj.reduce((result, entry, index) => {
@@ -4946,8 +5548,14 @@
                             }
 
 
+                            if (currentPlot === 'volcano') {
+                                updateVolcanoPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
+                            } else {
+                                updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
+                            }
 
-                            dynamicParallel(selectedGeneData, data_copy_pval, dataC_copy_pval, dataN_copy_pval, first_dims)
+
+                            // dynamicParallel(selectedGeneData, data_copy_pval, dataC_copy_pval, dataN_copy_pval, first_dims)
                             updateCounter()
                             var pc1Values = [];
                             var pc2Values = [];
@@ -5097,12 +5705,6 @@
                             averageExpressions10C = calculateAverageLog10Expressions(dataC_copy1);
                             averageExpressions10N = calculateAverageLog10Expressions(dataN_copy1);
 
-                            if (currentPlot === 'volcano') {
-                                updateVolcanoPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
-                            } else {
-                                updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
-                            }
-
 
 
                             const ind = old_p_adj.reduce((result, entry, index) => {
@@ -5171,9 +5773,37 @@
                                 });
                             }
 
+                            console.log(selectedGeneData)
+
+                            // Find the select element
+                            var selectElement = document.getElementById("selectButton");
+
+                            // Clear existing options
+                            selectElement.innerHTML = "";
+
+                            // Add the new options dynamically
+                            var option1 = document.createElement("option");
+                            option1.value = mostUpregulatedGene.Gene;
+                            option1.text = `Most Upregulated (${mostUpregulatedGene.Gene})`;
+                            option1.selected = true;
+                            selectElement.appendChild(option1);
+
+                            var option2 = document.createElement("option");
+                            option2.value = mostDownregulatedGene.Gene;
+                            option2.text = `Most Downregulated (${mostDownregulatedGene.Gene})`;
+                            selectElement.appendChild(option2);
+
+                            if (currentPlot === 'volcano') {
+                                updateVolcanoPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
+                            } else {
+                                updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
+                            }
 
 
-                            dynamicParallel(selectedGeneData, data_copy_pval, dataC_copy_pval, dataN_copy_pval, first_dims)
+
+                            //dynamicParallel(selectedGeneData, data_copy_pval, dataC_copy_pval, dataN_copy_pval, first_dims)
+
+
                             updateCounter()
                             var pc1Values = [];
                             var pc2Values = [];
@@ -5611,6 +6241,7 @@
                                 // Remove entries corresponding to ind from logFC
                                 parsedLogFC_pval = parsedLogFC.filter((entry, index) => !ind.includes(index));
 
+                                console.log(dataN_copy_pval[0])
 
                                 updateBoxPlot(last_box, parsedLogFC_pval, dataN_copy_pval, dataC_copy_pval)
                                 selectedGeneData = selectedGeneData.filter(function (gene) {
@@ -5796,7 +6427,7 @@
 
                 updateCounter()
 
-                updateBoxPlot(last_box, parsedLogFC_pval, dataN_copy, dataC_copy)
+                updateBoxPlot(last_box, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
 
                 var pc1Values = [];
                 var pc2Values = [];
@@ -6098,7 +6729,7 @@
                 dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims, ordering);
 
 
-                updateBoxPlot(last_box, parsedLogFC, dataN_copy, dataC_copy)
+                updateBoxPlot(last_box, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
 
             }
             var legendItems = [
@@ -7604,6 +8235,7 @@
                 }
             });
 
+            dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
 
         }
 
@@ -8727,6 +9359,7 @@
                     SwitchingPlot(data, currentPlot)
                 }
             });
+            dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
 
         }
 
@@ -8746,14 +9379,16 @@
         let last_box = ""
 
         function updateBoxPlot(genename, parsedLogFC, dataN, dataC) {
-
+            console.log(genename)
             if (combinedData.length == 0) {
                 last_box = genename
                 geneNameUP = genename;
 
+                console.log(dataN_copy_pval[0])
 
-                var geneDataN = dataN.filter(d => d.gene === geneNameUP)
-                var geneDataC = dataC.filter(d => d.gene === geneNameUP)
+
+                var geneDataN = dataN_copy.filter(d => d.gene === geneNameUP)
+                var geneDataC = dataC_copy.filter(d => d.gene === geneNameUP)
 
 
                 console.log(geneDataC)
@@ -9013,19 +9648,22 @@
             } else {
 
                 if (genename !== last_box) {
+                    console.log(last_box)
                     last_box = genename
                     combinedData = []
                     geneNameUP = genename;
+                    console.log(genename)
 
-
-                    var geneDataN = dataN.filter(d => d.gene === geneNameUP)
-                    var geneDataC = dataC.filter(d => d.gene === geneNameUP)
+                    var geneDataN = dataN_copy.filter(d => d.gene === geneNameUP)
+                    var geneDataC = dataC_copy.filter(d => d.gene === geneNameUP)
 
 
 
                     // Extract GSM values for each gene
-                    var gsmValuesC = Object.keys(geneDataC[0]).filter(key => key.startsWith('GSM'));
-                    var gsmValuesN = Object.keys(geneDataN[0]).filter(key => key.startsWith('GSM'));
+                    console.log(geneDataC[0])
+                    var gsmValuesC = Object.keys(geneDataC[0]).filter(key => !key.startsWith('gene'));
+                    var gsmValuesN = Object.keys(geneDataN[0]).filter(key => !key.startsWith('gene'));
+                    console.log(gsmValuesN)
 
 
                     function computeBoxPlotStatistics(data1) {
@@ -9282,6 +9920,7 @@
                     jitter.exit().remove();
 
                 } else {
+                    console.log(dataN_copy_pval[0])
 
                     console.log("Sono update box, gene ricevuto " + genename)
 
@@ -9293,6 +9932,8 @@
                     // Define the update selection for the jitter circles
                     var jitterUpdate = svg.selectAll(".indPoints")
                         .data(combinedData);
+
+                    console.log(combinedData)
 
                     // Update the class, stroke, and stroke width based on the GSM list
                     jitterUpdate.attr("class", function (d) {
@@ -9344,14 +9985,7 @@
                 // recover the option that has been chosen
                 var selectedOption = d3.select(this).property("value")
                 console.log(selectedOption)
-                // if(selectedOption == "MostUp"){
-                //     first_box = true
-                // }
-                // else{
-                //     first_box = false
-                // }
-                // // run the updateChart function with this selected option
-                updateBoxPlot(selectedOption, parsedLogFC, dataN, dataC)
+                updateBoxPlot(selectedOption, parsedLogFC, dataN_copy, dataC_copy)
             })
 
             synchronizeAnimations()
@@ -9397,7 +10031,7 @@
                 // Return the first one with the expected animationName
                 return anims.find((anim) => anim.animationName === name);
             }
-
+            // combinedData = []
         }
 
         function dynamicParallel(geneselected, data, dataC, dataN, first_dims, totalOrder) {
@@ -11170,7 +11804,7 @@
                         }
 
                         // Apply Math.log10 to the expression value before summing
-                        var log10Expression = Math.log2(parseFloat(geneData[sample]));
+                        var log10Expression = Math.log10(parseFloat(geneData[sample]));
 
                         // Add the log10 expression value to the sum and increment the count
                         geneSumCount[gene].sum += log10Expression;

@@ -10,9 +10,17 @@ hello <- function(data) {
   M <- 58
   # Now, the last column has been removed from each matrix
 
-  # x is the first gene of the data matrix
+  all_equal <- function(x) {
+    return(length(unique(x)) == 1)
+  }
+
+  # Compute p-values with checks for constant data
   pval <- apply(data, 1, function(x) {
-    t.test(x[1:N], x[(N+1):(M+N)], paired=FALSE)$p.value
+    if (all_equal(x[1:N]) || all_equal(x[(N+1):(M+N)])) {
+      return(1)
+    } else {
+      return(t.test(x[1:N], x[(N+1):(M+N)], paired = FALSE)$p.value)
+    }
   })
 
   # Adjustment p-value
@@ -32,9 +40,23 @@ pval <- function(data, N, M) {
   # Assuming data, dataN, and dataC are your matrices
   data <- data[, -ncol(data)]
 
-  # x is the first gene of the data matrix
+  # Define a helper function to check if all elements are equal
+  all_equal <- function(x) {
+    return(length(unique(x)) == 1)
+  }
+
+  # Define a helper function to check for low variance
+  low_variance <- function(x, threshold = 1e-10) {
+    return(var(x) < threshold)
+  }
+
+  # Compute p-values with checks for constant data and low variance
   pval <- apply(data, 1, function(x) {
-    t.test(x[1:N], x[(N+1):(M+N)], paired=FALSE)$p.value
+    if (all_equal(x[1:N]) || all_equal(x[(N+1):(M+N)]) || all_equal(x[1:(M+N)])) {
+      return(1)
+    } else {
+      return(t.test(x[1:N], x[(N+1):(M+N)], paired = FALSE)$p.value)
+    }
   })
 
   # Adjustment p-value
@@ -293,30 +315,60 @@ limmaDE <- function(dataC, dataN) {
 
 
 
-deseq <- function(expression_data, metadata, group1, group2, metadata_column) {
+deseq2DE <- function(dataC, dataN) {
   library(DESeq2)
 
-  dim(expression_data)
-  dim(metadata)
+  # Convert lists to data frames
+  dataC <- as.data.frame(dataC)
+  dataN <- as.data.frame(dataN)
 
-  metadata <- t(metadata)
-  expression_data <- round(expression_data)
+  # Convert all columns to numeric except for the last column (which is assumed to be the gene column)
+  dataC[,-ncol(dataC)] <- lapply(dataC[,-ncol(dataC)], as.numeric)
+  dataN[,-ncol(dataN)] <- lapply(dataN[,-ncol(dataN)], as.numeric)
 
+  # Set row names to gene names (assuming the gene names are in the last column)
+  rownames(dataC) <- dataC[,ncol(dataC)]
+  rownames(dataN) <- dataN[,ncol(dataN)]
 
-  # Create DESeqDataSet object
-  dds <- DESeqDataSetFromMatrix(countData = expression_data,
-                                colData = metadata,
-                                design = ~ Sample_source_name_ch1)
+  # Drop the gene column
+  dataC <- dataC[,-ncol(dataC)]
+  dataN <- dataN[,-ncol(dataN)]
+
+  # Combine data
+  data_combined <- cbind(dataC, dataN)
+
+  # Create metadata
+  coldata <- data.frame(
+    condition = factor(c(rep("Case", ncol(dataC)), rep("Normal", ncol(dataN))))
+  )
+  rownames(coldata) <- colnames(data_combined)
+
+  # Create DESeq2 dataset
+  dds <- DESeqDataSetFromMatrix(countData = data_combined, colData = coldata, design = ~ condition)
+
+  # Run DESeq2
   dds <- DESeq(dds)
 
-  #  group1 <- "Adenocarcinoma of the Lung"
-  #  group2 <- "Normal Lung Tissue"
-  #  metadata_column <- "Sample_source_name_ch1"
+  # Get results
+  res <- results(dds, contrast = c("condition", "Case", "Normal"))
 
-  # Create contrast dynamically
-  contrast <- c(metadata_column, group1, group2)
+  # Adjust p-values (This step is not necessary as DESeq2 automatically calculates adjusted p-values)
+  # res$padj <- p.adjust(res$pvalue, method = "BH")
 
-  # Run DESeq analysis
-  res <- results(dds, contrast = contrast)
+  # Convert to data frame
+  res_df <- as.data.frame(res)
 
+  # Add gene names
+  res_df$Gene <- rownames(res_df)
+
+  # Select relevant columns
+  res_df <- res_df[, c("Gene", "log2FoldChange", "lfcSE", "pvalue", "padj")]
+
+  # Convert pval_adj column to character
+  res_df$padj <- as.character(res_df$padj)
+
+  # Rename columns
+  colnames(res_df) <- c("Gene", "logFC", "lfcSE", "pvalue", "pval_adj")
+
+  return(res_df)
 }
