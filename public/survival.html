@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GEVIS - Survival Analysis</title>
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <script src="d3.v7.8.5.min.js"></script>
+  <script src="//code.jquery.com/jquery-1.11.1.min.js"></script>
+  <script src="//cdn.opencpu.org/opencpu-0.4.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/simple-statistics/7.0.0/simple-statistics.min.js"></script>
+  <script src='https://cdn.jsdelivr.net/gh/kdpsingh/rjs@master/r.js'></script>
+  <script src="https://d3js.org/d3.v4.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.js"
+    integrity="sha512-5mCB0Kvv97yTzqo0174qxPjMisck/WlK51+mw/RV7UfYbtHI8LuLR82BzZuxHUKSfbh75u9cZHgUcqrZDaBJuA=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+    integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.3/dist/umd/popper.min.js"
+    integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
+    crossorigin="anonymous"></script>
+
+  <link rel="stylesheet" type="text/css" href="css/bootstrap.css">
+  <script src="css/bootstrap.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-color/3.0.0/d3-color.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-interpolate/1.5.0/d3-interpolate.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-scale/3.2.2/d3-scale.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-scale-chromatic/1.6.0/d3-scale-chromatic.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.datatables.net/2.0.7/css/dataTables.dataTables.css" />
+  <script src="https://cdn.datatables.net/2.0.7/js/dataTables.js"></script>
+
+
+  <style>
+    body {
+      background-color: #0e0d0d;
+      color: white;
+    }
+
+    .flex {
+            display: flex;
+            flex-direction: row;
+            max-width: space-between;
+            height: 100%;
+            width: 100%
+        }
+
+        .flex1 {
+            display: flex;
+            flex-direction: row;
+            max-width: space-between;
+            height: auto;
+            width: 50%;
+
+        }
+
+        .flex-container {
+            display: flex;
+            flex-direction: column;
+            max-width: fit-content;
+
+        }
+
+        .flex-container>div {
+            margin-right: 3.2px;
+            /* Add spacing between items */
+        }
+
+
+
+    </style>
+    </head>
+
+    <body>
+
+        <div class="flex1">
+
+            <div>
+                    
+                    <h4 style="color: white; width: 100%;">Gene list</h4>
+                    <div id="radio-container" style="background-color: #292727;"></div>
+                    <button id="submission" type="button" class="btn btn-secondary" >Submit</button>
+                
+            </div>
+            
+            <div>   
+                <div id="survival"></div>
+                
+            </div>
+            
+        </div>
+
+
+
+        <script>
+            try {
+              ocpu.seturl("//localhost:8004/ocpu/lib/GEVIS/R");
+            } catch (error) {
+              // If an error occurs (e.g., ocpu is not defined), reload the page
+              window.location.reload();
+            }
+
+
+            // Function to parse URL query parameters
+    function getUrlParameter(name) {
+      name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+      var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+      var results = regex.exec(location.search);
+      return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+    }
+
+     // Retrieve sessionId from query parameter
+     const sessionId = getUrlParameter('sessionId');
+
+     if (sessionId) {
+      // Send a fetch request to retrieve data
+      fetch(`/retrieveData?sessionId=${sessionId}`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          return response.json();
+        })
+        .then(data => {
+
+            showLoadingMessageSurv(data);
+
+
+        })
+    } else {
+      alert('Session ID not found');
+    }
+
+
+    var btn2 = document.getElementById("submission");
+
+    // Function to display loading message inside the modal
+function showLoadingMessageSurv(data) {
+    var btn2 = document.getElementById("submission");
+    var survivalContainer = document.getElementById("survival");
+    console.log(data.selectedGeneData)
+    // Create initial radio buttons
+    createRadioButtons(data.selectedGeneData);
+
+   
+    survivalContainer.innerHTML = "<h3 style='color: white; margin-left: 50px; width:100%'>Select a gene </h3>";
+    // Form submission handler
+    document.getElementById('submission').onclick = function(event) {
+            event.preventDefault(); // Prevent default form submission
+
+            // Get selected radio input value
+        const selectedGene = document.querySelector('input[name="gene"]:checked');
+
+        if (selectedGene) {
+            survivalContainer.innerHTML = "<h3 style='color: white; margin-left: 50px'>Computing the plot... </h3>";
+            // Call your function to create the dot plot here
+            //btn2.disabled = true;
+
+            survival(data.filteredMetadata, data.dataC_copy_pval, selectedGene.value)
+
+            // You can handle the selected gene value as needed
+        } else {
+            alert('No gene selected!');
+        }
+
+    };
+
+}
+
+
+function createRadioButtons(data) {
+        const container = document.getElementById('radio-container');
+        container.innerHTML = ''; // Clear previous content
+
+        Object.keys(data).forEach(key => {
+            const value = data[key];
+            const geneName = value.split('/')[0]; // Extract part before '|'
+            console.log(geneName)
+
+            const radioWrapper = document.createElement('div');
+            radioWrapper.className = 'radio-wrapper';
+
+            const radioInput = document.createElement('input');
+            radioInput.type = 'radio';
+            radioInput.name = 'gene';
+            radioInput.id = `radio-${geneName}`;
+            radioInput.value = value;
+            radioInput.checked = true;
+            
+
+            const radioLabel = document.createElement('label');
+            radioLabel.htmlFor = `radio-${geneName}`;
+            radioLabel.innerText = geneName;
+
+            radioWrapper.appendChild(radioInput);
+            radioWrapper.appendChild(radioLabel);
+            container.appendChild(radioWrapper);
+        });
+    }
+
+
+function survival(clinical,cases,genename) {
+
+console.log("tutto il dataset",clinical)
+// console.log("i casi",cases)
+
+        
+    var geneDataC = cases.filter(d => d.gene === genename)
+
+console.log(clinical)
+
+    let allGSM = Object.keys(clinical[1]).slice(1);
+        let allEvent = Object.values(clinical[0]).slice(1);
+        let allTime_to_followUp = Object.values(clinical[1]).slice(1);
+
+    // Create the data structure
+    let dataStructure = allGSM.map((gsm, index) => ({
+            GSM: gsm,
+            Event: allEvent[index],
+            Time_to_followUp: allTime_to_followUp[index]
+        }));
+
+        console.log(dataStructure.length)
+
+
+
+    // Extract GSM identifiers from geneDataC
+    let relevantGSMs = geneDataC.flatMap(item => Object.keys(item));
+
+    //console.log(relevantGSMs)
+    // Filter the data structure to include only relevant GSMs
+    let filteredDataStructure = dataStructure.filter(item => relevantGSMs.includes(item.GSM));
+
+    console.log(filteredDataStructure.length);
+
+
+    //console.log(dataStructure);
+
+
+
+
+    var req = ocpu.call("surv", {
+                            metadata: filteredDataStructure,
+                            dataC: geneDataC,
+                            gene: genename
+                        }, function (session) {
+                            var filteredDataURL = session.loc + "/R/.val/json";
+                            console.log(filteredDataURL)
+                            // Fetch the filtered data from the URL
+                            fetch(filteredDataURL)
+                                .then(response => response.json())
+                                .then(data => {
+                                console.log(filteredDataURL)
+                                //console.log(data.pval[0].pval)
+                                survivalplot(data.obj,genename,data.pval[0].pval);
+
+                                btn2.disabled = false;
+                                })
+                            
+                                
+                            
+                            })
+
+}
+
+function survivalplot(data,name,pvalue) {
+
+console.log(data)
+
+
+
+// Calculate survival probability
+const survivalProb = [];
+let survival = 1; // Initial survival probability
+
+// Compute survival probability for each group
+function computeSurvivalProbability(data) {
+    const survivalProb = [];
+    let survival = 1; // Initial survival probability
+
+    for (let i = 0; i < data.time.length; i++) {
+        const nRisk = data['n.risk'][i];
+        const nEvent = data['n.event'][i];
+
+        if (nRisk === 0) break; // Avoid division by zero
+
+        const hazard = nEvent / nRisk;
+        survival *= Math.pow((1 - hazard), 1);
+        survivalProb.push(survival);
+    }
+    return survivalProb;
+}
+
+// Filter data by high and low expression
+const highExprData = {
+    time: data[0].time.slice(0, data[0].strata[0]),
+    "n.risk": data[0]['n.risk'].slice(0, data[0].strata[0]),
+    "n.event": data[0]['n.event'].slice(0, data[0].strata[0]),
+    "n.censor": data[0]['n.censor'].slice(0, data[0].strata[0]),
+    surv: data[0].surv.slice(0, data[0].strata[0])
+};
+
+const lowExprData = {
+    time: data[0].time.slice(data[0].strata[0]),
+    "n.risk": data[0]['n.risk'].slice(data[0].strata[0]),
+    "n.event": data[0]['n.event'].slice(data[0].strata[0]),
+    "n.censor": data[0]['n.censor'].slice(data[0].strata[0]),
+    surv: data[0].surv.slice(data[0].strata[0])
+};
+
+const highExprSurvivalProb = computeSurvivalProbability(highExprData);
+const lowExprSurvivalProb = computeSurvivalProbability(lowExprData);
+
+// Prepare data for D3.js
+const highExprPlotData = highExprData.time.map((time, index) => ({
+    time: time,
+    survivalProb: highExprSurvivalProb[index]
+}));
+
+const lowExprPlotData = lowExprData.time.map((time, index) => ({
+    time: time,
+    survivalProb: lowExprSurvivalProb[index]
+}));
+
+console.log("High Expression Data:", highExprPlotData);
+console.log("Low Expression Data:", lowExprPlotData);
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Append the svg object to the body of the page
+
+const margin = { top: 20, right: 30, bottom: 50, left: 50 },
+            width = 800 - margin.left - margin.right,
+            height = 600 - margin.top - margin.bottom;
+
+
+// Append the svg object to the body of the page
+const svg = d3.select("#survival")
+    .html("")
+    .append("svg")
+    .attr("width", width + margin.left + margin.right) // Adjusted width and height to include margins
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", `translate(${margin.left},${margin.top})`);
+
+// Add X axis
+const x = d3.scaleLinear()
+    .domain([0, d3.max(data[0].time)])
+    .range([0, width]);
+
+xAxis= svg.append("g") // Appending a group element for the x-axis
+    .attr("transform", `translate(0,${height})`) // Translate it to the bottom
+    .call(d3.axisBottom(x)); 
+
+    xAxis.selectAll("line, path")
+                .style("stroke", "white");
+            xAxis.selectAll("text")
+                .style("fill", "white");
+
+
+// Add Y axis
+const y = d3.scaleLinear()
+    .domain([0, 1])
+    .range([height, 0]);
+
+    yAxis= svg.append("g") // Appending a group element for the y-axis
+    .call(d3.axisLeft(y)); 
+
+    yAxis.selectAll("line, path")
+                .style("stroke", "white");
+            yAxis.selectAll("text")
+                .style("fill", "white");
+
+
+// Add X axis label
+svg.append("text")
+    .attr("x", width / 2)
+    .attr("y", height + margin.bottom - 10)
+    .attr("text-anchor", "middle")
+    .style("font-size", "14px")
+    .style("fill", "white")
+    .text("Time (in days)");
+
+// Add Y axis label
+svg.append("text")
+    .attr("transform", "rotate(-90)")
+    .attr("x", -height / 2)
+    .attr("y", -margin.left + 12)
+    .attr("text-anchor", "middle")
+    .style("font-size", "14px")
+    .style("fill", "white")
+    .text("Survival Probability");
+
+
+// Add the high expression line
+const highLine = d3.line()
+    .x(d => x(d.time))
+    .y(d => y(d.survivalProb));
+
+svg.append("path")
+    .datum(highExprPlotData)
+    .attr("fill", "none")
+    .attr("stroke", "#F8766D")
+    .attr("stroke-width", 2)
+    .attr("d", highLine);
+
+// Add the low expression line
+const lowLine = d3.line()
+    .x(d => x(d.time))
+    .y(d => y(d.survivalProb));
+
+svg.append("path")
+    .datum(lowExprPlotData)
+    .attr("fill", "none")
+    .attr("stroke", "#00BFC4")
+    .attr("stroke-width", 2)
+    .attr("d", lowLine);
+
+
+    // Add legend
+const legend = svg.append("g")
+    .attr("class", "legend")
+    .attr("transform", `translate(${width - 100}, 20)`); // Adjust position of legend
+
+legend.append("rect")
+    .attr("x", 0)
+    .attr("y", 0)
+    .attr("width", 10)
+    .attr("height", 10)
+    .attr("fill", "#F8766D");
+
+legend.append("text")
+    .attr("x", 15)
+    .attr("y", 8)
+    .style("fill", "white")
+    .text("High Expression");
+
+legend.append("rect")
+    .attr("x", 0)
+    .attr("y", 20)
+    .attr("width", 10)
+    .attr("height", 10)
+    .attr("fill", "#00BFC4");
+
+legend.append("text")
+    .attr("x", 15)
+    .attr("y", 28)
+    .style("fill", "white")
+    .text("Low Expression");
+
+legend.append("text")
+    .attr("x", 15)
+    .attr("y", 48)
+    .style("fill", "white")
+    .text("p-value: " +pvalue);
+
+// Add title
+svg.append("text")
+    .attr("x", width / 2)
+    .attr("y", 15)
+    .attr("text-anchor", "middle")
+    .style("font-size", "18px")
+    .text("Survival plot for "+name.split('|')[0])
+    .style("fill", "white");
+
+
+}
+
+
+    </script>
+
+
+    </body>
+
+    </html>

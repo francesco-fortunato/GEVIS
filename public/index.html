@@ -596,6 +596,8 @@
         <button class="btn btn-secondary" id="exportGenesButton">Export DEGs</button>
         <span style="margin-left: 10px;"></span> <!-- Adjust the margin as needed -->
         <button class="btn btn-secondary" id="importDatasetButton">Import Dataset</button>
+        <button class="btn btn-secondary" id="openModalBtn1" style="margin-left: 10px;">Survival Plot</button>
+
 
     </nav>
     <div id="loadingOverlay" style="display: flex; justify-content: center; align-items: center;">
@@ -823,6 +825,34 @@
 
         </div>
     </div>
+    <div id="myModal1" class="modal">
+        <div class="modal-content">
+        <span class="close1">&times;</span>
+        <div class="flex1">
+
+            <div>
+                    
+                    <h4 style="color: white; width: 100%;">Select clinical data for the survival analysis</h4>
+                    <form id="dropdownForm">
+                    </form>
+                    <form id="dropdownForm1">
+                    </form>
+                    <button id="submission" type="button" class="btn btn-secondary" disabled>Submit</button>
+                
+            </div>
+            
+            <div>   
+                <div id="survival"></div>
+            </div>
+            
+        </div>
+        
+        
+        </div>
+    </div>
+
+
+</div>
     <script>
 
         try {
@@ -1013,6 +1043,192 @@
                 dotplotContainer1.innerHTML = "";
             }
         }
+
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+
+// Get the modal element
+var modal1 = document.getElementById("myModal1");
+
+// Get the button that opens the modal
+var btn1 = document.getElementById("openModalBtn1");
+
+// Get the button that opens the modal
+var btn2 = document.getElementById("submission");
+
+// Get the <span> element that closes the modal
+var span1 = document.getElementsByClassName("close1")[0];
+
+// Function to display loading message inside the modal
+function showLoadingMessageSurv() {
+    var survivalContainer = document.getElementById("survival");
+    console.log(selectedGeneData)
+    // Create initial radio buttons
+    //createRadioButtons(selectedGeneData);
+
+   
+    // survivalContainer.innerHTML = "<h3 style='color: white; margin-left: 50px; width:100%'>Select a gene </h3>";
+    // // Form submission handler
+    // document.getElementById('submission').onclick = function(event) {
+    //         event.preventDefault(); // Prevent default form submission
+
+    //         // Get selected radio input value
+    //     const selectedGene = document.querySelector('input[name="gene"]:checked');
+
+    //     if (selectedGene) {
+    //         survivalContainer.innerHTML = "<h3 style='color: white; margin-left: 50px'>Computing the plot... </h3>";
+    //         // Call your function to create the dot plot here
+    //         btn2.disabled = true;
+    //         survival(metadata,dataC_copy_pval,selectedGene.value)
+
+    //         // You can handle the selected gene value as needed
+    //     } else {
+    //         alert('No gene selected!');
+    //     }
+
+    // };
+
+}
+
+// Function to create the dot plot inside the modal
+function createSurvivalPlotInsideModal() {
+    // Display loading message inside the modal
+    showLoadingMessageSurv();
+
+}
+
+
+document.getElementById("openModalBtn1").addEventListener("click", function () {
+
+    modal1.style.display = "block";
+
+console.log(metadata);
+
+// Clear previous form contents
+const form = document.getElementById("dropdownForm");
+const form1 = document.getElementById("dropdownForm1");
+form.innerHTML = '';
+form1.innerHTML = '';
+
+// First dropdown label and menu
+const label = document.createElement('label');
+label.textContent = "Select the Event:";
+label.style.color = 'white';
+label.setAttribute('for', 'metadataDropdown1');
+form.appendChild(label);
+
+const select = document.createElement('select');
+select.id = 'metadataDropdown1';
+select.name = 'metadataSelection1';
+
+metadata.forEach((item) => {
+    const option = document.createElement('option');
+    option.value = item.Sample_geo_accession;
+    option.textContent = item.Sample_geo_accession;
+    select.appendChild(option);
+});
+
+form.appendChild(select);
+
+// Second dropdown label and menu
+const label1 = document.createElement('label');
+label1.textContent = "Select Time to Follow Up:";
+label1.style.color = 'white';
+label1.setAttribute('for', 'metadataDropdown2');
+form1.appendChild(label1);  // Corrected from appending 'label' to 'label1'
+
+const select1 = document.createElement('select');
+select1.id = 'metadataDropdown2';
+select1.name = 'metadataSelection2';
+
+metadata.forEach((item) => {
+    const option = document.createElement('option');
+    option.value = item.Sample_geo_accession;
+    option.textContent = item.Sample_geo_accession;
+    select1.appendChild(option);
+});
+
+form1.appendChild(select1);
+
+btn2.addEventListener('click',filterMetadata)
+
+            
+
+
+        });
+
+function filterMetadata() {
+    const selectedEvent = document.getElementById('metadataDropdown1').value;
+    const selectedTime = document.getElementById('metadataDropdown2').value;
+
+    // Filter the metadata based on the selections
+    const filteredMetadata = metadata.filter(item => 
+        item.Sample_geo_accession === selectedEvent || 
+        item.Sample_geo_accession === selectedTime
+    );
+
+    console.log('Filtered Metadata:', filteredMetadata);
+
+
+    const data = { filteredMetadata,dataC_copy_pval, selectedGeneData}; // Assuming you have these arrays defined elsewhere
+
+            // Send data to server using fetch
+            fetch('/survival', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ data: data })
+            })
+                .then(response => response.json())
+                .then(response => {
+                    // Redirect to /enrichment with unique identifier (sessionId)
+                    window.open(`/survival?sessionId=${response.sessionId}`, '_blank');
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to store survival data');
+                });
+
+    // You can further process or display the filteredMetadata here
+}
+
+//When the user clicks the button, open the modal and create the dot plot inside it
+btn1.onclick = function() {
+    modal1.style.display = "block";
+    // Display loading message inside the modal
+    showLoadingMessageSurv();
+    // Call function to create dot plot inside modal
+    createSurvivalPlotInsideModal();
+    btn2.disabled = false
+}
+
+// When the user clicks on <span> (x), close the modal
+span1.onclick = function() {
+    modal1.style.display = "none";
+    // Clear the content of the modal when it is closed
+    var survivalContainer = document.getElementById("survival");
+    survivalContainer.innerHTML = "";
+}
+
+// When the user clicks anywhere outside of the modal, close it
+window.onclick = function(event) {
+    if (event.target == modal1) {
+        modal1.style.display = "none";
+        // Clear the content of the modal when it is closed
+        var survivalContainer = document.getElementById("survival");
+        survivalContainer.innerHTML = "";
+    }
+}
+
+
+
+
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////
 
 
 
@@ -11804,7 +12020,7 @@
                         }
 
                         // Apply Math.log10 to the expression value before summing
-                        var log10Expression = Math.log10(parseFloat(geneData[sample]));
+                        var log10Expression = Math.log10(parseFloat(geneData[sample]) +1);
 
                         // Add the log10 expression value to the sum and increment the count
                         geneSumCount[gene].sum += log10Expression;

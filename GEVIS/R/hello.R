@@ -372,3 +372,66 @@ deseq2DE <- function(dataC, dataN) {
 
   return(res_df)
 }
+
+
+surv <- function (metadata,dataC, gene){
+  library(survival)
+  library(survminer)
+
+  # Remove the last element from gsm_cods
+  gsm_cods <- names(dataC)
+
+
+  # Remove the last element from gene_expression
+  gene_expression <- unlist(dataC, use.names = FALSE)
+
+
+
+
+
+  df <- data.frame(case_id = gsm_cods, counts = gene_expression)
+
+
+
+
+  medianValue = median(df$counts)
+
+
+
+  df$strata = ifelse (df$counts >= medianValue,"HIGH","LOW")
+
+  df$event = ifelse(df$case_id == metadata$GSM,  metadata$Event[match(df$case_id, metadata$GSM)], "NA")
+
+  df$time = ifelse(df$case_id == metadata$GSM, metadata$Time_to_followUp[match(df$case_id, metadata$GSM)], "NA")
+
+  if (nrow(df) > 1) {
+    df <- df[-nrow(df), ]
+  }
+
+  print(df)
+
+  df$counts <-(as.numeric(df$counts))
+  df$time = as.numeric(df$time)
+  df$event = as.numeric(df$event)
+
+  newDF = data.frame(time =df$time, event = df$event, gene = df$strata)
+
+  fit=survfit(Surv(time,event) ~ gene, data = newDF)
+
+  members <- c("time", "n.risk", "n.event","n.censor","surv","strata")
+
+
+
+  last = list(unclass(fit)[members])
+
+  ####### UTILE PER CALCOLARE IL PVALUE DEL GENE PASSATO#######
+  obj_pval = surv_pvalue(fit,newDF)
+  members2 = c("pval")
+  pval=list(unclass(obj_pval)[members2])
+  print(pval)
+  #############################################################
+
+  return(list (obj = last, pval = pval))
+
+
+}

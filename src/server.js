@@ -38,6 +38,31 @@ app.get('/enrichment', (req, res) => {
   res.sendFile(path.join(__dirname, '../public', 'enrichment.html'));
 });
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Handle POST request to /survival
+app.post('/survival', (req, res) => {
+  const data = req.body.data;
+
+  // Generate a unique session ID using uuidv4
+  req.session.sessionId = generateSessionId();
+
+  // Store the data in the session
+  req.session.data = data;
+
+  // Send the session ID back to the client
+  res.json({ sessionId: req.session.sessionId });
+});
+
+// Serve the survival.html file on a GET request
+app.get('/survival', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public', 'survival.html'));
+});
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 // Handle GET request to retrieve data based on session ID
 app.get('/retrieveData', (req, res) => {
   const sessionId = req.query.sessionId;
