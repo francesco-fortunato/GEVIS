@@ -7615,6 +7615,140 @@
 
             svg.select("#scatter").selectAll("*").remove();
 
+            // Create a legend
+            var legend = svg.append("g")
+                .attr("transform", "translate(" + (width - 75) + "," + (height - 250) + ")");
+
+            // Add a filter for the shadow
+            var defs = svg.append("defs");
+
+            var filter = defs.append("filter")
+                .attr("id", "legendShadow")
+                .attr("height", "150%");
+
+            filter.append("feGaussianBlur")
+                .attr("in", "SourceAlpha")
+                .attr("stdDeviation", 3)
+                .attr("result", "blur");
+
+            filter.append("feOffset")
+                .attr("in", "blur")
+                .attr("dx", 3)
+                .attr("dy", 3)
+                .attr("result", "offsetBlur");
+
+            var feMerge = filter.append("feMerge");
+
+            feMerge.append("feMergeNode")
+                .attr("in", "offsetBlur");
+            feMerge.append("feMergeNode")
+                .attr("in", "SourceGraphic");
+
+            // Add a rectangle around the legend with shadow
+            var legendRect = legend.append("rect")
+                .attr("x", 0)
+                .attr("y", 0)
+                .attr("width", 160)
+                .attr("height", 210)
+                .style("stroke", "white")
+                .style("fill", "none")
+                .style("filter", "url(#legendShadow)")
+                .style("pointer-events", "none");
+
+            // Append legend for upregulated genes (LogFC > log2(thr_fc) and pval_adj < threshold)
+            var upregulatedLegend = legend.append("g")
+                .attr("transform", "translate(0,0)");
+
+            upregulatedLegend.append("circle")
+                .attr("cx", 10)
+                .attr("cy", 20)
+                .attr("r", 6)
+                .style("fill", "darkred")
+                .classed("legend-circle", true);
+
+            upregulatedLegend.append("text")
+                .attr("x", 20)
+                .attr("y", 20)
+                .style("fill", "white")
+                .style("font-size", "20px")
+                .text("Upregulated")
+                .append("tspan")
+                .attr("x", 20)
+                .attr("dy", 15) // Adjusted spacing for subtitle
+                .style("font-size", "12px") // Smaller font size for subtitle
+                .text("LogFC > log2(" + thr_fc + ") and");
+
+            upregulatedLegend.append("text")
+                .attr("x", 20)
+                .attr("y", 48)
+                .style("fill", "white")
+                .text("pval_adj < " + threshold)
+                .style("font-size", "12px"); // Smaller font size for subtitle
+
+            // Calculate the height of the first legend item
+            var legendItemHeight = upregulatedLegend.node().getBBox().height;
+
+            // Append legend for downregulated genes (LogFC < -log2(thr_fc) and pval_adj < threshold)
+            var downregulatedLegend = legend.append("g")
+                .attr("transform", "translate(0," + 2 * legendItemHeight + ")");
+
+            downregulatedLegend.append("circle")
+                .attr("cx", 10)
+                .attr("cy", 65)
+                .attr("r", 6)
+                .style("fill", "royalblue")
+                .classed("legend-circle", true);
+
+            downregulatedLegend.append("text")
+                .attr("x", 20)
+                .attr("y", 68)
+                .style("fill", "white")
+                .style("font-size", "20px")
+                .text("Downregulated")
+                .append("tspan")
+                .attr("x", 20)
+                .attr("dy", 15) // Adjusted spacing for subtitle
+                .style("font-size", "12px") // Smaller font size for subtitle
+                .text("LogFC < -log2(" + thr_fc + ") and");
+
+            downregulatedLegend.append("text")
+                .attr("x", 20)
+                .attr("y", 96)
+                .style("fill", "white")
+                .text("pval_adj < " + threshold)
+                .style("font-size", "12px"); // Smaller font size for subtitle
+
+            // Append legend for not significant genes (abs(LogFC) < log2(thr_fc) OR pval_adj > threshold)
+            var notSignificantLegend = legend.append("g")
+                .attr("transform", "translate(0," + legendItemHeight + ")");
+
+            notSignificantLegend.append("circle")
+                .attr("cx", 10)
+                .attr("cy", 40)
+                .attr("r", 6)
+                .style("fill", "grey")
+                .classed("legend-circle", true);
+
+            notSignificantLegend.append("text")
+                .attr("x", 20)
+                .attr("y", 40)
+                .style("fill", "white")
+                .style("font-size", "20px")
+                .text("Not Significant")
+                .append("tspan")
+                .attr("x", 20)
+                .attr("dy", 15) // Adjusted spacing for subtitle
+                .style("font-size", "12px") // Smaller font size for subtitle
+                .text("|LogFC| < log2(" + thr_fc + ") or");
+
+            notSignificantLegend.append("text")
+                .attr("x", 20)
+                .attr("y", 68)
+                .style("fill", "white")
+                .text("pval_adj > " + threshold)
+                .style("font-size", "12px"); // Smaller font size for subtitle
+
+
             var circles = scatter.selectAll("circle")
                 .data(data);
 
@@ -7930,12 +8064,13 @@
                         .style("fill", "white");
 
 
-                    // Update dots
-                    var dot = svg
-                        .selectAll('circle')
-                        .data(structure)
+                    var dot = svg.selectAll('circle').filter(function () {
+                        return !d3.select(this).classed('legend-circle');
+                    }).data(structure);
+
                     // Remove existing circles
                     dot.exit().remove();
+
 
                     dot.enter().append("circle").merge(dot)
                         .classed('pulse', d => {
@@ -8209,12 +8344,13 @@
 
                     //svg.select("#scatter").selectAll("*").remove();
 
-                    // Update dots
-                    var dot = svg
-                        .selectAll('circle')
-                        .data(structure)
+                    var dot = svg.selectAll('circle').filter(function () {
+                        return !d3.select(this).classed('legend-circle');
+                    }).data(structure);
+
+
                     // Remove existing circles
-                    //dot.exit().remove();
+                    // dot.exit().remove();
 
                     dot.enter().append("circle").merge(dot)
                         .classed('pulse', d => {
@@ -8666,7 +8802,8 @@
                 .attr("cx", 10)
                 .attr("cy", 20)
                 .attr("r", 6)
-                .style("fill", "darkred");
+                .style("fill", "darkred")
+                .classed("legend-circle", true);
 
             upregulatedLegend.append("text")
                 .attr("x", 20)
@@ -8698,7 +8835,8 @@
                 .attr("cx", 10)
                 .attr("cy", 65)
                 .attr("r", 6)
-                .style("fill", "royalblue");
+                .style("fill", "royalblue")
+                .classed("legend-circle", true);
 
             downregulatedLegend.append("text")
                 .attr("x", 20)
@@ -8727,7 +8865,8 @@
                 .attr("cx", 10)
                 .attr("cy", 40)
                 .attr("r", 6)
-                .style("fill", "grey");
+                .style("fill", "grey")
+                .classed("legend-circle", true);
 
             notSignificantLegend.append("text")
                 .attr("x", 20)
@@ -9063,9 +9202,10 @@
 
 
                     // Update dots
-                    var dot = svg
-                        .selectAll('circle')
-                        .data(structure)
+                    var dot = svg.selectAll('circle').filter(function () {
+                        return !d3.select(this).classed('legend-circle');
+                    }).data(structure);
+
                     dot.enter().append("circle").merge(dot)
                         .classed('pulse', d => {
                             return selectedGeneData.some(selectedGene => selectedGene === d.gene);
@@ -9360,9 +9500,9 @@
                     //svg.select("#scatter").selectAll("*").remove();
 
                     // Update dots
-                    var dot = svg
-                        .selectAll('circle')
-                        .data(structure)
+                    var dot = svg.selectAll('circle').filter(function () {
+                        return !d3.select(this).classed('legend-circle');
+                    }).data(structure);
 
                     dot.enter().append("circle").merge(dot)
                         .classed('pulse', d => {
