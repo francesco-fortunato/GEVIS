@@ -7764,7 +7764,7 @@
                         return yScale(-Math.log10(d.pval_adj.toExponential(20)))
                     }
                 })
-                .attr("r", 3) // Start with radius 0 for initial transition effect
+                .attr("r", 2) // Start with radius 0 for initial transition effect
                 .style("fill", d => {
                     if (d.pval_adj < threshold) {
                         if (d.logFC >= log_thr_fc) {
@@ -7941,7 +7941,7 @@
                         return "grey"; // Not significant
                     }
                 })
-                .attr("r", 3);
+                .attr("r", 2);
 
             // Exit old circles
             circles.exit()
@@ -9335,7 +9335,7 @@
                                 return yScale(-Math.log10(d.pval_adj.toExponential(20)))
                             }
                         })
-                        .attr("r", 3)
+                        .attr("r", 2)
                         .style("fill", d => {
                             if (d.pval_adj < threshold) {
                                 if (d.logFC >= log_thr_fc) {
