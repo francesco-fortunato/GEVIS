@@ -8451,7 +8451,7 @@
                 }
             });
 
-            dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
+            //dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
 
         }
 
@@ -9575,7 +9575,7 @@
                     SwitchingPlot(data, currentPlot)
                 }
             });
-            dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
+            // dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
 
         }
 
@@ -10493,7 +10493,7 @@
             legend.selectAll("text")
                 .attr("dy", "-0.35em"); // Adjust vertical alignment
 
-
+            console.log(dimensions)
 
             // Build the X scale -> it finds the best position for each Y axis
             var x = d3.scalePoint()
@@ -10789,6 +10789,7 @@
                     }
                     totalOrder.push(d.dimension);
                 });
+                console.log(totalOrder)
 
                 // Check if any dimension was dragged too far to the left and remove it from geneselectedOrder if it belongs to geneselected
                 var removedDimensions = [];
@@ -10831,8 +10832,6 @@
                 console.log("Removed dimensions:", removedDimensions);
 
                 selectedGeneData = geneselectedOrder
-
-                selectedGeneData = geneselectedOrder
                 // Find and remove the corresponding option from the select element
                 var select = document.getElementById("selectButton");
                 var options = select.options;
@@ -10861,78 +10860,78 @@
                 } d3.selectAll(".axis-label").classed("dragging", false);
 
             }
-            var newPositions = [];
-            svg.selectAll(".axis-group").each(function (d) {
-                var transform = d3.select(this).attr("transform");
-                var translateX = +transform.split("(")[1].split(")")[0];
-                console.log(translateX)
-                newPositions.push({ dimension: d, position: translateX });
-            });
-            console.log(newPositions)
+            // var newPositions = [];
+            // svg.selectAll(".axis-group").each(function (d) {
+            //     var transform = d3.select(this).attr("transform");
+            //     var translateX = +transform.split("(")[1].split(")")[0];
+            //     console.log(translateX)
+            //     newPositions.push({ dimension: d, position: translateX });
+            // });
+            // console.log(newPositions)
 
-            // Sort newPositions array based on position
-            newPositions.sort(function (a, b) {
-                return a.position - b.position;
-            });
-
-            // Separate dimensions into geneselected, metadata (first_dims), and total ordering
-            var geneselectedOrder = [];
-            var metadataOrder = [];
-            totalOrder = [];
-            newPositions.forEach(function (d) {
-                if (geneselected.includes(d.dimension)) {
-                    geneselectedOrder.push(d.dimension);
-                } else if (first_dims.includes(d.dimension)) {
-                    metadataOrder.push(d.dimension);
-                }
-                totalOrder.push(d.dimension);
-            });
-
-            // Check if any dimension was dragged too far to the left and remove it from geneselectedOrder if it belongs to geneselected
-            var removedDimensions = [];
-            newPositions.forEach(function (d) {
-                if (d.position < -100 && geneselected.includes(d.dimension)) {
-                    var index = geneselectedOrder.indexOf(d.dimension);
-                    if (index !== -1) {
-                        removedDimensions.push(geneselectedOrder.splice(index, 1)[0]);
-                        // Remove highlighting color in the scatter plot
-                        scatter.selectAll("circle")
-                            .filter(circleData => circleData.gene === d.dimension)
-                            .style("fill", d => {
-                                // Check if logFC is greater than or equal to the threshold
-                                if (d.logFC >= log_thr_fc && d.pval_adj <= threshold) {
-                                    return "darkred";
-                                } else if (d.logFC <= -(log_thr_fc) && d.pval_adj <= threshold) {
-                                    return "royalblue";
-                                } else {
-                                    return "grey";
-                                }
-                            });
-                    }
-                }
-            });
-
-            // // Remove corresponding data from transposedData
-            // transposedData = transposedData.filter(function (d) {
-            //     return !removedDimensions.includes(d.gene);
+            // // Sort newPositions array based on position
+            // newPositions.sort(function (a, b) {
+            //     return a.position - b.position;
             // });
 
-            // Update totalOrder by removing removedDimensions
-            totalOrder = totalOrder.filter(function (d) {
-                return !removedDimensions.includes(d);
-            });
+            // // Separate dimensions into geneselected, metadata (first_dims), and total ordering
+            // var geneselectedOrder = [];
+            // var metadataOrder = [];
+            // totalOrder = [];
+            // newPositions.forEach(function (d) {
+            //     if (geneselected.includes(d.dimension)) {
+            //         geneselectedOrder.push(d.dimension);
+            //     } else if (first_dims.includes(d.dimension)) {
+            //         metadataOrder.push(d.dimension);
+            //     }
+            //     totalOrder.push(d.dimension);
+            // });
 
-            console.log("Geneselected order:", geneselectedOrder);
-            console.log("Metadata order:", metadataOrder);
-            console.log("Total order:", totalOrder);
-            console.log("Removed dimensions:", removedDimensions);
+            // // Check if any dimension was dragged too far to the left and remove it from geneselectedOrder if it belongs to geneselected
+            // var removedDimensions = [];
+            // newPositions.forEach(function (d) {
+            //     if (d.position < -100 && geneselected.includes(d.dimension)) {
+            //         var index = geneselectedOrder.indexOf(d.dimension);
+            //         if (index !== -1) {
+            //             removedDimensions.push(geneselectedOrder.splice(index, 1)[0]);
+            //             // Remove highlighting color in the scatter plot
+            //             scatter.selectAll("circle")
+            //                 .filter(circleData => circleData.gene === d.dimension)
+            //                 .style("fill", d => {
+            //                     // Check if logFC is greater than or equal to the threshold
+            //                     if (d.logFC >= log_thr_fc && d.pval_adj <= threshold) {
+            //                         return "darkred";
+            //                     } else if (d.logFC <= -(log_thr_fc) && d.pval_adj <= threshold) {
+            //                         return "royalblue";
+            //                     } else {
+            //                         return "grey";
+            //                     }
+            //                 });
+            //         }
+            //     }
+            // });
 
-            selectedGeneData = geneselectedOrder
+            // // // Remove corresponding data from transposedData
+            // // transposedData = transposedData.filter(function (d) {
+            // //     return !removedDimensions.includes(d.gene);
+            // // });
+
+            // // Update totalOrder by removing removedDimensions
+            // totalOrder = totalOrder.filter(function (d) {
+            //     return !removedDimensions.includes(d);
+            // });
+
+            // console.log("Geneselected order:", geneselectedOrder);
+            // console.log("Metadata order:", metadataOrder);
+            // console.log("Total order:", totalOrder);
+            // console.log("Removed dimensions:", removedDimensions);
+
+            // selectedGeneData = geneselectedOrder
 
 
-            first_dims = metadataOrder
+            // first_dims = metadataOrder
 
-            ordering = totalOrder
+            // ordering = totalOrder
             // Function to handle mouseover event
             function highlight(d) {
                 // Determine the value to highlight based on the selected variable
