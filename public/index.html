@@ -940,6 +940,8 @@
 
         var data_copy_pval
 
+        let deseq_p_adj = []
+
         // Remove entries corresponding to ind from logFC
         var parsedLogFC_pval
         var color_by = 'case'
@@ -3276,7 +3278,7 @@
                             //  console.log("first data orign afterC ",dataC_copy.length)
 
                             // This logarithmic transformation is needed for the scatter plot
-                            var data_log = data_copy.map(obj => {
+                            var data_log = data_copy1.map(obj => {
                                 var newObj = {};
                                 for (var key in obj) {
                                     if (key !== "gene") {
@@ -3287,7 +3289,7 @@
                                 return newObj;
                             });
 
-                            var dataN_log = dataN_copy.map(obj => {
+                            var dataN_log = dataN_copy1.map(obj => {
                                 var newObj = {};
                                 for (var key in obj) {
                                     if (key !== "gene") {
@@ -3298,7 +3300,7 @@
                                 return newObj;
                             });
 
-                            var dataC_log = dataC_copy.map(obj => {
+                            var dataC_log = dataC_copy1.map(obj => {
                                 var newObj = {};
                                 for (var key in obj) {
                                     if (key !== "gene") {
@@ -3351,6 +3353,7 @@
                             });
 
                             old_p_adj = data.filter(entry => geneset.has(entry.Gene))
+                            deseq_p_adj = old_p_adj
 
                             // Step 1: Initialize the geneset and the p-value threshold
                             const geneset_pval = new Set();
@@ -6607,8 +6610,244 @@
                 })
 
             } else if (chosen_statistic == 'deseq2') {
+                const geneset = new Set();
+                parsedLogFC_origin.forEach(entry => {
+                    if (Math.abs(entry.logFC) >= log_thr_fc) {
+                        geneset.add(entry.Gene);  // Add the gene to the set if it passes the filter
+                    }
+                });
 
-                //da implementare
+                console.log("Number of genes passing the LOGFC filter", geneset.size);
+
+                // Step 3: Filter dataC_copy1, dataN_copy1, data_copy1, and parsedLogFC_origin using the geneset
+                if (geneset.size > 0) {
+                    dataC_copy = dataC_copy1.filter(entry => geneset.has(entry.gene));
+                    dataN_copy = dataN_copy1.filter(entry => geneset.has(entry.gene));
+                    data_copy = data_copy1.filter(entry => geneset.has(entry.gene));
+                    parsedLogFC = parsedLogFC_origin.filter(entry => geneset.has(entry.Gene));
+                    old_p_adj = deseq_p_adj.filter(entry => geneset.has(entry.Gene))
+                }
+
+                console.log(data_copy)
+                console.log(parsedLogFC)
+                console.log(old_p_adj)
+
+                var data_log = data_copy1.map(obj => {
+                    var newObj = {};
+                    for (var key in obj) {
+                        if (key !== "gene") {
+                            newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
+                        }
+                    }
+                    newObj["gene"] = obj["gene"];
+                    return newObj;
+                });
+
+                var dataN_log = dataN_copy1.map(obj => {
+                    var newObj = {};
+                    for (var key in obj) {
+                        if (key !== "gene") {
+                            newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
+                        }
+                    }
+                    newObj["gene"] = obj["gene"];
+                    return newObj;
+                });
+
+                var dataC_log = dataC_copy1.map(obj => {
+                    var newObj = {};
+                    for (var key in obj) {
+                        if (key !== "gene") {
+                            newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
+                        }
+                    }
+                    newObj["gene"] = obj["gene"];
+                    return newObj;
+                });
+
+                averageExpressions10C = calculateAverageLog10Expressions(dataC_log);
+                averageExpressions10N = calculateAverageLog10Expressions(dataN_log);
+
+                if (currentPlot === 'volcano') {
+                    updateVolcanoPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
+                } else {
+                    updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
+                }
+
+                // Step 1: Initialize the geneset and the p-value threshold
+                const geneset_pval = new Set();
+
+                // Step 2: Create a geneset of genes to keep based on the p-value condition
+                old_p_adj.forEach(entry => {
+                    if (entry.pval_adj <= threshold) {  // Adjust condition according to your filtering logic
+                        geneset_pval.add(entry.Gene);  // Assuming 'Gene' is the property name
+                    }
+                });
+
+                console.log("Number of genes passing the pval_adj filter", geneset_pval.size);
+
+                selectedGeneData = selectedGeneData.filter(function (gene) {
+                    // Check if the gene is present in dataC_copy or dataN_copy
+                    return dataC_copy.some(function (d) { return d.gene === gene; }) ||
+                        dataN_copy.some(function (d) { return d.gene === gene; });
+                });
+
+                console.log(selectedGeneData)
+
+                data_copy = data_log.filter(entry => geneset.has(entry.gene))
+                dataC_copy = dataC_log.filter(entry => geneset.has(entry.gene))
+                dataN_copy = dataN_log.filter(entry => geneset.has(entry.gene))
+
+                dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
+
+                const ind = old_p_adj.reduce((result, entry, index) => {
+
+                    if (entry.pval_adj > threshold) {
+                        result.push(index);
+                    }
+                    return result;
+                }, []);
+                dataC_copy_pval = dataC_copy
+                dataN_copy_pval = dataN_copy
+                data_copy_pval = data_copy
+
+                console.log("geni con pval minore di thr nel logFC slider", ind.length)
+
+                if (ind.length > 0) {
+
+                    //console.log(parsedLogFC.length)
+
+                    // Remove entries corresponding to ind from dataN
+
+                    // Remove entries corresponding to ind from dataN
+                    dataC_copy_pval = dataC_copy.filter((entry, index) => !ind.includes(index));
+
+                    // Remove entries corresponding to ind from dataN
+                    dataN_copy_pval = dataN_copy.filter((entry, index) => !ind.includes(index));
+
+                    data_copy_pval = data_copy.filter((entry, index) => !ind.includes(index));
+
+                    // Remove entries corresponding to ind from logFC
+                    parsedLogFC_pval = parsedLogFC.filter((entry, index) => !ind.includes(index));
+
+                    console.log(dataN_copy_pval[0])
+
+                    updateBoxPlot(last_box, parsedLogFC_pval, dataN_copy_pval, dataC_copy_pval)
+                    selectedGeneData = selectedGeneData.filter(function (gene) {
+                        // Check if the gene is present in dataC_copy or dataN_copy
+                        return dataC_copy.some(function (d) { return d.gene === gene; }) ||
+                            dataN_copy.some(function (d) { return d.gene === gene; });
+                    });
+
+                    console.log(selectedGeneData)
+
+                    dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
+
+                    console.log(dataN_copy.length)
+                }
+                updateCounter()
+
+                //   var pc1Values = [];
+                // var pc2Values = [];
+                // var groupValues = [];
+                var req = ocpu.call("pca", {
+                    data: data_copy_pval,
+                    dataN: dataN_copy_pval,
+                    dataC: dataC_copy_pval
+                }, function (session) {
+                    var filteredDataURL = session.loc + "R/.val/json";
+                    //console.log(session);
+                    // Fetch the filtered data from the URL
+                    fetch(filteredDataURL)
+                        .then(response => response.json())
+                        .then(data => {
+                            json = data
+                            console.log(filteredDataURL)
+                            console.log(json)
+
+                            var pc1Key = "PC1";
+                            var pc2Key = "PC2";
+                            var groupKey = "Group";
+
+                            // Arrays to store PC1 and PC2 values
+
+
+                            // Iterate over each object in the JSON array
+                            json.scores_df.forEach(function (obj) {
+                                // Push PC1, PC2, and Group values to the arrays
+                                pc1Values.push(obj[pc1Key]);
+                                pc2Values.push(obj[pc2Key]);
+                                groupValues.push(obj[groupKey]);
+                            });
+                            // console.log(pc1Values)
+
+                            // Extract metadata categories from the values of the first column
+                            var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
+                            console.log("Metadata categories:", metadataCategories);
+
+                            // Initialize pca_data array
+                            pca_data = [];
+
+                            // Iterate over each object in the JSON array
+                            json.scores_df.forEach(function (obj) {
+                                // Retrieve additional data from metadata based on _row
+                                var gsm = obj._row;
+                                var group = obj.Group;
+                                var pc1 = obj.PC1;
+                                var pc2 = obj.PC2;
+
+                                // Create an object with the required fields
+                                var newObj = {
+                                    GSM: gsm,
+                                    group: group,
+                                    pc1: pc1,
+                                    pc2: pc2
+                                };
+
+                                // Add metadata values for each category to the newObj
+                                metadataCategories.forEach((category, index) => {
+                                    newObj[category] = metadata[index][gsm];
+                                });
+
+                                // Push the new object to the pca_data array
+                                pca_data.push(newObj);
+                            });
+
+                            // Display the newData array
+                            console.log(pca_data);
+                            heatmap_data = []
+                            json.scores_var.forEach(function (obj) {
+                                // Push PC1, PC2, and Group values to the arrays
+                                var gene = obj._row
+                                var pc1 = obj.PC1
+                                var pc2 = obj.PC2
+                                var pc3 = obj.PC3
+                                var pc4 = obj.PC4
+                                var pc5 = obj.PC5
+                                var pc6 = obj.PC6
+
+                                var newObj = {
+                                    gene: gene,
+                                    pc1: pc1,
+                                    pc2: pc2,
+                                    pc3: pc3,
+                                    pc4: pc4,
+                                    pc5: pc5,
+                                    pc6: pc6
+                                };
+                                heatmap_data.push(newObj);
+                            })
+
+                            pca(pca_data);
+                            heatmap(heatmap_data)
+                        })
+
+                    //DEG(data_copy_pval,parsedLogFC_pval,old_p_adj)
+
+                })
+
+
+
 
             }
 
