@@ -77,26 +77,68 @@ pca <- function(data, dataC, dataN) {
   library(factoextra)
   library(dplyr)
 
-  data1 <- as.data.frame.list(data)
+  data1 <- as.data.frame(data)
 
-  # Move the last column to the first position
-  data1 <- data1[, c(ncol(data1), 1:(ncol(data1)-1))]
+  # Identify the position of the 'gene' column
+  gene_col_position <- which(colnames(data1) == "gene")
 
-  # Set the first column as row names
-  rownames(data1) <- data1[, 1]
+  # Check if 'gene' is the first column
+  if (gene_col_position == 1) {
+    # 'gene' is already in the first position, just set row names
+    rownames(data1) <- data1[, 1]
+    data1 <- data1[, -1]
+  } else {
+    # Move the 'gene' column to the first position
+    data1 <- data1[, c(gene_col_position, setdiff(seq_along(data1), gene_col_position))]
+    # Set the first column as row names
+    rownames(data1) <- data1[, 1]
+    # Remove the first column (it's now the row names)
+    data1 <- data1[, -1]
+  }
 
-  # Remove the first column (it's now the row names)
-  data1 <- data1[, -1]
+  # Convert all columns to numeric
+  data1[] <- lapply(data1, function(x) as.numeric(as.character(x)))
+
+  # Check for any non-numeric values
+  if (!all(sapply(data1, is.numeric))) {
+    stop("Data contains non-numeric values.")
+  }
+
+  # Print column names and data types of data1 for debugging
+  print("Column names of data1:")
+  print(colnames(data1))
+  print("Data types of data1 columns:")
+  print(sapply(data1, class))
 
   gsmC <- colnames(dataC)
   gsmN <- colnames(dataN)
 
-  # Convert GSM headers to vectors and remove the last element
-  gsmC_vector <- head(unlist(gsmC), -1)
-  gsmN_vector <- head(unlist(gsmN), -1)
+  # Convert GSM headers to vectors and remove 'gene'
+  gsmC_vector <- setdiff(gsmC, "gene")
+  gsmN_vector <- setdiff(gsmN, "gene")
+
+  # Print GSM vectors for debugging
+  print("GSM C Vector:")
+  print(gsmC_vector)
+  print("GSM N Vector:")
+  print(gsmN_vector)
+
+  # Check if the columns in gsmC_vector and gsmN_vector exist in data1
+  missing_cols_C <- setdiff(gsmC_vector, colnames(data1))
+  missing_cols_N <- setdiff(gsmN_vector, colnames(data1))
+
+  if (length(missing_cols_C) > 0 || length(missing_cols_N) > 0) {
+    stop("Some columns from GSM vectors are missing in data1.")
+  }
 
   # Combine data from case and normal samples
   data1 <- t(data1[, c(gsmC_vector, gsmN_vector)])
+
+  # Check for any non-numeric values after transposing
+  if (!all(sapply(data1, is.numeric))) {
+    stop("Data contains non-numeric values after transposing.")
+  }
+
   # Create groups vector
   groups <- c(rep("case", length(gsmC_vector)), rep("normal", length(gsmN_vector)))
 
@@ -116,7 +158,7 @@ pca <- function(data, dataC, dataN) {
 
   # Sort by PC1 contribution
   scores_var <- scores_var[order(scores_var[,"PC1"], decreasing = TRUE), ]
-  scores_var= as.data.frame(scores_var)
+  scores_var = as.data.frame(scores_var)
 
   # Get gene names
   gene_names <- rownames(scores_var)
@@ -125,6 +167,8 @@ pca <- function(data, dataC, dataN) {
   # Return a list containing scores_df and scores_var
   return(list(scores_df = scores_df, scores_var = scores_var))
 }
+
+
 
 enrichment <- function (data,direction){
   library(forcats)
@@ -316,59 +360,55 @@ limmaDE <- function(dataC, dataN) {
 
 
 deseq2DE <- function(dataC, dataN) {
+  # Load DESeq2 library
   library(DESeq2)
 
-  # Convert lists to data frames
+  # Convert the data from list to data frames if they aren't already
   dataC <- as.data.frame(dataC)
   dataN <- as.data.frame(dataN)
 
-  # Convert all columns to numeric except for the last column (which is assumed to be the gene column)
-  dataC[,-ncol(dataC)] <- lapply(dataC[,-ncol(dataC)], as.numeric)
-  dataN[,-ncol(dataN)] <- lapply(dataN[,-ncol(dataN)], as.numeric)
+  # Remove the 'gene' column before combining and ensure numeric values
+  dataC_numeric <- as.matrix(dataC[,-1])  # Convert to matrix and exclude 'gene' column
+  dataN_numeric <- as.matrix(dataN[,-1])  # Convert to matrix and exclude 'gene' column
 
-  # Set row names to gene names (assuming the gene names are in the last column)
-  rownames(dataC) <- dataC[,ncol(dataC)]
-  rownames(dataN) <- dataN[,ncol(dataN)]
+  # Ensure all values are numeric
+  dataC_numeric <- apply(dataC_numeric, 2, as.numeric)
+  dataN_numeric <- apply(dataN_numeric, 2, as.numeric)
 
-  # Drop the gene column
-  dataC <- dataC[,-ncol(dataC)]
-  dataN <- dataN[,-ncol(dataN)]
+  # Combine the numeric matrices
+  data_combined <- cbind(dataC_numeric, dataN_numeric)
 
-  # Combine data
-  data_combined <- cbind(dataC, dataN)
+  # Set row names from the 'gene' column in the original data frames
+  rownames(data_combined) <- dataC$gene  # Assuming 'gene' column is the same in both dataC and dataN
 
   # Create metadata
   coldata <- data.frame(
-    condition = factor(c(rep("Case", ncol(dataC)), rep("Normal", ncol(dataN))))
+    condition = factor(c(rep("Case", ncol(dataC_numeric)), rep("Normal", ncol(dataN_numeric))))
   )
   rownames(coldata) <- colnames(data_combined)
 
-  # Create DESeq2 dataset
+  # Create DESeq2 dataset object
   dds <- DESeqDataSetFromMatrix(countData = data_combined, colData = coldata, design = ~ condition)
 
-  # Run DESeq2
+  # Run DESeq2 analysis
   dds <- DESeq(dds)
 
-  # Get results
+  # Extract results, including log2 fold change, p-values, and adjusted p-values
   res <- results(dds, contrast = c("condition", "Case", "Normal"))
 
-  # Adjust p-values (This step is not necessary as DESeq2 automatically calculates adjusted p-values)
-  # res$padj <- p.adjust(res$pvalue, method = "BH")
-
-  # Convert to data frame
+  # Convert the results to a data frame
   res_df <- as.data.frame(res)
 
-  # Add gene names
+  # Add gene names to the results
   res_df$Gene <- rownames(res_df)
 
-  # Select relevant columns
+  # Select relevant columns for output (log2 fold change, standard error, p-value, adjusted p-value)
   res_df <- res_df[, c("Gene", "log2FoldChange", "lfcSE", "pvalue", "padj")]
 
-  # Convert pval_adj column to character
-  res_df$padj <- as.character(res_df$padj)
-
-  # Rename columns
+  # Rename columns for clarity
   colnames(res_df) <- c("Gene", "logFC", "lfcSE", "pvalue", "pval_adj")
+  res_df$pval_adj <- as.character(res_df$pval_adj)
+  res_df$logFC <- as.character(res_df$logFC)
 
   return(res_df)
 }

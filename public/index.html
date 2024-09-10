@@ -2835,64 +2835,6 @@
                             // Assuming you have obtained genes from data1
                             var genes = data1.map(obj => obj[Object.keys(obj)[0]]);
 
-                            
-                            // Calculate overall mean for data1
-                            var overall_mean = data1.map(obj => {
-                                var values = Object.values(obj).slice(1).map(parseFloat);
-                                return values.reduce((acc, val) => acc + val, 0) / values.length;
-                            });
-
-                            // Filter out rows with overall mean equal to 0
-                            var ind = overall_mean.reduce((acc, val, index) => {
-                                if (val === 0) {
-                                    // console.log("VALUE 0");
-                                    acc.push(index);
-                                }
-                                return acc;
-                            }, []);
-
-                            // Filter dataC, dataN, data1, and genes based on ind
-                            if (ind.length > 0) {
-                                dataN = dataN.filter((_, index) => !ind.includes(index));
-                                dataC = dataC.filter((_, index) => !ind.includes(index));
-                                data1 = data1.filter((_, index) => !ind.includes(index));
-                                genes = genes.filter((_, index) => !ind.includes(index));
-                            }
-
-                            // Logarithmic transformation for dataN, dataC, and data1
-                            dataN = dataN.map(obj => {
-                                var newObj = {};
-                                for (var key in obj) {
-                                    if (key !== "gene") {
-                                        newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
-                                    }
-                                }
-                                newObj["gene"] = obj["gene"];
-                                return newObj;
-                            });
-
-                            dataC = dataC.map(obj => {
-                                var newObj = {};
-                                for (var key in obj) {
-                                    if (key !== "gene") {
-                                        newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
-                                    }
-                                }
-                                newObj["gene"] = obj["gene"];
-                                return newObj;
-                            });
-
-                            data1 = data1.map(obj => {
-                                var newObj = {};
-                                for (var key in obj) {
-                                    if (key !== "gene") {
-                                        newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
-                                    }
-                                }
-                                newObj["gene"] = obj["gene"];
-                                return newObj;
-                            });
-
                             // Return the processed data
                             return {
                                 dataC: dataC,
@@ -3274,1368 +3216,1452 @@
 
 
 
+            if (chosen_statistic == 'deseq2') {
+                console.log(dataC_original)
+                console.log(dataN_original)
 
-            var req = ocpu.call("variation", {
-                rawdata: data1,
-            }, function (session) {
-                var filteredDataURL = session.loc + "/R/.val/json";
-                console.log(session);
-                // Fetch the filtered data from the URL
-                fetch(filteredDataURL)
-                    .then(response => response.json())
-                    .then(data => {
-                        document.getElementById("loadingOverlay").style.display = "none";
+                var dataN_or = dataN_original
 
-                        const innerData = JSON.parse(data[0]);
-                        console.log(data1)
+                var dataC_or = dataC_original
+                dataN_copy = dataN_original
 
-                        // Extract variation values from the inner JSON array
-                        variation_data = innerData.map(obj => obj.Variation);
+                dataC_copy = dataC_original
+                data_copy = data_original
 
-                        // Now you have an array of variation values, you can use it as needed
-                        console.log(variation_data);
-                        row_length = variation_data.length
-                        initial_num_genes = row_length
+                console.log(dataC_or)
+                console.log(dataN_or)
 
-                        console.log("numero di geni iniziali prima di qualsiasi filtro " + row_length)
+                var req = ocpu.call("deseq2DE", {
+                    dataC: dataC_or,  // Pass your processed case data
+                    dataN: dataN_or   // Pass your processed normal data
+                }, function (session) {
+                    var filteredDataURL = session.loc + "/R/.val/json";
+                    //console.log(session);
+                    // Fetch the filtered data from the URL
+                    fetch(filteredDataURL)
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log(session);
+                            var data = data.filter(row => !isNaN(row.pval_adj));
+                            data.forEach(entry => {
+                                entry.pval_adj = parseFloat(entry.pval_adj); // Convert string to number if necessary
+                                entry.logFC = parseFloat(entry.logFC); // Convert string to number if necessary
+                            });
+                            console.log(data_original)
+                            console.log(data)
 
-                        thr_prc = ss.quantile(variation_data, prc_IQR);
-                        updateHistogram(variation_data);
-                        variation_data_copy = (variation_data);
+                            parsedLogFC = data.map(row => ({
+                                "Gene": row.Gene,
+                                "logFC": row.logFC
+                            }));
 
-                        const ind = variation_data_copy.reduce((result, entry, index) => {
+                            // Step 1: Create a set of Gene values from the `data` array (these are genes remaining from the thres)
+                            const geneSet = new Set(data.map(entry => entry.Gene));
 
-                            if (entry < thr_prc) {
-                                result.push(index);
-                            }
-                            return result;
-                        }, []);
+                            // Step 2: Filter `data_original` to create `data_copy1` with only matching gene values
+                            data_copy1 = data_original.filter(entry => geneSet.has(entry.gene));
+                            dataC_copy1 = dataC_original.filter(entry => geneSet.has(entry.gene));
+                            dataN_copy1 = dataN_original.filter(entry => geneSet.has(entry.gene));
 
-                        console.log(ind)
+                            console.log(data_copy1);
 
-                        if (ind.length > 0) {
+                            // Now, data*_copy1 contains the original data filtered by deseq2DE
 
-                            // Remove entries corresponding to ind from dataN
-                            data_copy1 = data_original.filter((entry, index) => !ind.includes(index));
+                            parsedLogFC_origin1 = parsedLogFC
+                            parsedLogFC_origin = parsedLogFC
+                            console.log(parsedLogFC)
 
-                            // Remove entries corresponding to ind from dataC
-                            dataC_copy1 = dataC_original.filter((entry, index) => !ind.includes(index));
+                            //  console.log("first parsed origin after",parsedLogFC_origin.length)
+                            //  console.log("first data orign afterN ",dataN_copy.length)
+                            //  console.log("first data orign afterC ",dataC_copy.length)
 
-                            // Remove entries corresponding to ind from data
-                            dataN_copy1 = dataN_original.filter((entry, index) => !ind.includes(index));
-
-                            data_original_cpy = data_copy1
-
-                            dataC_original_cpy = dataC_copy1
-
-                            dataN_original_cpy = dataN_copy1
-
-                            // Remove entries corresponding to ind from genes
-                            //genes = genes.filter((entry, index) => !ind.includes(index));
-
-                            // Remove entries corresponding to ind from logFC
-                            //parsedLogFC = parsedLogFC.filter((entry, index) => !ind.includes(index));
-
-                        }
-
-                        dataN_copy = dataN_copy1
-                        dataC_copy = dataC_copy1
-                        data_copy = data_copy1
-                        console.log("geni tolti dal primo filtering del IQR", ind.length)
-
-                        // Update the gene count display
-                        // const geneCountDiv = document.getElementById('geneCount');
-                        // geneCountDiv.innerHTML = `Initial number of genes: ${initial_num_genes}<br>Number of genes after filtering: ${data_copy.length}`;
-
-                        first_filter_number_genes = data_copy.length
-                        console.log(dataC_original)
-
-
-                        parsedLogFC_origin1 = calculateLogFC(dataC_original, dataN_original)
-                        parsedLogFC_origin = calculateLogFC(dataC_copy, dataN_copy);
-                        parsedLogFC = parsedLogFC_origin
-                        console.log(parsedLogFC)
-
-                        //  console.log("first parsed origin after",parsedLogFC_origin.length)
-                        //  console.log("first data orign afterN ",dataN_copy.length)
-                        //  console.log("first data orign afterC ",dataC_copy.length)
-
-                        averageExpressions10C = calculateAverageLog10Expressions(dataC_copy);
-                        averageExpressions10N = calculateAverageLog10Expressions(dataN_copy);
-
-                        if (parsedLogFC) {
-
-                            // Calculate the quantile
-                            log_thr_fc = Math.log2(1.1);
-                            //console.log(log_thr_fc)
-                            const ind = parsedLogFC_origin.reduce((result, entry, index) => {
-
-                                if (Math.abs(entry.logFC) < Math.log2(thr_fc)) {
-                                    result.push(index);
-
+                            // This logarithmic transformation is needed for the scatter plot
+                            var data_log = data_copy.map(obj => {
+                                var newObj = {};
+                                for (var key in obj) {
+                                    if (key !== "gene") {
+                                        newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
+                                    }
                                 }
-                                return result;
-                            }, []);
-                            console.log("geni tolti dal primo filtering del LOGFC", ind.length)
+                                newObj["gene"] = obj["gene"];
+                                return newObj;
+                            });
 
-                            // console.log("parsed log before ",parsedLogFC.length)
-                            // console.log("data copy beforeC ",dataC_copy.length)
-                            // console.log("data copy beforeN ",dataN_copy.length)
+                            var dataN_log = dataN_copy.map(obj => {
+                                var newObj = {};
+                                for (var key in obj) {
+                                    if (key !== "gene") {
+                                        newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
+                                    }
+                                }
+                                newObj["gene"] = obj["gene"];
+                                return newObj;
+                            });
 
-                            // console.log("parsed log origin ",parsedLogFC_origin.length)
-                            /////////////////////// 
+                            var dataC_log = dataC_copy.map(obj => {
+                                var newObj = {};
+                                for (var key in obj) {
+                                    if (key !== "gene") {
+                                        newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
+                                    }
+                                }
+                                newObj["gene"] = obj["gene"];
+                                return newObj;
+                            });
 
-                            //DIMENSIONE DI PARSED E DATAC,DATAN SONO UGUALI , GIUSTAMENTE
+                            averageExpressions10C = calculateAverageLog10Expressions(dataC_log);
+                            averageExpressions10N = calculateAverageLog10Expressions(dataN_log);
 
-                            //////////////////////
-                            // console.log(parsedLogFC_origin)
-                            // console.log(data_copy)
-                            if (ind.length > 0) {
+                            // Now is time to filter out the genes using the logFC
 
-                                // Remove entries corresponding to ind from dataN
-                                dataC_copy = dataC_copy1.filter((entry, index) => !ind.includes(index));
+                            // Step 1: Initialize the geneset and log threshold
+                            log_thr_fc = Math.log2(1.1);
 
-                                // Remove entries corresponding to ind from dataN
-                                dataN_copy = dataN_copy1.filter((entry, index) => !ind.includes(index));
+                            // Step 2: Create a geneset of genes to keep based on the filtering condition
+                            const geneset = new Set();
+                            parsedLogFC_origin.forEach(entry => {
+                                if (Math.abs(entry.logFC) >= log_thr_fc) {
+                                    geneset.add(entry.Gene);  // Add the gene to the set if it passes the filter
+                                }
+                            });
 
-                                data_copy = data_copy1.filter((entry, index) => !ind.includes(index));
+                            console.log("Number of genes passing the LOGFC filter", geneset.size);
 
-                                parsedLogFC = parsedLogFC_origin.filter((entry, index) => !ind.includes(index));
+                            // Step 3: Filter dataC_copy1, dataN_copy1, data_copy1, and parsedLogFC_origin using the geneset
+                            if (geneset.size > 0) {
+                                dataC_copy = dataC_copy1.filter(entry => geneset.has(entry.gene));
+                                dataN_copy = dataN_copy1.filter(entry => geneset.has(entry.gene));
+                                data_copy = data_copy1.filter(entry => geneset.has(entry.gene));
+                                parsedLogFC = parsedLogFC_origin.filter(entry => geneset.has(entry.Gene));
                             }
 
-                            //////// DATI FILTRATI DAL PRIMO FOLD-CHANGE//////////////////
-                            // console.log(parsedLogFC)
-                            // console.log(data_copy)
+                            console.log("Filtered logFC dataC_copy", dataC_copy.length);
+                            console.log("Filtered logFC dataN_copy", dataN_copy.length);
+                            console.log("Filtered logFC data_copy", data_copy.length);
+                            console.log("Filtered logFC parsedLogFC", parsedLogFC.length);
 
                             updateLogFCHistogram(parsedLogFC_origin)
 
-                            if (chosen_statistic == 't-test') {
-                                var req = ocpu.call("pval", {
-                                    data: data_copy,
-                                    N: normal_number,
-                                    M: case_number
-                                }, function (session) {
-                                    var filteredDataURL = session.loc + "/R/.val/json";
-                                    //console.log(session);
-                                    // Fetch the filtered data from the URL
-                                    fetch(filteredDataURL)
-                                        .then(response => response.json())
-                                        .then(data => {
-                                            console.log(session);
-                                            // Convert pval_adj values back to numbers if needed
-                                            data.forEach(entry => {
-                                                entry.pval_adj = parseFloat(entry.pval_adj); // Convert string to number if necessary
-                                            });
+                            // Rename '_row' to 'Gene'
+                            data.forEach(entry => {
+                                if (entry.hasOwnProperty('_row')) {
+                                    entry.Gene = entry._row; // Assign '_row' value to 'Gene'
+                                    delete entry._row; // Remove '_row' property
+                                }
+                            });
 
-                                            old_p_adj = data
-                                            const ind = old_p_adj.reduce((result, entry, index) => {
+                            old_p_adj = data.filter(entry => geneset.has(entry.Gene))
 
-                                                if (entry.pval_adj > threshold) {
-                                                    result.push(index);
-                                                }
-                                                return result;
-                                            }, []);
+                            // Step 1: Initialize the geneset and the p-value threshold
+                            const geneset_pval = new Set();
 
-                                            console.log(old_p_adj)
-                                            console.log(ind)
+                            // Step 2: Create a geneset of genes to keep based on the p-value condition
+                            old_p_adj.forEach(entry => {
+                                if (entry.pval_adj <= threshold) {  // Adjust condition according to your filtering logic
+                                    geneset_pval.add(entry.Gene);  // Assuming 'Gene' is the property name
+                                }
+                            });
 
+                            console.log("Number of genes passing the pval_adj filter", geneset_pval.size);
 
-                                            console.log("geni tolti dal primo filtering del pval", ind.length)
+                            // Step 3: Filter dataC_copy, dataN_copy, and data_copy using the geneset_pval
+                            if (geneset_pval.size > 0) {
 
-                                            if (ind.length > 0) {
+                                //console.log(parsedLogFC.length)
 
-                                                //console.log(parsedLogFC.length)
+                                dataC_copy_pval = dataC_copy.filter(entry => geneset_pval.has(entry.gene));
 
-                                                // Remove entries corresponding to ind from dataN
+                                dataN_copy_pval = dataN_copy.filter(entry => geneset_pval.has(entry.gene));
 
-                                                // Remove entries corresponding to ind from dataN
-                                                dataC_copy_pval = dataC_copy.filter((entry, index) => !ind.includes(index));
+                                data_copy_pval = data_copy.filter(entry => geneset_pval.has(entry.gene));
 
-                                                // Remove entries corresponding to ind from dataN
-                                                dataN_copy_pval = dataN_copy.filter((entry, index) => !ind.includes(index));
+                                console.log("geni rimamenti dal primo filtering", data_copy.length)
 
+                                // Remove entries corresponding to ind from logFC
+                                //parsedLogFC = parsedLogFC.filter((entry, index) => !ind.includes(index));
 
-                                                data_copy_pval = data_copy.filter((entry, index) => !ind.includes(index));
+                                parsedLogFC_pval = parsedLogFC
+                                console.log(log_thr_fc)
+                                console.log(parsedLogFC_origin1)
+                                console.log(old_p_adj)
 
-                                                console.log("geni rimamenti dal primo filtering", data_copy.length)
-                                                // Remove entries corresponding to ind from logFC
-                                                parsedLogFC = parsedLogFC.filter((entry, index) => !ind.includes(index));
+                                if (parsedLogFC.length == 0) {
+                                    alert("No deg found!")
+                                }
 
-                                                parsedLogFC_pval = parsedLogFC
-                                                console.log(log_thr_fc)
-                                                console.log(parsedLogFC_origin1)
-                                                console.log(old_p_adj)
+                                console.log("Promise: al box gli passo parsedlogFC", parsedLogFC.length)
 
-                                                if (parsedLogFC.length == 0) {
-                                                    alert("No deg found!")
-                                                }
+                                var sortedLogFC = parsedLogFC.slice().sort((a, b) => b.logFC - a.logFC);
 
-                                                console.log("Promise: al box gli passo parsedlogFC", parsedLogFC.length)
+                                console.log(sortedLogFC)
 
-                                                var sortedLogFC = parsedLogFC.slice().sort((a, b) => b.logFC - a.logFC);
+                                var mostUpregulatedGene = sortedLogFC[0];
 
-                                                console.log(sortedLogFC)
+                                var secondMostUpregulatedGene = sortedLogFC[1];
 
-                                                var mostUpregulatedGene = sortedLogFC[0];
-                                                var secondMostUpregulatedGene = sortedLogFC[1];
+                                var mostDownregulatedGene = sortedLogFC[sortedLogFC.length - 1];
+                                var secondMostDownregulatedGene = sortedLogFC[sortedLogFC.length - 2];
 
-                                                var mostDownregulatedGene = sortedLogFC[sortedLogFC.length - 1];
-                                                var secondMostDownregulatedGene = sortedLogFC[sortedLogFC.length - 2];
+                                console.log(mostUpregulatedGene)
 
-                                                console.log(mostUpregulatedGene)
+                                var mostUpregulatedGeneName = mostUpregulatedGene.Gene
+                                //var secondMostUpregulatedGeneName = secondMostUpregulatedGene.Gene
+                                var mostDownregulatedGeneName = mostDownregulatedGene.Gene
+                                //var secondMostDownregulatedGeneName = secondMostDownregulatedGene.Gene
 
-                                                var mostUpregulatedGeneName = mostUpregulatedGene.Gene
-                                                //var secondMostUpregulatedGeneName = secondMostUpregulatedGene.Gene
-                                                var mostDownregulatedGeneName = mostDownregulatedGene.Gene
-                                                //var secondMostDownregulatedGeneName = secondMostDownregulatedGene.Gene
 
+                                selectedGeneData.push(mostUpregulatedGeneName)
+                                selectedGeneData.push(mostDownregulatedGeneName)
 
-                                                selectedGeneData.push(mostUpregulatedGeneName)
-                                                selectedGeneData.push(mostDownregulatedGeneName)
+                                // Find the select element
+                                var selectElement = document.getElementById("selectButton");
 
-                                                // Find the select element
-                                                var selectElement = document.getElementById("selectButton");
+                                // Clear existing options
+                                selectElement.innerHTML = "";
 
-                                                // Clear existing options
-                                                selectElement.innerHTML = "";
+                                // Add the new options dynamically
+                                var option1 = document.createElement("option");
+                                option1.value = mostUpregulatedGene.Gene;
+                                option1.text = `Most Upregulated (${mostUpregulatedGene.Gene})`;
+                                option1.selected = true;
+                                selectElement.appendChild(option1);
 
-                                                // Add the new options dynamically
-                                                var option1 = document.createElement("option");
-                                                option1.value = mostUpregulatedGene.Gene;
-                                                option1.text = `Most Upregulated (${mostUpregulatedGene.Gene})`;
-                                                option1.selected = true;
-                                                selectElement.appendChild(option1);
+                                var option2 = document.createElement("option");
+                                option2.value = mostDownregulatedGene.Gene;
+                                option2.text = `Most Downregulated (${mostDownregulatedGene.Gene})`;
+                                selectElement.appendChild(option2);
 
-                                                var option2 = document.createElement("option");
-                                                option2.value = mostDownregulatedGene.Gene;
-                                                option2.text = `Most Downregulated (${mostDownregulatedGene.Gene})`;
-                                                selectElement.appendChild(option2);
 
+                                // updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
+                                updateVolcanoPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
 
-                                                // updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
-                                                updateVolcanoPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
+                                data_copy = data_log.filter(entry => geneset.has(entry.gene))
+                                dataC_copy = dataC_log.filter(entry => geneset.has(entry.gene))
+                                dataN_copy = dataN_log.filter(entry => geneset.has(entry.gene))
 
-                                                dynamicParallel(selectedGeneData, data_copy_pval, dataC_copy_pval, dataN_copy, first_dims)
+                                dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
 
-                                                updateBoxPlot(mostUpregulatedGeneName, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
-
-                                                updateCounter()
-
-                                                scatter.selectAll("circle")
-                                                    .filter(circleData => circleData.Gene === mostUpregulatedGeneName || circleData.Gene === mostDownregulatedGeneName)
-                                                    .style("fill", d => {
-                                                        // Check if logFC is greater than or equal to the threshold
-                                                        return "green";
-
-                                                    })
-                                                    .classed('pulse', true);
-
-                                                // Function to handle checkbox change event
-                                                function handleCheckboxChange(event) {
-                                                    var isChecked = event.target.checked;
-                                                    var category = event.target.value;
-
-                                                    if (isChecked) {
-                                                        // Add category to first_dims array
-                                                        first_dims.unshift(category);
-                                                    } else {
-                                                        // Remove category from first_dims array
-                                                        var index = first_dims.indexOf(category);
-                                                        if (index !== -1) {
-                                                            first_dims.splice(index, 1);
-                                                        }
-                                                    }
-
-                                                    // Log the updated first_dims array
-                                                    console.log("Updated first_dims:", first_dims);
-
-                                                    dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
-                                                }
-
-
-                                                var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
-
-                                                // Get the container element
-                                                var checkboxContainer = document.getElementById("checkboxContainer");
-
-                                                // Initialize a variable to count the number of checkboxes added to the current row
-                                                var checkboxesInRow = 0;
-
-                                                // Iterate through metadataCategories to create checkboxes
-                                                metadataCategories.forEach(function (category) {
-                                                    // Create a checkbox element
-                                                    var checkbox = document.createElement("input");
-                                                    checkbox.type = "checkbox";
-                                                    checkbox.value = category;
-                                                    checkbox.id = "checkbox_" + category; // Set a unique ID for each checkbox
-
-                                                    // Set the checked attribute based on condition
-                                                    if (category === selectedRowName) {
-                                                        checkbox.checked = true;
-                                                    }
-
-                                                    // Create a label for the checkbox
-                                                    var label = document.createElement("label");
-                                                    label.htmlFor = checkbox.id;
-                                                    label.appendChild(document.createTextNode(category));
-
-                                                    // Add event listener to the checkbox to handle change event
-                                                    checkbox.addEventListener("change", handleCheckboxChange);
-
-                                                    // Append the checkbox and label to the container element
-                                                    checkboxContainer.appendChild(checkbox);
-                                                    checkboxContainer.appendChild(label);
-
-                                                    // Increment the count of checkboxes in the row
-                                                    checkboxesInRow++;
-
-                                                    // Add a line break after every two checkboxes
-                                                    if (checkboxesInRow % 2 === 0) {
-                                                        checkboxContainer.appendChild(document.createElement("br"));
-                                                    }
-                                                });
-
-                                                // Initialize a variable to count the number of radio buttons added to the current row
-                                                var radioButtonsInRow = 0;
-                                                // Get the container element
-                                                var radioBoxContainer = document.getElementById("radioBoxContainer");
-
-                                                // Function to handle radio button change event
-                                                function handleRadioButtonChange(event) {
-                                                    // Update selectedVariable with the value of the selected radio button
-                                                    selectedVariable = event.target.value;
-
-                                                    dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims, ordering);
-                                                }
-
-
-                                                // Iterate through metadataCategories to create radio buttons
-                                                // Count the unique values in the metadata category
-                                                function countUniqueValues(cat, j) {
-                                                    var uniqueValues = new Set(); // Use a Set to store unique values
-                                                    // Iterate through metadata categories to create y scales
-                                                    metadataCategories.forEach((category, i) => {
-                                                        if (j === i) {
-                                                            var values = Object.values(metadata[i]); // Extract values for the current category
-                                                            values.shift(); // Remove the first value (Sample_source_name_ch1)
-                                                            var uniqueValues = [...new Set(values)]; // Filter out duplicate
-                                                            console.log("Values for", category, ":", uniqueValues);
-                                                            return uniqueValues.length; // Return the size of the Set, which is the count of unique values
-                                                        }
-                                                    });
-                                                }
-
-                                                // Iterate through metadataCategories to create radio buttons
-                                                metadataCategories.forEach(function (category, i) {
-                                                    // Check if the category has more than 9 unique values
-                                                    var values = Object.values(metadata[i]); // Extract values for the current category
-                                                    values.shift(); // Remove the first value (Sample_source_name_ch1)
-                                                    var uniqueValues = [...new Set(values)]; // Filter out duplicate
-                                                    console.log("Values for", category, ":", uniqueValues);
-                                                    console.log(uniqueValues.length);
-                                                    if (uniqueValues.length >= 9) return
-
-                                                    // Create a radio button element
-                                                    var radioButton = document.createElement("input");
-                                                    radioButton.type = "radio";
-                                                    radioButton.name = "radioButtonGroup"; // Set the same name for all radio buttons in the group
-                                                    radioButton.value = category;
-                                                    radioButton.id = "radioButton_" + category; // Set a unique ID for each radio button
-
-                                                    // Set the checked attribute based on condition
-                                                    if (category === selectedRowName) {
-                                                        radioButton.checked = true;
-                                                    }
-
-                                                    // Create a label for the radio button
-                                                    var label = document.createElement("label");
-                                                    label.htmlFor = radioButton.id;
-                                                    label.appendChild(document.createTextNode(category));
-
-                                                    // Add event listener to the radio button to handle change event
-                                                    radioButton.addEventListener("change", handleRadioButtonChange);
-
-                                                    // Append the radio button and label to the container element
-                                                    radioBoxContainer.appendChild(radioButton);
-                                                    radioBoxContainer.appendChild(label);
-
-                                                    // Increment the count of radio buttons in the row
-                                                    radioButtonsInRow++;
-
-                                                    // Add a line break after every two radio buttons
-                                                    if (radioButtonsInRow % 2 === 0) {
-                                                        radioBoxContainer.appendChild(document.createElement("br"));
-                                                    }
-                                                });
-
-                                                document.getElementById("checkboxContainer").style.visibility = "visible";
-                                                document.getElementById("radioBoxContainer").style.visibility = "visible";
-
-
-                                            }
-                                            console.log(dataN_copy.length)
-                                            var pc1Values = [];
-                                            var pc2Values = [];
-                                            var groupValues = [];
-                                            var req = ocpu.call("pca", {
-                                                data: data_copy_pval,
-                                                dataN: dataN_copy_pval,
-                                                dataC: dataC_copy_pval
-                                            }, function (session) {
-                                                var filteredDataURL = session.loc + "/R/.val/json";
-                                                //console.log(session);
-                                                // Fetch the filtered data from the URL
-                                                fetch(filteredDataURL)
-                                                    .then(response => response.json())
-                                                    .then(data => {
-                                                        json = data
-                                                        console.log(filteredDataURL)
-                                                        console.log(json)
-
-                                                        var pc1Key = "PC1";
-                                                        var pc2Key = "PC2";
-                                                        var groupKey = "Group";
-
-                                                        // Arrays to store PC1 and PC2 values
-
-
-                                                        // Iterate over each object in the JSON array
-                                                        json.scores_df.forEach(function (obj) {
-                                                            // Push PC1, PC2, and Group values to the arrays
-                                                            pc1Values.push(obj[pc1Key]);
-                                                            pc2Values.push(obj[pc2Key]);
-                                                            groupValues.push(obj[groupKey]);
-                                                        });
-                                                        // console.log(pc1Values)
-
-                                                        // Extract metadata categories from the values of the first column
-                                                        var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
-                                                        console.log("Metadata categories:", metadataCategories);
-
-                                                        // Initialize pca_data array
-                                                        pca_data = [];
-
-                                                        // Iterate over each object in the JSON array
-                                                        json.scores_df.forEach(function (obj) {
-                                                            // Retrieve additional data from metadata based on _row
-                                                            var gsm = obj._row;
-                                                            var group = obj.Group;
-                                                            var pc1 = obj.PC1;
-                                                            var pc2 = obj.PC2;
-
-                                                            // Create an object with the required fields
-                                                            var newObj = {
-                                                                GSM: gsm,
-                                                                group: group,
-                                                                pc1: pc1,
-                                                                pc2: pc2
-                                                            };
-
-                                                            // Add metadata values for each category to the newObj
-                                                            metadataCategories.forEach((category, index) => {
-                                                                newObj[category] = metadata[index][gsm];
-                                                            });
-
-                                                            // Push the new object to the pca_data array
-                                                            pca_data.push(newObj);
-                                                        });
-
-                                                        heatmap_data = []
-                                                        json.scores_var.forEach(function (obj) {
-                                                            // Push PC1, PC2, and Group values to the arrays
-                                                            var gene = obj._row
-                                                            var pc1 = obj.PC1
-                                                            var pc2 = obj.PC2
-                                                            var pc3 = obj.PC3
-                                                            var pc4 = obj.PC4
-                                                            var pc5 = obj.PC5
-                                                            var pc6 = obj.PC6
-
-                                                            var newObj = {
-                                                                gene: gene,
-                                                                pc1: pc1,
-                                                                pc2: pc2,
-                                                                pc3: pc3,
-                                                                pc4: pc4,
-                                                                pc5: pc5,
-                                                                pc6: pc6
-                                                            };
-                                                            heatmap_data.push(newObj);
-                                                        })
-                                                        // Display the newData array
-                                                        console.log("PCA, first try ", pca_data);
-                                                        pca(pca_data);
-                                                        heatmap(heatmap_data);
-
-                                                    })
-
-
-
-
-
-                                            })
-                                            // DEG(data_copy_pval,parsedLogFC,old_p_adj)
-                                            // var req = ocpu.call("enrichment", {
-                                            //     data: data_copy
-                                            //     }, function (session) {
-
-                                            // })
-                                        });
-
-
-                                })
-                            } else if (chosen_statistic == 'limma') {
-
-                                console.log(dataC_copy)
-                                console.log(dataN_copy)
-
-                                var req = ocpu.call("limmaDE", {
-                                    dataC: dataC_copy,  // Pass your processed case data
-                                    dataN: dataN_copy   // Pass your processed normal data
-                                }, function (session) {
-                                    var filteredDataURL = session.loc + "/R/.val/json";
-                                    //console.log(session);
-                                    // Fetch the filtered data from the URL
-                                    fetch(filteredDataURL)
-                                        .then(response => response.json())
-                                        .then(data => {
-                                            console.log(session);
-                                            // Convert pval_adj values back to numbers if needed
-                                            data.forEach(entry => {
-                                                entry.pval_adj = parseFloat(entry.pval_adj); // Convert string to number if necessary
-                                            });
-
-                                            // Rename '_row' to 'Gene'
-                                            data.forEach(entry => {
-                                                if (entry.hasOwnProperty('_row')) {
-                                                    entry.Gene = entry._row; // Assign '_row' value to 'Gene'
-                                                    delete entry._row; // Remove '_row' property
-                                                }
-                                            });
-
-                                            old_p_adj = data
-                                            old_p_adj.sort((a, b) => {
-                                                if (a.Gene < b.Gene) {
-                                                    return -1;
-                                                }
-                                                if (a.Gene > b.Gene) {
-                                                    return 1;
-                                                }
-                                                return 0;
-                                            });
-
-                                            const ind = old_p_adj.reduce((result, entry, index) => {
-
-                                                if (entry.pval_adj > threshold) {
-                                                    result.push(index);
-                                                }
-                                                return result;
-                                            }, []);
-
-                                            console.log(old_p_adj)
-                                            console.log(ind)
-
-                                            console.log("geni tolti dal primo filtering del pval", ind.length)
-
-                                            if (ind.length > 0) {
-
-                                                //console.log(parsedLogFC.length)
-
-                                                // Remove entries corresponding to ind from dataN
-
-                                                // Remove entries corresponding to ind from dataN
-                                                dataC_copy_pval = dataC_copy.filter((entry, index) => !ind.includes(index));
-
-                                                // Remove entries corresponding to ind from dataN
-                                                dataN_copy_pval = dataN_copy.filter((entry, index) => !ind.includes(index));
-
-
-                                                data_copy_pval = data_copy.filter((entry, index) => !ind.includes(index));
-
-                                                console.log("geni rimamenti dal primo filtering", data_copy.length)
-
-                                                // Remove entries corresponding to ind from logFC
-                                                parsedLogFC = parsedLogFC.filter((entry, index) => !ind.includes(index));
-
-                                                parsedLogFC_pval = parsedLogFC
-                                                console.log(log_thr_fc)
-                                                console.log(parsedLogFC_origin1)
-                                                console.log(old_p_adj)
-
-                                                if (parsedLogFC.length == 0) {
-                                                    alert("No deg found!")
-                                                }
-
-                                                console.log("Promise: al box gli passo parsedlogFC", parsedLogFC.length)
-
-                                                var sortedLogFC = parsedLogFC.slice().sort((a, b) => b.logFC - a.logFC);
-
-                                                console.log(sortedLogFC)
-
-                                                var mostUpregulatedGene = sortedLogFC[0];
-
-                                                var secondMostUpregulatedGene = sortedLogFC[1];
-
-                                                var mostDownregulatedGene = sortedLogFC[sortedLogFC.length - 1];
-                                                var secondMostDownregulatedGene = sortedLogFC[sortedLogFC.length - 2];
-
-                                                console.log(mostUpregulatedGene)
-
-                                                var mostUpregulatedGeneName = mostUpregulatedGene.Gene
-                                                //var secondMostUpregulatedGeneName = secondMostUpregulatedGene.Gene
-                                                var mostDownregulatedGeneName = mostDownregulatedGene.Gene
-                                                //var secondMostDownregulatedGeneName = secondMostDownregulatedGene.Gene
-
-
-                                                selectedGeneData.push(mostUpregulatedGeneName)
-                                                selectedGeneData.push(mostDownregulatedGeneName)
-
-                                                // Find the select element
-                                                var selectElement = document.getElementById("selectButton");
-
-                                                // Clear existing options
-                                                selectElement.innerHTML = "";
-
-                                                // Add the new options dynamically
-                                                var option1 = document.createElement("option");
-                                                option1.value = mostUpregulatedGene.Gene;
-                                                option1.text = `Most Upregulated (${mostUpregulatedGene.Gene})`;
-                                                option1.selected = true;
-                                                selectElement.appendChild(option1);
-
-                                                var option2 = document.createElement("option");
-                                                option2.value = mostDownregulatedGene.Gene;
-                                                option2.text = `Most Downregulated (${mostDownregulatedGene.Gene})`;
-                                                selectElement.appendChild(option2);
-
-
-                                                // updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
-                                                updateVolcanoPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
-
-                                                dynamicParallel(selectedGeneData, data_copy_pval, dataC_copy_pval, dataN_copy, first_dims)
-                                                console.log(dataN_copy_pval[0])
-
-                                                updateBoxPlot(mostUpregulatedGeneName, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
-
-                                                updateCounter()
-
-                                                scatter.selectAll("circle")
-                                                    .filter(circleData => circleData.Gene === mostUpregulatedGeneName || circleData.Gene === mostDownregulatedGeneName)
-                                                    .style("fill", d => {
-                                                        // Check if logFC is greater than or equal to the threshold
-                                                        return "green";
-
-                                                    })
-                                                    .classed('pulse', true);
-
-                                                // Function to handle checkbox change event
-                                                function handleCheckboxChange(event) {
-                                                    var isChecked = event.target.checked;
-                                                    var category = event.target.value;
-
-                                                    if (isChecked) {
-                                                        // Add category to first_dims array
-                                                        first_dims.unshift(category);
-                                                    } else {
-                                                        // Remove category from first_dims array
-                                                        var index = first_dims.indexOf(category);
-                                                        if (index !== -1) {
-                                                            first_dims.splice(index, 1);
-                                                        }
-                                                    }
-
-                                                    // Log the updated first_dims array
-                                                    console.log("Updated first_dims:", first_dims);
-
-                                                    dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
-                                                }
-
-
-                                                var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
-
-                                                // Get the container element
-                                                var checkboxContainer = document.getElementById("checkboxContainer");
-
-                                                // Initialize a variable to count the number of checkboxes added to the current row
-                                                var checkboxesInRow = 0;
-
-                                                // Iterate through metadataCategories to create checkboxes
-                                                metadataCategories.forEach(function (category) {
-                                                    // Create a checkbox element
-                                                    var checkbox = document.createElement("input");
-                                                    checkbox.type = "checkbox";
-                                                    checkbox.value = category;
-                                                    checkbox.id = "checkbox_" + category; // Set a unique ID for each checkbox
-
-                                                    // Set the checked attribute based on condition
-                                                    if (category === selectedRowName) {
-                                                        checkbox.checked = true;
-                                                    }
-
-                                                    // Create a label for the checkbox
-                                                    var label = document.createElement("label");
-                                                    label.htmlFor = checkbox.id;
-                                                    label.appendChild(document.createTextNode(category));
-
-                                                    // Add event listener to the checkbox to handle change event
-                                                    checkbox.addEventListener("change", handleCheckboxChange);
-
-                                                    // Append the checkbox and label to the container element
-                                                    checkboxContainer.appendChild(checkbox);
-                                                    checkboxContainer.appendChild(label);
-
-                                                    // Increment the count of checkboxes in the row
-                                                    checkboxesInRow++;
-
-                                                    // Add a line break after every two checkboxes
-                                                    if (checkboxesInRow % 2 === 0) {
-                                                        checkboxContainer.appendChild(document.createElement("br"));
-                                                    }
-                                                });
-
-                                                // Initialize a variable to count the number of radio buttons added to the current row
-                                                var radioButtonsInRow = 0;
-                                                // Get the container element
-                                                var radioBoxContainer = document.getElementById("radioBoxContainer");
-
-                                                // Function to handle radio button change event
-                                                function handleRadioButtonChange(event) {
-                                                    // Update selectedVariable with the value of the selected radio button
-                                                    selectedVariable = event.target.value;
-
-                                                    dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims, ordering);
-                                                }
-
-
-                                                // Iterate through metadataCategories to create radio buttons
-                                                // Count the unique values in the metadata category
-                                                function countUniqueValues(cat, j) {
-                                                    var uniqueValues = new Set(); // Use a Set to store unique values
-                                                    // Iterate through metadata categories to create y scales
-                                                    metadataCategories.forEach((category, i) => {
-                                                        if (j === i) {
-                                                            var values = Object.values(metadata[i]); // Extract values for the current category
-                                                            values.shift(); // Remove the first value (Sample_source_name_ch1)
-                                                            var uniqueValues = [...new Set(values)]; // Filter out duplicate
-                                                            console.log("Values for", category, ":", uniqueValues);
-                                                            return uniqueValues.length; // Return the size of the Set, which is the count of unique values
-                                                        }
-                                                    });
-                                                }
-
-                                                // Iterate through metadataCategories to create radio buttons
-                                                metadataCategories.forEach(function (category, i) {
-                                                    // Check if the category has more than 9 unique values
-                                                    var values = Object.values(metadata[i]); // Extract values for the current category
-                                                    values.shift(); // Remove the first value (Sample_source_name_ch1)
-                                                    var uniqueValues = [...new Set(values)]; // Filter out duplicate
-                                                    console.log("Values for", category, ":", uniqueValues);
-                                                    console.log(uniqueValues.length);
-                                                    if (uniqueValues.length >= 9) return
-
-                                                    // Create a radio button element
-                                                    var radioButton = document.createElement("input");
-                                                    radioButton.type = "radio";
-                                                    radioButton.name = "radioButtonGroup"; // Set the same name for all radio buttons in the group
-                                                    radioButton.value = category;
-                                                    radioButton.id = "radioButton_" + category; // Set a unique ID for each radio button
-
-                                                    // Set the checked attribute based on condition
-                                                    if (category === selectedRowName) {
-                                                        radioButton.checked = true;
-                                                    }
-
-                                                    // Create a label for the radio button
-                                                    var label = document.createElement("label");
-                                                    label.htmlFor = radioButton.id;
-                                                    label.appendChild(document.createTextNode(category));
-
-                                                    // Add event listener to the radio button to handle change event
-                                                    radioButton.addEventListener("change", handleRadioButtonChange);
-
-                                                    // Append the radio button and label to the container element
-                                                    radioBoxContainer.appendChild(radioButton);
-                                                    radioBoxContainer.appendChild(label);
-
-                                                    // Increment the count of radio buttons in the row
-                                                    radioButtonsInRow++;
-
-                                                    // Add a line break after every two radio buttons
-                                                    if (radioButtonsInRow % 2 === 0) {
-                                                        radioBoxContainer.appendChild(document.createElement("br"));
-                                                    }
-                                                });
-
-                                                document.getElementById("checkboxContainer").style.visibility = "visible";
-                                                document.getElementById("radioBoxContainer").style.visibility = "visible";
-
-
-                                            }
-                                            console.log(dataN_copy.length)
-                                            var pc1Values = [];
-                                            var pc2Values = [];
-                                            var groupValues = [];
-                                            console.log(data_copy_pval)
-                                            var req = ocpu.call("pca", {
-                                                data: data_copy_pval,
-                                                dataN: dataN_copy_pval,
-                                                dataC: dataC_copy_pval
-                                            }, function (session) {
-                                                var filteredDataURL = session.loc + "/R/.val/json";
-                                                //console.log(session);
-                                                // Fetch the filtered data from the URL
-                                                fetch(filteredDataURL)
-                                                    .then(response => response.json())
-                                                    .then(data => {
-                                                        json = data
-                                                        console.log(filteredDataURL)
-                                                        console.log(json)
-
-                                                        var pc1Key = "PC1";
-                                                        var pc2Key = "PC2";
-                                                        var groupKey = "Group";
-
-                                                        // Arrays to store PC1 and PC2 values
-
-
-                                                        // Iterate over each object in the JSON array
-                                                        json.scores_df.forEach(function (obj) {
-                                                            // Push PC1, PC2, and Group values to the arrays
-                                                            pc1Values.push(obj[pc1Key]);
-                                                            pc2Values.push(obj[pc2Key]);
-                                                            groupValues.push(obj[groupKey]);
-                                                        });
-                                                        // console.log(pc1Values)
-
-                                                        // Extract metadata categories from the values of the first column
-                                                        var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
-                                                        console.log("Metadata categories:", metadataCategories);
-
-                                                        // Initialize pca_data array
-                                                        pca_data = [];
-
-                                                        // Iterate over each object in the JSON array
-                                                        json.scores_df.forEach(function (obj) {
-                                                            // Retrieve additional data from metadata based on _row
-                                                            var gsm = obj._row;
-                                                            var group = obj.Group;
-                                                            var pc1 = obj.PC1;
-                                                            var pc2 = obj.PC2;
-
-                                                            // Create an object with the required fields
-                                                            var newObj = {
-                                                                GSM: gsm,
-                                                                group: group,
-                                                                pc1: pc1,
-                                                                pc2: pc2
-                                                            };
-
-                                                            // Add metadata values for each category to the newObj
-                                                            metadataCategories.forEach((category, index) => {
-                                                                newObj[category] = metadata[index][gsm];
-                                                            });
-
-                                                            // Push the new object to the pca_data array
-                                                            pca_data.push(newObj);
-                                                        });
-
-                                                        heatmap_data = []
-                                                        json.scores_var.forEach(function (obj) {
-                                                            // Push PC1, PC2, and Group values to the arrays
-                                                            var gene = obj._row
-                                                            var pc1 = obj.PC1
-                                                            var pc2 = obj.PC2
-                                                            var pc3 = obj.PC3
-                                                            var pc4 = obj.PC4
-                                                            var pc5 = obj.PC5
-                                                            var pc6 = obj.PC6
-
-                                                            var newObj = {
-                                                                gene: gene,
-                                                                pc1: pc1,
-                                                                pc2: pc2,
-                                                                pc3: pc3,
-                                                                pc4: pc4,
-                                                                pc5: pc5,
-                                                                pc6: pc6
-                                                            };
-                                                            heatmap_data.push(newObj);
-                                                        })
-                                                        // Display the newData array
-                                                        console.log("PCA, first try ", pca_data);
-
-
-                                                        pca(pca_data);
-                                                        heatmap(heatmap_data);
-
-                                                    })
-
-
-
-
-
-                                            })
-                                            // DEG(data_copy_pval,parsedLogFC,old_p_adj)
-                                            // var req = ocpu.call("enrichment", {
-                                            //     data: data_copy
-                                            //     }, function (session) {
-
-                                            // })
-                                        });
-
-
-                                })
-                            } else if (chosen_statistic == 'deseq2') {
-                                console.log(dataC_copy)
-                                console.log(dataN_copy)
-
-                                // Logarithmic transformation for dataN, dataC, and data1
-                                var dataN_or = dataN_original_cpy.map(obj => {
-                                    var newObj = {};
-                                    for (var key in obj) {
-                                        if (key !== "gene") {
-                                            newObj[key] = Math.pow((obj[key]), 2) + 1;
+                                console.log(dataN_log[0])
+
+                                updateBoxPlot(mostUpregulatedGeneName, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
+
+                                updateCounter()
+
+                                scatter.selectAll("circle")
+                                    .filter(circleData => circleData.Gene === mostUpregulatedGeneName || circleData.Gene === mostDownregulatedGeneName)
+                                    .style("fill", d => {
+                                        // Check if logFC is greater than or equal to the threshold
+                                        return "green";
+
+                                    })
+                                    .classed('pulse', true);
+
+                                // Function to handle checkbox change event
+                                function handleCheckboxChange(event) {
+                                    var isChecked = event.target.checked;
+                                    var category = event.target.value;
+
+                                    if (isChecked) {
+                                        // Add category to first_dims array
+                                        first_dims.unshift(category);
+                                    } else {
+                                        // Remove category from first_dims array
+                                        var index = first_dims.indexOf(category);
+                                        if (index !== -1) {
+                                            first_dims.splice(index, 1);
                                         }
                                     }
-                                    newObj["gene"] = obj["gene"];
-                                    return newObj;
-                                });
 
-                                var dataC_or = dataC_original_cpy.map(obj => {
-                                    var newObj = {};
-                                    for (var key in obj) {
-                                        if (key !== "gene") {
-                                            newObj[key] = Math.pow((obj[key]), 2) + 1;
-                                        }
+                                    // Log the updated first_dims array
+                                    console.log("Updated first_dims:", first_dims);
+
+                                    dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
+                                }
+
+
+                                var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
+
+                                // Get the container element
+                                var checkboxContainer = document.getElementById("checkboxContainer");
+
+                                // Initialize a variable to count the number of checkboxes added to the current row
+                                var checkboxesInRow = 0;
+
+                                // Iterate through metadataCategories to create checkboxes
+                                metadataCategories.forEach(function (category) {
+                                    // Create a checkbox element
+                                    var checkbox = document.createElement("input");
+                                    checkbox.type = "checkbox";
+                                    checkbox.value = category;
+                                    checkbox.id = "checkbox_" + category; // Set a unique ID for each checkbox
+
+                                    // Set the checked attribute based on condition
+                                    if (category === selectedRowName) {
+                                        checkbox.checked = true;
                                     }
-                                    newObj["gene"] = obj["gene"];
-                                    return newObj;
+
+                                    // Create a label for the checkbox
+                                    var label = document.createElement("label");
+                                    label.htmlFor = checkbox.id;
+                                    label.appendChild(document.createTextNode(category));
+
+                                    // Add event listener to the checkbox to handle change event
+                                    checkbox.addEventListener("change", handleCheckboxChange);
+
+                                    // Append the checkbox and label to the container element
+                                    checkboxContainer.appendChild(checkbox);
+                                    checkboxContainer.appendChild(label);
+
+                                    // Increment the count of checkboxes in the row
+                                    checkboxesInRow++;
+
+                                    // Add a line break after every two checkboxes
+                                    if (checkboxesInRow % 2 === 0) {
+                                        checkboxContainer.appendChild(document.createElement("br"));
+                                    }
                                 });
 
-                                console.log(dataC_or)
-                                console.log(dataN_or)
+                                // Initialize a variable to count the number of radio buttons added to the current row
+                                var radioButtonsInRow = 0;
+                                // Get the container element
+                                var radioBoxContainer = document.getElementById("radioBoxContainer");
 
-                                var req = ocpu.call("deseq2DE", {
-                                    dataC: dataC_or,  // Pass your processed case data
-                                    dataN: dataN_or   // Pass your processed normal data
-                                }, function (session) {
-                                    var filteredDataURL = session.loc + "/R/.val/json";
-                                    //console.log(session);
-                                    // Fetch the filtered data from the URL
-                                    fetch(filteredDataURL)
-                                        .then(response => response.json())
-                                        .then(data => {
-                                            console.log(session);
-                                            // Convert pval_adj values back to numbers if needed
-                                            data.forEach(entry => {
-                                                entry.pval_adj = parseFloat(entry.pval_adj); // Convert string to number if necessary
+                                // Function to handle radio button change event
+                                function handleRadioButtonChange(event) {
+                                    // Update selectedVariable with the value of the selected radio button
+                                    selectedVariable = event.target.value;
+
+                                    dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims, ordering);
+                                }
+
+
+                                // Iterate through metadataCategories to create radio buttons
+                                // Count the unique values in the metadata category
+                                function countUniqueValues(cat, j) {
+                                    var uniqueValues = new Set(); // Use a Set to store unique values
+                                    // Iterate through metadata categories to create y scales
+                                    metadataCategories.forEach((category, i) => {
+                                        if (j === i) {
+                                            var values = Object.values(metadata[i]); // Extract values for the current category
+                                            values.shift(); // Remove the first value (Sample_source_name_ch1)
+                                            var uniqueValues = [...new Set(values)]; // Filter out duplicate
+                                            console.log("Values for", category, ":", uniqueValues);
+                                            return uniqueValues.length; // Return the size of the Set, which is the count of unique values
+                                        }
+                                    });
+                                }
+
+                                // Iterate through metadataCategories to create radio buttons
+                                metadataCategories.forEach(function (category, i) {
+                                    // Check if the category has more than 9 unique values
+                                    var values = Object.values(metadata[i]); // Extract values for the current category
+                                    values.shift(); // Remove the first value (Sample_source_name_ch1)
+                                    var uniqueValues = [...new Set(values)]; // Filter out duplicate
+                                    console.log("Values for", category, ":", uniqueValues);
+                                    console.log(uniqueValues.length);
+                                    if (uniqueValues.length >= 9) return
+
+                                    // Create a radio button element
+                                    var radioButton = document.createElement("input");
+                                    radioButton.type = "radio";
+                                    radioButton.name = "radioButtonGroup"; // Set the same name for all radio buttons in the group
+                                    radioButton.value = category;
+                                    radioButton.id = "radioButton_" + category; // Set a unique ID for each radio button
+
+                                    // Set the checked attribute based on condition
+                                    if (category === selectedRowName) {
+                                        radioButton.checked = true;
+                                    }
+
+                                    // Create a label for the radio button
+                                    var label = document.createElement("label");
+                                    label.htmlFor = radioButton.id;
+                                    label.appendChild(document.createTextNode(category));
+
+                                    // Add event listener to the radio button to handle change event
+                                    radioButton.addEventListener("change", handleRadioButtonChange);
+
+                                    // Append the radio button and label to the container element
+                                    radioBoxContainer.appendChild(radioButton);
+                                    radioBoxContainer.appendChild(label);
+
+                                    // Increment the count of radio buttons in the row
+                                    radioButtonsInRow++;
+
+                                    // Add a line break after every two radio buttons
+                                    if (radioButtonsInRow % 2 === 0) {
+                                        radioBoxContainer.appendChild(document.createElement("br"));
+                                    }
+                                });
+
+                                document.getElementById("checkboxContainer").style.visibility = "visible";
+                                document.getElementById("radioBoxContainer").style.visibility = "visible";
+
+
+                            }
+                            console.log(dataN_copy.length)
+                            var pc1Values = [];
+                            var pc2Values = [];
+                            var groupValues = [];
+                            console.log(data_copy_pval)
+                            console.log(dataC_copy_pval)
+                            console.log(dataN_copy_pval)
+                            const geneNames = data_copy_pval.map(entry => entry.gene);
+                            const uniqueGeneNames = new Set(geneNames);
+
+                            if (geneNames.length !== uniqueGeneNames.size) {
+                                console.error("Duplicate gene names detected in the input data.");
+                            }
+
+                            var req = ocpu.call("pca", {
+                                data: data_copy_pval,
+                                dataN: dataN_copy_pval,
+                                dataC: dataC_copy_pval
+                            }, function (session) {
+                                var filteredDataURL = session.loc + "/R/.val/json";
+                                console.log(session);
+                                // Fetch the filtered data from the URL
+                                fetch(filteredDataURL)
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        json = data
+                                        console.log(filteredDataURL)
+                                        console.log(json)
+
+                                        var pc1Key = "PC1";
+                                        var pc2Key = "PC2";
+                                        var groupKey = "Group";
+
+                                        // Arrays to store PC1 and PC2 values
+
+
+                                        // Iterate over each object in the JSON array
+                                        json.scores_df.forEach(function (obj) {
+                                            // Push PC1, PC2, and Group values to the arrays
+                                            pc1Values.push(obj[pc1Key]);
+                                            pc2Values.push(obj[pc2Key]);
+                                            groupValues.push(obj[groupKey]);
+                                        });
+                                        // console.log(pc1Values)
+
+                                        // Extract metadata categories from the values of the first column
+                                        var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
+                                        console.log("Metadata categories:", metadataCategories);
+
+                                        // Initialize pca_data array
+                                        pca_data = [];
+
+                                        // Iterate over each object in the JSON array
+                                        json.scores_df.forEach(function (obj) {
+                                            // Retrieve additional data from metadata based on _row
+                                            var gsm = obj._row;
+                                            var group = obj.Group;
+                                            var pc1 = obj.PC1;
+                                            var pc2 = obj.PC2;
+
+                                            // Create an object with the required fields
+                                            var newObj = {
+                                                GSM: gsm,
+                                                group: group,
+                                                pc1: pc1,
+                                                pc2: pc2
+                                            };
+
+                                            // Add metadata values for each category to the newObj
+                                            metadataCategories.forEach((category, index) => {
+                                                newObj[category] = metadata[index][gsm];
                                             });
 
-                                            // Rename '_row' to 'Gene'
-                                            data.forEach(entry => {
-                                                if (entry.hasOwnProperty('_row')) {
-                                                    entry.Gene = entry._row; // Assign '_row' value to 'Gene'
-                                                    delete entry._row; // Remove '_row' property
-                                                }
-                                            });
-
-                                            old_p_adj = data
-                                            old_p_adj.sort((a, b) => {
-                                                if (a.Gene < b.Gene) {
-                                                    return -1;
-                                                }
-                                                if (a.Gene > b.Gene) {
-                                                    return 1;
-                                                }
-                                                return 0;
-                                            });
-
-                                            const ind = old_p_adj.reduce((result, entry, index) => {
-
-                                                if (entry.pval_adj > threshold) {
-                                                    result.push(index);
-                                                }
-                                                return result;
-                                            }, []);
-
-                                            console.log(old_p_adj)
-                                            console.log(ind)
-
-                                            console.log("geni tolti dal primo filtering del pval", ind.length)
-
-                                            if (ind.length > 0) {
-
-                                                //console.log(parsedLogFC.length)
-
-                                                // Remove entries corresponding to ind from dataN
-
-                                                // Remove entries corresponding to ind from dataN
-                                                dataC_copy_pval = dataC_copy.filter((entry, index) => !ind.includes(index));
-
-                                                // Remove entries corresponding to ind from dataN
-                                                dataN_copy_pval = dataN_copy.filter((entry, index) => !ind.includes(index));
-
-                                                data_copy_pval = data_copy.filter((entry, index) => !ind.includes(index));
-
-                                                console.log("geni rimamenti dal primo filtering", data_copy.length)
-
-                                                // Remove entries corresponding to ind from logFC
-                                                parsedLogFC = parsedLogFC.filter((entry, index) => !ind.includes(index));
-
-                                                parsedLogFC_pval = parsedLogFC
-                                                console.log(log_thr_fc)
-                                                console.log(parsedLogFC_origin1)
-                                                console.log(old_p_adj)
-
-                                                if (parsedLogFC.length == 0) {
-                                                    alert("No deg found!")
-                                                }
-
-                                                console.log("Promise: al box gli passo parsedlogFC", parsedLogFC.length)
-
-                                                var sortedLogFC = parsedLogFC.slice().sort((a, b) => b.logFC - a.logFC);
-
-                                                console.log(sortedLogFC)
-
-                                                var mostUpregulatedGene = sortedLogFC[0];
-
-                                                var secondMostUpregulatedGene = sortedLogFC[1];
-
-                                                var mostDownregulatedGene = sortedLogFC[sortedLogFC.length - 1];
-                                                var secondMostDownregulatedGene = sortedLogFC[sortedLogFC.length - 2];
-
-                                                console.log(mostUpregulatedGene)
-
-                                                var mostUpregulatedGeneName = mostUpregulatedGene.Gene
-                                                //var secondMostUpregulatedGeneName = secondMostUpregulatedGene.Gene
-                                                var mostDownregulatedGeneName = mostDownregulatedGene.Gene
-                                                //var secondMostDownregulatedGeneName = secondMostDownregulatedGene.Gene
-
-
-                                                selectedGeneData.push(mostUpregulatedGeneName)
-                                                selectedGeneData.push(mostDownregulatedGeneName)
-
-                                                // Find the select element
-                                                var selectElement = document.getElementById("selectButton");
-
-                                                // Clear existing options
-                                                selectElement.innerHTML = "";
-
-                                                // Add the new options dynamically
-                                                var option1 = document.createElement("option");
-                                                option1.value = mostUpregulatedGene.Gene;
-                                                option1.text = `Most Upregulated (${mostUpregulatedGene.Gene})`;
-                                                option1.selected = true;
-                                                selectElement.appendChild(option1);
-
-                                                var option2 = document.createElement("option");
-                                                option2.value = mostDownregulatedGene.Gene;
-                                                option2.text = `Most Downregulated (${mostDownregulatedGene.Gene})`;
-                                                selectElement.appendChild(option2);
-
-
-                                                // updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
-                                                updateVolcanoPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
-
-                                                dynamicParallel(selectedGeneData, data_copy_pval, dataC_copy_pval, dataN_copy, first_dims)
-
-                                                console.log(dataN_copy_pval[0])
-
-                                                updateBoxPlot(mostUpregulatedGeneName, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
-
-                                                updateCounter()
-
-                                                scatter.selectAll("circle")
-                                                    .filter(circleData => circleData.Gene === mostUpregulatedGeneName || circleData.Gene === mostDownregulatedGeneName)
-                                                    .style("fill", d => {
-                                                        // Check if logFC is greater than or equal to the threshold
-                                                        return "green";
-
-                                                    })
-                                                    .classed('pulse', true);
-
-                                                // Function to handle checkbox change event
-                                                function handleCheckboxChange(event) {
-                                                    var isChecked = event.target.checked;
-                                                    var category = event.target.value;
-
-                                                    if (isChecked) {
-                                                        // Add category to first_dims array
-                                                        first_dims.unshift(category);
-                                                    } else {
-                                                        // Remove category from first_dims array
-                                                        var index = first_dims.indexOf(category);
-                                                        if (index !== -1) {
-                                                            first_dims.splice(index, 1);
-                                                        }
-                                                    }
-
-                                                    // Log the updated first_dims array
-                                                    console.log("Updated first_dims:", first_dims);
-
-                                                    dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
-                                                }
-
-
-                                                var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
-
-                                                // Get the container element
-                                                var checkboxContainer = document.getElementById("checkboxContainer");
-
-                                                // Initialize a variable to count the number of checkboxes added to the current row
-                                                var checkboxesInRow = 0;
-
-                                                // Iterate through metadataCategories to create checkboxes
-                                                metadataCategories.forEach(function (category) {
-                                                    // Create a checkbox element
-                                                    var checkbox = document.createElement("input");
-                                                    checkbox.type = "checkbox";
-                                                    checkbox.value = category;
-                                                    checkbox.id = "checkbox_" + category; // Set a unique ID for each checkbox
-
-                                                    // Set the checked attribute based on condition
-                                                    if (category === selectedRowName) {
-                                                        checkbox.checked = true;
-                                                    }
-
-                                                    // Create a label for the checkbox
-                                                    var label = document.createElement("label");
-                                                    label.htmlFor = checkbox.id;
-                                                    label.appendChild(document.createTextNode(category));
-
-                                                    // Add event listener to the checkbox to handle change event
-                                                    checkbox.addEventListener("change", handleCheckboxChange);
-
-                                                    // Append the checkbox and label to the container element
-                                                    checkboxContainer.appendChild(checkbox);
-                                                    checkboxContainer.appendChild(label);
-
-                                                    // Increment the count of checkboxes in the row
-                                                    checkboxesInRow++;
-
-                                                    // Add a line break after every two checkboxes
-                                                    if (checkboxesInRow % 2 === 0) {
-                                                        checkboxContainer.appendChild(document.createElement("br"));
-                                                    }
-                                                });
-
-                                                // Initialize a variable to count the number of radio buttons added to the current row
-                                                var radioButtonsInRow = 0;
-                                                // Get the container element
-                                                var radioBoxContainer = document.getElementById("radioBoxContainer");
-
-                                                // Function to handle radio button change event
-                                                function handleRadioButtonChange(event) {
-                                                    // Update selectedVariable with the value of the selected radio button
-                                                    selectedVariable = event.target.value;
-
-                                                    dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims, ordering);
-                                                }
-
-
-                                                // Iterate through metadataCategories to create radio buttons
-                                                // Count the unique values in the metadata category
-                                                function countUniqueValues(cat, j) {
-                                                    var uniqueValues = new Set(); // Use a Set to store unique values
-                                                    // Iterate through metadata categories to create y scales
-                                                    metadataCategories.forEach((category, i) => {
-                                                        if (j === i) {
-                                                            var values = Object.values(metadata[i]); // Extract values for the current category
-                                                            values.shift(); // Remove the first value (Sample_source_name_ch1)
-                                                            var uniqueValues = [...new Set(values)]; // Filter out duplicate
-                                                            console.log("Values for", category, ":", uniqueValues);
-                                                            return uniqueValues.length; // Return the size of the Set, which is the count of unique values
-                                                        }
-                                                    });
-                                                }
-
-                                                // Iterate through metadataCategories to create radio buttons
-                                                metadataCategories.forEach(function (category, i) {
-                                                    // Check if the category has more than 9 unique values
-                                                    var values = Object.values(metadata[i]); // Extract values for the current category
-                                                    values.shift(); // Remove the first value (Sample_source_name_ch1)
-                                                    var uniqueValues = [...new Set(values)]; // Filter out duplicate
-                                                    console.log("Values for", category, ":", uniqueValues);
-                                                    console.log(uniqueValues.length);
-                                                    if (uniqueValues.length >= 9) return
-
-                                                    // Create a radio button element
-                                                    var radioButton = document.createElement("input");
-                                                    radioButton.type = "radio";
-                                                    radioButton.name = "radioButtonGroup"; // Set the same name for all radio buttons in the group
-                                                    radioButton.value = category;
-                                                    radioButton.id = "radioButton_" + category; // Set a unique ID for each radio button
-
-                                                    // Set the checked attribute based on condition
-                                                    if (category === selectedRowName) {
-                                                        radioButton.checked = true;
-                                                    }
-
-                                                    // Create a label for the radio button
-                                                    var label = document.createElement("label");
-                                                    label.htmlFor = radioButton.id;
-                                                    label.appendChild(document.createTextNode(category));
-
-                                                    // Add event listener to the radio button to handle change event
-                                                    radioButton.addEventListener("change", handleRadioButtonChange);
-
-                                                    // Append the radio button and label to the container element
-                                                    radioBoxContainer.appendChild(radioButton);
-                                                    radioBoxContainer.appendChild(label);
-
-                                                    // Increment the count of radio buttons in the row
-                                                    radioButtonsInRow++;
-
-                                                    // Add a line break after every two radio buttons
-                                                    if (radioButtonsInRow % 2 === 0) {
-                                                        radioBoxContainer.appendChild(document.createElement("br"));
-                                                    }
-                                                });
-
-                                                document.getElementById("checkboxContainer").style.visibility = "visible";
-                                                document.getElementById("radioBoxContainer").style.visibility = "visible";
-
-
-                                            }
-                                            console.log(dataN_copy.length)
-                                            var pc1Values = [];
-                                            var pc2Values = [];
-                                            var groupValues = [];
-                                            console.log(data_copy_pval)
-                                            var req = ocpu.call("pca", {
-                                                data: data_copy_pval,
-                                                dataN: dataN_copy_pval,
-                                                dataC: dataC_copy_pval
-                                            }, function (session) {
-                                                var filteredDataURL = session.loc + "/R/.val/json";
-                                                //console.log(session);
-                                                // Fetch the filtered data from the URL
-                                                fetch(filteredDataURL)
-                                                    .then(response => response.json())
-                                                    .then(data => {
-                                                        json = data
-                                                        console.log(filteredDataURL)
-                                                        console.log(json)
-
-                                                        var pc1Key = "PC1";
-                                                        var pc2Key = "PC2";
-                                                        var groupKey = "Group";
-
-                                                        // Arrays to store PC1 and PC2 values
-
-
-                                                        // Iterate over each object in the JSON array
-                                                        json.scores_df.forEach(function (obj) {
-                                                            // Push PC1, PC2, and Group values to the arrays
-                                                            pc1Values.push(obj[pc1Key]);
-                                                            pc2Values.push(obj[pc2Key]);
-                                                            groupValues.push(obj[groupKey]);
-                                                        });
-                                                        // console.log(pc1Values)
-
-                                                        // Extract metadata categories from the values of the first column
-                                                        var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
-                                                        console.log("Metadata categories:", metadataCategories);
-
-                                                        // Initialize pca_data array
-                                                        pca_data = [];
-
-                                                        // Iterate over each object in the JSON array
-                                                        json.scores_df.forEach(function (obj) {
-                                                            // Retrieve additional data from metadata based on _row
-                                                            var gsm = obj._row;
-                                                            var group = obj.Group;
-                                                            var pc1 = obj.PC1;
-                                                            var pc2 = obj.PC2;
-
-                                                            // Create an object with the required fields
-                                                            var newObj = {
-                                                                GSM: gsm,
-                                                                group: group,
-                                                                pc1: pc1,
-                                                                pc2: pc2
-                                                            };
-
-                                                            // Add metadata values for each category to the newObj
-                                                            metadataCategories.forEach((category, index) => {
-                                                                newObj[category] = metadata[index][gsm];
-                                                            });
-
-                                                            // Push the new object to the pca_data array
-                                                            pca_data.push(newObj);
-                                                        });
-
-                                                        heatmap_data = []
-                                                        json.scores_var.forEach(function (obj) {
-                                                            // Push PC1, PC2, and Group values to the arrays
-                                                            var gene = obj._row
-                                                            var pc1 = obj.PC1
-                                                            var pc2 = obj.PC2
-                                                            var pc3 = obj.PC3
-                                                            var pc4 = obj.PC4
-                                                            var pc5 = obj.PC5
-                                                            var pc6 = obj.PC6
-
-                                                            var newObj = {
-                                                                gene: gene,
-                                                                pc1: pc1,
-                                                                pc2: pc2,
-                                                                pc3: pc3,
-                                                                pc4: pc4,
-                                                                pc5: pc5,
-                                                                pc6: pc6
-                                                            };
-                                                            heatmap_data.push(newObj);
-                                                        })
-                                                        // Display the newData array
-                                                        console.log("PCA, first try ", pca_data);
-
-
-                                                        pca(pca_data);
-                                                        heatmap(heatmap_data);
-
-                                                    })
-
-
-
-
-
-                                            })
-                                            // DEG(data_copy_pval,parsedLogFC,old_p_adj)
-                                            // var req = ocpu.call("enrichment", {
-                                            //     data: data_copy
-                                            //     }, function (session) {
-
-                                            // })
+                                            // Push the new object to the pca_data array
+                                            pca_data.push(newObj);
                                         });
 
+                                        heatmap_data = []
+                                        json.scores_var.forEach(function (obj) {
+                                            // Push PC1, PC2, and Group values to the arrays
+                                            var gene = obj._row
+                                            var pc1 = obj.PC1
+                                            var pc2 = obj.PC2
+                                            var pc3 = obj.PC3
+                                            var pc4 = obj.PC4
+                                            var pc5 = obj.PC5
+                                            var pc6 = obj.PC6
 
-                                })
+                                            var newObj = {
+                                                gene: gene,
+                                                pc1: pc1,
+                                                pc2: pc2,
+                                                pc3: pc3,
+                                                pc4: pc4,
+                                                pc5: pc5,
+                                                pc6: pc6
+                                            };
+                                            heatmap_data.push(newObj);
+                                        })
+                                        // Display the newData array
+                                        console.log("PCA, first try ", pca_data);
+
+
+                                        pca(pca_data);
+                                        heatmap(heatmap_data);
+
+                                    })
+
+
+
+
+
+                            })
+                            // DEG(data_copy_pval,parsedLogFC,old_p_adj)
+                            // var req = ocpu.call("enrichment", {
+                            //     data: data_copy
+                            //     }, function (session) {
+
+                            // })
+                        });
+
+
+                })
+
+            }
+            else {
+
+                var req = ocpu.call("variation", {
+                    rawdata: data1,
+                }, function (session) {
+                    var filteredDataURL = session.loc + "/R/.val/json";
+                    console.log(session);
+                    // Fetch the filtered data from the URL
+                    fetch(filteredDataURL)
+                        .then(response => response.json())
+                        .then(data => {
+                            document.getElementById("loadingOverlay").style.display = "none";
+
+                            const innerData = JSON.parse(data[0]);
+                            console.log(data1)
+
+                            // Extract variation values from the inner JSON array
+                            variation_data = innerData.map(obj => obj.Variation);
+
+                            // Now you have an array of variation values, you can use it as needed
+                            console.log(variation_data);
+                            row_length = variation_data.length
+                            initial_num_genes = row_length
+
+                            console.log("numero di geni iniziali prima di qualsiasi filtro " + row_length)
+
+                            thr_prc = ss.quantile(variation_data, prc_IQR);
+                            updateHistogram(variation_data);
+                            variation_data_copy = (variation_data);
+
+                            const ind = variation_data_copy.reduce((result, entry, index) => {
+
+                                if (entry < thr_prc) {
+                                    result.push(index);
+                                }
+                                return result;
+                            }, []);
+
+                            console.log(ind)
+
+                            if (ind.length > 0) {
+
+                                // Remove entries corresponding to ind from dataN
+                                data_copy1 = data_original.filter((entry, index) => !ind.includes(index));
+
+                                // Remove entries corresponding to ind from dataC
+                                dataC_copy1 = dataC_original.filter((entry, index) => !ind.includes(index));
+
+                                // Remove entries corresponding to ind from data
+                                dataN_copy1 = dataN_original.filter((entry, index) => !ind.includes(index));
+
+                                data_original_cpy = data_copy1
+
+                                dataC_original_cpy = dataC_copy1
+
+                                dataN_original_cpy = dataN_copy1
+
+                                // Remove entries corresponding to ind from genes
+                                //genes = genes.filter((entry, index) => !ind.includes(index));
+
+                                // Remove entries corresponding to ind from logFC
+                                //parsedLogFC = parsedLogFC.filter((entry, index) => !ind.includes(index));
+
                             }
 
+                            dataN_copy = dataN_copy1
+                            dataC_copy = dataC_copy1
+                            data_copy = data_copy1
+                            console.log("geni tolti dal primo filtering del IQR", ind.length)
 
-                            ///// DATI FILTRATI DAL PRIMO PVALUE, GIA' FILTRATI DAL PRIMO LOGFC, CHE ERANO GIA FILTRATI DA PRIMO IQR IN dataC_copy dataN_copy data_copy parsedLogFC ///////
+                            // Update the gene count display
+                            // const geneCountDiv = document.getElementById('geneCount');
+                            // geneCountDiv.innerHTML = `Initial number of genes: ${initial_num_genes}<br>Number of genes after filtering: ${data_copy.length}`;
+
+                            first_filter_number_genes = data_copy.length
+                            console.log(dataC_original)
 
 
-                            // Calculate the quantile
-                            log_thr_fc = Math.log2(thr_fc);
-                        }
-                        const ind2 = parsedLogFC_origin.reduce((result, entry, index) => {
+                            parsedLogFC_origin1 = calculateLogFC(dataC_original, dataN_original)
+                            parsedLogFC_origin = calculateLogFC(dataC_copy, dataN_copy);
+                            parsedLogFC = parsedLogFC_origin
+                            console.log(parsedLogFC)
 
-                            if (Math.abs(entry.logFC) < Math.log2(thr_fc)) {
-                                result.push(index);
+                            //  console.log("first parsed origin after",parsedLogFC_origin.length)
+                            //  console.log("first data orign afterN ",dataN_copy.length)
+                            //  console.log("first data orign afterC ",dataC_copy.length)
+
+                            averageExpressions10C = calculateAverageLog10Expressions(dataC_copy);
+                            averageExpressions10N = calculateAverageLog10Expressions(dataN_copy);
+
+                            if (parsedLogFC) {
+
+                                // Calculate the quantile
+                                log_thr_fc = Math.log2(1.1);
+                                //console.log(log_thr_fc)
+                                const ind = parsedLogFC_origin.reduce((result, entry, index) => {
+
+                                    if (Math.abs(entry.logFC) < Math.log2(thr_fc)) {
+                                        result.push(index);
+
+                                    }
+                                    return result;
+                                }, []);
+                                console.log("geni tolti dal primo filtering del LOGFC", ind.length)
+
+                                // console.log("parsed log before ",parsedLogFC.length)
+                                // console.log("data copy beforeC ",dataC_copy.length)
+                                // console.log("data copy beforeN ",dataN_copy.length)
+
+                                // console.log("parsed log origin ",parsedLogFC_origin.length)
+                                /////////////////////// 
+
+                                //DIMENSIONE DI PARSED E DATAC,DATAN SONO UGUALI , GIUSTAMENTE
+
+                                //////////////////////
+                                // console.log(parsedLogFC_origin)
+                                // console.log(data_copy)
+                                if (ind.length > 0) {
+
+                                    // Remove entries corresponding to ind from dataN
+                                    dataC_copy = dataC_copy1.filter((entry, index) => !ind.includes(index));
+
+                                    // Remove entries corresponding to ind from dataN
+                                    dataN_copy = dataN_copy1.filter((entry, index) => !ind.includes(index));
+
+                                    data_copy = data_copy1.filter((entry, index) => !ind.includes(index));
+
+                                    parsedLogFC = parsedLogFC_origin.filter((entry, index) => !ind.includes(index));
+                                }
+
+                                //////// DATI FILTRATI DAL PRIMO FOLD-CHANGE//////////////////
+                                // console.log(parsedLogFC)
+                                // console.log(data_copy)
+
+                                updateLogFCHistogram(parsedLogFC_origin)
+
+                                if (chosen_statistic == 't-test') {
+                                    var req = ocpu.call("pval", {
+                                        data: data_copy,
+                                        N: normal_number,
+                                        M: case_number
+                                    }, function (session) {
+                                        var filteredDataURL = session.loc + "/R/.val/json";
+                                        //console.log(session);
+                                        // Fetch the filtered data from the URL
+                                        fetch(filteredDataURL)
+                                            .then(response => response.json())
+                                            .then(data => {
+                                                console.log(session);
+                                                // Convert pval_adj values back to numbers if needed
+                                                data.forEach(entry => {
+                                                    entry.pval_adj = parseFloat(entry.pval_adj); // Convert string to number if necessary
+                                                });
+
+                                                old_p_adj = data
+                                                const ind = old_p_adj.reduce((result, entry, index) => {
+
+                                                    if (entry.pval_adj > threshold) {
+                                                        result.push(index);
+                                                    }
+                                                    return result;
+                                                }, []);
+
+                                                console.log(old_p_adj)
+                                                console.log(ind)
+
+
+                                                console.log("geni tolti dal primo filtering del pval", ind.length)
+
+                                                if (ind.length > 0) {
+
+                                                    //console.log(parsedLogFC.length)
+
+                                                    // Remove entries corresponding to ind from dataN
+
+                                                    // Remove entries corresponding to ind from dataN
+                                                    dataC_copy_pval = dataC_copy.filter((entry, index) => !ind.includes(index));
+
+                                                    // Remove entries corresponding to ind from dataN
+                                                    dataN_copy_pval = dataN_copy.filter((entry, index) => !ind.includes(index));
+
+
+                                                    data_copy_pval = data_copy.filter((entry, index) => !ind.includes(index));
+
+                                                    console.log("geni rimamenti dal primo filtering", data_copy.length)
+                                                    // Remove entries corresponding to ind from logFC
+                                                    parsedLogFC = parsedLogFC.filter((entry, index) => !ind.includes(index));
+
+                                                    parsedLogFC_pval = parsedLogFC
+                                                    console.log(log_thr_fc)
+                                                    console.log(parsedLogFC_origin1)
+                                                    console.log(old_p_adj)
+
+                                                    if (parsedLogFC.length == 0) {
+                                                        alert("No deg found!")
+                                                    }
+
+                                                    console.log("Promise: al box gli passo parsedlogFC", parsedLogFC.length)
+
+                                                    var sortedLogFC = parsedLogFC.slice().sort((a, b) => b.logFC - a.logFC);
+
+                                                    console.log(sortedLogFC)
+
+                                                    var mostUpregulatedGene = sortedLogFC[0];
+                                                    var secondMostUpregulatedGene = sortedLogFC[1];
+
+                                                    var mostDownregulatedGene = sortedLogFC[sortedLogFC.length - 1];
+                                                    var secondMostDownregulatedGene = sortedLogFC[sortedLogFC.length - 2];
+
+                                                    console.log(mostUpregulatedGene)
+
+                                                    var mostUpregulatedGeneName = mostUpregulatedGene.Gene
+                                                    //var secondMostUpregulatedGeneName = secondMostUpregulatedGene.Gene
+                                                    var mostDownregulatedGeneName = mostDownregulatedGene.Gene
+                                                    //var secondMostDownregulatedGeneName = secondMostDownregulatedGene.Gene
+
+
+                                                    selectedGeneData.push(mostUpregulatedGeneName)
+                                                    selectedGeneData.push(mostDownregulatedGeneName)
+
+                                                    // Find the select element
+                                                    var selectElement = document.getElementById("selectButton");
+
+                                                    // Clear existing options
+                                                    selectElement.innerHTML = "";
+
+                                                    // Add the new options dynamically
+                                                    var option1 = document.createElement("option");
+                                                    option1.value = mostUpregulatedGene.Gene;
+                                                    option1.text = `Most Upregulated (${mostUpregulatedGene.Gene})`;
+                                                    option1.selected = true;
+                                                    selectElement.appendChild(option1);
+
+                                                    var option2 = document.createElement("option");
+                                                    option2.value = mostDownregulatedGene.Gene;
+                                                    option2.text = `Most Downregulated (${mostDownregulatedGene.Gene})`;
+                                                    selectElement.appendChild(option2);
+
+
+                                                    // updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
+                                                    updateVolcanoPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
+
+                                                    dynamicParallel(selectedGeneData, data_copy_pval, dataC_copy_pval, dataN_copy, first_dims)
+
+                                                    updateBoxPlot(mostUpregulatedGeneName, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
+
+                                                    updateCounter()
+
+                                                    scatter.selectAll("circle")
+                                                        .filter(circleData => circleData.Gene === mostUpregulatedGeneName || circleData.Gene === mostDownregulatedGeneName)
+                                                        .style("fill", d => {
+                                                            // Check if logFC is greater than or equal to the threshold
+                                                            return "green";
+
+                                                        })
+                                                        .classed('pulse', true);
+
+                                                    // Function to handle checkbox change event
+                                                    function handleCheckboxChange(event) {
+                                                        var isChecked = event.target.checked;
+                                                        var category = event.target.value;
+
+                                                        if (isChecked) {
+                                                            // Add category to first_dims array
+                                                            first_dims.unshift(category);
+                                                        } else {
+                                                            // Remove category from first_dims array
+                                                            var index = first_dims.indexOf(category);
+                                                            if (index !== -1) {
+                                                                first_dims.splice(index, 1);
+                                                            }
+                                                        }
+
+                                                        // Log the updated first_dims array
+                                                        console.log("Updated first_dims:", first_dims);
+
+                                                        dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
+                                                    }
+
+
+                                                    var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
+
+                                                    // Get the container element
+                                                    var checkboxContainer = document.getElementById("checkboxContainer");
+
+                                                    // Initialize a variable to count the number of checkboxes added to the current row
+                                                    var checkboxesInRow = 0;
+
+                                                    // Iterate through metadataCategories to create checkboxes
+                                                    metadataCategories.forEach(function (category) {
+                                                        // Create a checkbox element
+                                                        var checkbox = document.createElement("input");
+                                                        checkbox.type = "checkbox";
+                                                        checkbox.value = category;
+                                                        checkbox.id = "checkbox_" + category; // Set a unique ID for each checkbox
+
+                                                        // Set the checked attribute based on condition
+                                                        if (category === selectedRowName) {
+                                                            checkbox.checked = true;
+                                                        }
+
+                                                        // Create a label for the checkbox
+                                                        var label = document.createElement("label");
+                                                        label.htmlFor = checkbox.id;
+                                                        label.appendChild(document.createTextNode(category));
+
+                                                        // Add event listener to the checkbox to handle change event
+                                                        checkbox.addEventListener("change", handleCheckboxChange);
+
+                                                        // Append the checkbox and label to the container element
+                                                        checkboxContainer.appendChild(checkbox);
+                                                        checkboxContainer.appendChild(label);
+
+                                                        // Increment the count of checkboxes in the row
+                                                        checkboxesInRow++;
+
+                                                        // Add a line break after every two checkboxes
+                                                        if (checkboxesInRow % 2 === 0) {
+                                                            checkboxContainer.appendChild(document.createElement("br"));
+                                                        }
+                                                    });
+
+                                                    // Initialize a variable to count the number of radio buttons added to the current row
+                                                    var radioButtonsInRow = 0;
+                                                    // Get the container element
+                                                    var radioBoxContainer = document.getElementById("radioBoxContainer");
+
+                                                    // Function to handle radio button change event
+                                                    function handleRadioButtonChange(event) {
+                                                        // Update selectedVariable with the value of the selected radio button
+                                                        selectedVariable = event.target.value;
+
+                                                        dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims, ordering);
+                                                    }
+
+
+                                                    // Iterate through metadataCategories to create radio buttons
+                                                    // Count the unique values in the metadata category
+                                                    function countUniqueValues(cat, j) {
+                                                        var uniqueValues = new Set(); // Use a Set to store unique values
+                                                        // Iterate through metadata categories to create y scales
+                                                        metadataCategories.forEach((category, i) => {
+                                                            if (j === i) {
+                                                                var values = Object.values(metadata[i]); // Extract values for the current category
+                                                                values.shift(); // Remove the first value (Sample_source_name_ch1)
+                                                                var uniqueValues = [...new Set(values)]; // Filter out duplicate
+                                                                console.log("Values for", category, ":", uniqueValues);
+                                                                return uniqueValues.length; // Return the size of the Set, which is the count of unique values
+                                                            }
+                                                        });
+                                                    }
+
+                                                    // Iterate through metadataCategories to create radio buttons
+                                                    metadataCategories.forEach(function (category, i) {
+                                                        // Check if the category has more than 9 unique values
+                                                        var values = Object.values(metadata[i]); // Extract values for the current category
+                                                        values.shift(); // Remove the first value (Sample_source_name_ch1)
+                                                        var uniqueValues = [...new Set(values)]; // Filter out duplicate
+                                                        console.log("Values for", category, ":", uniqueValues);
+                                                        console.log(uniqueValues.length);
+                                                        if (uniqueValues.length >= 9) return
+
+                                                        // Create a radio button element
+                                                        var radioButton = document.createElement("input");
+                                                        radioButton.type = "radio";
+                                                        radioButton.name = "radioButtonGroup"; // Set the same name for all radio buttons in the group
+                                                        radioButton.value = category;
+                                                        radioButton.id = "radioButton_" + category; // Set a unique ID for each radio button
+
+                                                        // Set the checked attribute based on condition
+                                                        if (category === selectedRowName) {
+                                                            radioButton.checked = true;
+                                                        }
+
+                                                        // Create a label for the radio button
+                                                        var label = document.createElement("label");
+                                                        label.htmlFor = radioButton.id;
+                                                        label.appendChild(document.createTextNode(category));
+
+                                                        // Add event listener to the radio button to handle change event
+                                                        radioButton.addEventListener("change", handleRadioButtonChange);
+
+                                                        // Append the radio button and label to the container element
+                                                        radioBoxContainer.appendChild(radioButton);
+                                                        radioBoxContainer.appendChild(label);
+
+                                                        // Increment the count of radio buttons in the row
+                                                        radioButtonsInRow++;
+
+                                                        // Add a line break after every two radio buttons
+                                                        if (radioButtonsInRow % 2 === 0) {
+                                                            radioBoxContainer.appendChild(document.createElement("br"));
+                                                        }
+                                                    });
+
+                                                    document.getElementById("checkboxContainer").style.visibility = "visible";
+                                                    document.getElementById("radioBoxContainer").style.visibility = "visible";
+
+
+                                                }
+                                                console.log(dataN_copy.length)
+                                                var pc1Values = [];
+                                                var pc2Values = [];
+                                                var groupValues = [];
+                                                var req = ocpu.call("pca", {
+                                                    data: data_copy_pval,
+                                                    dataN: dataN_copy_pval,
+                                                    dataC: dataC_copy_pval
+                                                }, function (session) {
+                                                    var filteredDataURL = session.loc + "/R/.val/json";
+                                                    //console.log(session);
+                                                    // Fetch the filtered data from the URL
+                                                    fetch(filteredDataURL)
+                                                        .then(response => response.json())
+                                                        .then(data => {
+                                                            json = data
+                                                            console.log(filteredDataURL)
+                                                            console.log(json)
+
+                                                            var pc1Key = "PC1";
+                                                            var pc2Key = "PC2";
+                                                            var groupKey = "Group";
+
+                                                            // Arrays to store PC1 and PC2 values
+
+
+                                                            // Iterate over each object in the JSON array
+                                                            json.scores_df.forEach(function (obj) {
+                                                                // Push PC1, PC2, and Group values to the arrays
+                                                                pc1Values.push(obj[pc1Key]);
+                                                                pc2Values.push(obj[pc2Key]);
+                                                                groupValues.push(obj[groupKey]);
+                                                            });
+                                                            // console.log(pc1Values)
+
+                                                            // Extract metadata categories from the values of the first column
+                                                            var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
+                                                            console.log("Metadata categories:", metadataCategories);
+
+                                                            // Initialize pca_data array
+                                                            pca_data = [];
+
+                                                            // Iterate over each object in the JSON array
+                                                            json.scores_df.forEach(function (obj) {
+                                                                // Retrieve additional data from metadata based on _row
+                                                                var gsm = obj._row;
+                                                                var group = obj.Group;
+                                                                var pc1 = obj.PC1;
+                                                                var pc2 = obj.PC2;
+
+                                                                // Create an object with the required fields
+                                                                var newObj = {
+                                                                    GSM: gsm,
+                                                                    group: group,
+                                                                    pc1: pc1,
+                                                                    pc2: pc2
+                                                                };
+
+                                                                // Add metadata values for each category to the newObj
+                                                                metadataCategories.forEach((category, index) => {
+                                                                    newObj[category] = metadata[index][gsm];
+                                                                });
+
+                                                                // Push the new object to the pca_data array
+                                                                pca_data.push(newObj);
+                                                            });
+
+                                                            heatmap_data = []
+                                                            json.scores_var.forEach(function (obj) {
+                                                                // Push PC1, PC2, and Group values to the arrays
+                                                                var gene = obj._row
+                                                                var pc1 = obj.PC1
+                                                                var pc2 = obj.PC2
+                                                                var pc3 = obj.PC3
+                                                                var pc4 = obj.PC4
+                                                                var pc5 = obj.PC5
+                                                                var pc6 = obj.PC6
+
+                                                                var newObj = {
+                                                                    gene: gene,
+                                                                    pc1: pc1,
+                                                                    pc2: pc2,
+                                                                    pc3: pc3,
+                                                                    pc4: pc4,
+                                                                    pc5: pc5,
+                                                                    pc6: pc6
+                                                                };
+                                                                heatmap_data.push(newObj);
+                                                            })
+                                                            // Display the newData array
+                                                            console.log("PCA, first try ", pca_data);
+                                                            pca(pca_data);
+                                                            heatmap(heatmap_data);
+
+                                                        })
+
+
+
+
+
+                                                })
+                                                // DEG(data_copy_pval,parsedLogFC,old_p_adj)
+                                                // var req = ocpu.call("enrichment", {
+                                                //     data: data_copy
+                                                //     }, function (session) {
+
+                                                // })
+                                            });
+
+
+                                    })
+                                } else if (chosen_statistic == 'limma') {
+
+                                    console.log(dataC_copy)
+                                    console.log(dataN_copy)
+
+                                    var req = ocpu.call("limmaDE", {
+                                        dataC: dataC_copy,  // Pass your processed case data
+                                        dataN: dataN_copy   // Pass your processed normal data
+                                    }, function (session) {
+                                        var filteredDataURL = session.loc + "/R/.val/json";
+                                        //console.log(session);
+                                        // Fetch the filtered data from the URL
+                                        fetch(filteredDataURL)
+                                            .then(response => response.json())
+                                            .then(data => {
+                                                console.log(session);
+                                                // Convert pval_adj values back to numbers if needed
+                                                data.forEach(entry => {
+                                                    entry.pval_adj = parseFloat(entry.pval_adj); // Convert string to number if necessary
+                                                });
+
+                                                // Rename '_row' to 'Gene'
+                                                data.forEach(entry => {
+                                                    if (entry.hasOwnProperty('_row')) {
+                                                        entry.Gene = entry._row; // Assign '_row' value to 'Gene'
+                                                        delete entry._row; // Remove '_row' property
+                                                    }
+                                                });
+
+                                                old_p_adj = data
+                                                old_p_adj.sort((a, b) => {
+                                                    if (a.Gene < b.Gene) {
+                                                        return -1;
+                                                    }
+                                                    if (a.Gene > b.Gene) {
+                                                        return 1;
+                                                    }
+                                                    return 0;
+                                                });
+
+                                                const ind = old_p_adj.reduce((result, entry, index) => {
+
+                                                    if (entry.pval_adj > threshold) {
+                                                        result.push(index);
+                                                    }
+                                                    return result;
+                                                }, []);
+
+                                                console.log(old_p_adj)
+                                                console.log(ind)
+
+                                                console.log("geni tolti dal primo filtering del pval", ind.length)
+
+                                                if (ind.length > 0) {
+
+                                                    //console.log(parsedLogFC.length)
+
+                                                    // Remove entries corresponding to ind from dataN
+
+                                                    // Remove entries corresponding to ind from dataN
+                                                    dataC_copy_pval = dataC_copy.filter((entry, index) => !ind.includes(index));
+
+                                                    // Remove entries corresponding to ind from dataN
+                                                    dataN_copy_pval = dataN_copy.filter((entry, index) => !ind.includes(index));
+
+
+                                                    data_copy_pval = data_copy.filter((entry, index) => !ind.includes(index));
+
+                                                    console.log("geni rimamenti dal primo filtering", data_copy.length)
+
+                                                    // Remove entries corresponding to ind from logFC
+                                                    parsedLogFC = parsedLogFC.filter((entry, index) => !ind.includes(index));
+
+                                                    parsedLogFC_pval = parsedLogFC
+                                                    console.log(log_thr_fc)
+                                                    console.log(parsedLogFC_origin1)
+                                                    console.log(old_p_adj)
+
+                                                    if (parsedLogFC.length == 0) {
+                                                        alert("No deg found!")
+                                                    }
+
+                                                    console.log("Promise: al box gli passo parsedlogFC", parsedLogFC.length)
+
+                                                    var sortedLogFC = parsedLogFC.slice().sort((a, b) => b.logFC - a.logFC);
+
+                                                    console.log(sortedLogFC)
+
+                                                    var mostUpregulatedGene = sortedLogFC[0];
+
+                                                    var secondMostUpregulatedGene = sortedLogFC[1];
+
+                                                    var mostDownregulatedGene = sortedLogFC[sortedLogFC.length - 1];
+                                                    var secondMostDownregulatedGene = sortedLogFC[sortedLogFC.length - 2];
+
+                                                    console.log(mostUpregulatedGene)
+
+                                                    var mostUpregulatedGeneName = mostUpregulatedGene.Gene
+                                                    //var secondMostUpregulatedGeneName = secondMostUpregulatedGene.Gene
+                                                    var mostDownregulatedGeneName = mostDownregulatedGene.Gene
+                                                    //var secondMostDownregulatedGeneName = secondMostDownregulatedGene.Gene
+
+
+                                                    selectedGeneData.push(mostUpregulatedGeneName)
+                                                    selectedGeneData.push(mostDownregulatedGeneName)
+
+                                                    // Find the select element
+                                                    var selectElement = document.getElementById("selectButton");
+
+                                                    // Clear existing options
+                                                    selectElement.innerHTML = "";
+
+                                                    // Add the new options dynamically
+                                                    var option1 = document.createElement("option");
+                                                    option1.value = mostUpregulatedGene.Gene;
+                                                    option1.text = `Most Upregulated (${mostUpregulatedGene.Gene})`;
+                                                    option1.selected = true;
+                                                    selectElement.appendChild(option1);
+
+                                                    var option2 = document.createElement("option");
+                                                    option2.value = mostDownregulatedGene.Gene;
+                                                    option2.text = `Most Downregulated (${mostDownregulatedGene.Gene})`;
+                                                    selectElement.appendChild(option2);
+
+
+                                                    // updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
+                                                    updateVolcanoPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
+
+                                                    dynamicParallel(selectedGeneData, data_copy_pval, dataC_copy_pval, dataN_copy, first_dims)
+                                                    console.log(dataN_copy_pval[0])
+
+                                                    updateBoxPlot(mostUpregulatedGeneName, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
+
+                                                    updateCounter()
+
+                                                    scatter.selectAll("circle")
+                                                        .filter(circleData => circleData.Gene === mostUpregulatedGeneName || circleData.Gene === mostDownregulatedGeneName)
+                                                        .style("fill", d => {
+                                                            // Check if logFC is greater than or equal to the threshold
+                                                            return "green";
+
+                                                        })
+                                                        .classed('pulse', true);
+
+                                                    // Function to handle checkbox change event
+                                                    function handleCheckboxChange(event) {
+                                                        var isChecked = event.target.checked;
+                                                        var category = event.target.value;
+
+                                                        if (isChecked) {
+                                                            // Add category to first_dims array
+                                                            first_dims.unshift(category);
+                                                        } else {
+                                                            // Remove category from first_dims array
+                                                            var index = first_dims.indexOf(category);
+                                                            if (index !== -1) {
+                                                                first_dims.splice(index, 1);
+                                                            }
+                                                        }
+
+                                                        // Log the updated first_dims array
+                                                        console.log("Updated first_dims:", first_dims);
+
+                                                        dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
+                                                    }
+
+
+                                                    var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
+
+                                                    // Get the container element
+                                                    var checkboxContainer = document.getElementById("checkboxContainer");
+
+                                                    // Initialize a variable to count the number of checkboxes added to the current row
+                                                    var checkboxesInRow = 0;
+
+                                                    // Iterate through metadataCategories to create checkboxes
+                                                    metadataCategories.forEach(function (category) {
+                                                        // Create a checkbox element
+                                                        var checkbox = document.createElement("input");
+                                                        checkbox.type = "checkbox";
+                                                        checkbox.value = category;
+                                                        checkbox.id = "checkbox_" + category; // Set a unique ID for each checkbox
+
+                                                        // Set the checked attribute based on condition
+                                                        if (category === selectedRowName) {
+                                                            checkbox.checked = true;
+                                                        }
+
+                                                        // Create a label for the checkbox
+                                                        var label = document.createElement("label");
+                                                        label.htmlFor = checkbox.id;
+                                                        label.appendChild(document.createTextNode(category));
+
+                                                        // Add event listener to the checkbox to handle change event
+                                                        checkbox.addEventListener("change", handleCheckboxChange);
+
+                                                        // Append the checkbox and label to the container element
+                                                        checkboxContainer.appendChild(checkbox);
+                                                        checkboxContainer.appendChild(label);
+
+                                                        // Increment the count of checkboxes in the row
+                                                        checkboxesInRow++;
+
+                                                        // Add a line break after every two checkboxes
+                                                        if (checkboxesInRow % 2 === 0) {
+                                                            checkboxContainer.appendChild(document.createElement("br"));
+                                                        }
+                                                    });
+
+                                                    // Initialize a variable to count the number of radio buttons added to the current row
+                                                    var radioButtonsInRow = 0;
+                                                    // Get the container element
+                                                    var radioBoxContainer = document.getElementById("radioBoxContainer");
+
+                                                    // Function to handle radio button change event
+                                                    function handleRadioButtonChange(event) {
+                                                        // Update selectedVariable with the value of the selected radio button
+                                                        selectedVariable = event.target.value;
+
+                                                        dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims, ordering);
+                                                    }
+
+
+                                                    // Iterate through metadataCategories to create radio buttons
+                                                    // Count the unique values in the metadata category
+                                                    function countUniqueValues(cat, j) {
+                                                        var uniqueValues = new Set(); // Use a Set to store unique values
+                                                        // Iterate through metadata categories to create y scales
+                                                        metadataCategories.forEach((category, i) => {
+                                                            if (j === i) {
+                                                                var values = Object.values(metadata[i]); // Extract values for the current category
+                                                                values.shift(); // Remove the first value (Sample_source_name_ch1)
+                                                                var uniqueValues = [...new Set(values)]; // Filter out duplicate
+                                                                console.log("Values for", category, ":", uniqueValues);
+                                                                return uniqueValues.length; // Return the size of the Set, which is the count of unique values
+                                                            }
+                                                        });
+                                                    }
+
+                                                    // Iterate through metadataCategories to create radio buttons
+                                                    metadataCategories.forEach(function (category, i) {
+                                                        // Check if the category has more than 9 unique values
+                                                        var values = Object.values(metadata[i]); // Extract values for the current category
+                                                        values.shift(); // Remove the first value (Sample_source_name_ch1)
+                                                        var uniqueValues = [...new Set(values)]; // Filter out duplicate
+                                                        console.log("Values for", category, ":", uniqueValues);
+                                                        console.log(uniqueValues.length);
+                                                        if (uniqueValues.length >= 9) return
+
+                                                        // Create a radio button element
+                                                        var radioButton = document.createElement("input");
+                                                        radioButton.type = "radio";
+                                                        radioButton.name = "radioButtonGroup"; // Set the same name for all radio buttons in the group
+                                                        radioButton.value = category;
+                                                        radioButton.id = "radioButton_" + category; // Set a unique ID for each radio button
+
+                                                        // Set the checked attribute based on condition
+                                                        if (category === selectedRowName) {
+                                                            radioButton.checked = true;
+                                                        }
+
+                                                        // Create a label for the radio button
+                                                        var label = document.createElement("label");
+                                                        label.htmlFor = radioButton.id;
+                                                        label.appendChild(document.createTextNode(category));
+
+                                                        // Add event listener to the radio button to handle change event
+                                                        radioButton.addEventListener("change", handleRadioButtonChange);
+
+                                                        // Append the radio button and label to the container element
+                                                        radioBoxContainer.appendChild(radioButton);
+                                                        radioBoxContainer.appendChild(label);
+
+                                                        // Increment the count of radio buttons in the row
+                                                        radioButtonsInRow++;
+
+                                                        // Add a line break after every two radio buttons
+                                                        if (radioButtonsInRow % 2 === 0) {
+                                                            radioBoxContainer.appendChild(document.createElement("br"));
+                                                        }
+                                                    });
+
+                                                    document.getElementById("checkboxContainer").style.visibility = "visible";
+                                                    document.getElementById("radioBoxContainer").style.visibility = "visible";
+
+
+                                                }
+                                                console.log(dataN_copy.length)
+                                                var pc1Values = [];
+                                                var pc2Values = [];
+                                                var groupValues = [];
+                                                console.log(data_copy_pval)
+                                                var req = ocpu.call("pca", {
+                                                    data: data_copy_pval,
+                                                    dataN: dataN_copy_pval,
+                                                    dataC: dataC_copy_pval
+                                                }, function (session) {
+                                                    var filteredDataURL = session.loc + "/R/.val/json";
+                                                    //console.log(session);
+                                                    // Fetch the filtered data from the URL
+                                                    fetch(filteredDataURL)
+                                                        .then(response => response.json())
+                                                        .then(data => {
+                                                            json = data
+                                                            console.log(filteredDataURL)
+                                                            console.log(json)
+
+                                                            var pc1Key = "PC1";
+                                                            var pc2Key = "PC2";
+                                                            var groupKey = "Group";
+
+                                                            // Arrays to store PC1 and PC2 values
+
+
+                                                            // Iterate over each object in the JSON array
+                                                            json.scores_df.forEach(function (obj) {
+                                                                // Push PC1, PC2, and Group values to the arrays
+                                                                pc1Values.push(obj[pc1Key]);
+                                                                pc2Values.push(obj[pc2Key]);
+                                                                groupValues.push(obj[groupKey]);
+                                                            });
+                                                            // console.log(pc1Values)
+
+                                                            // Extract metadata categories from the values of the first column
+                                                            var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
+                                                            console.log("Metadata categories:", metadataCategories);
+
+                                                            // Initialize pca_data array
+                                                            pca_data = [];
+
+                                                            // Iterate over each object in the JSON array
+                                                            json.scores_df.forEach(function (obj) {
+                                                                // Retrieve additional data from metadata based on _row
+                                                                var gsm = obj._row;
+                                                                var group = obj.Group;
+                                                                var pc1 = obj.PC1;
+                                                                var pc2 = obj.PC2;
+
+                                                                // Create an object with the required fields
+                                                                var newObj = {
+                                                                    GSM: gsm,
+                                                                    group: group,
+                                                                    pc1: pc1,
+                                                                    pc2: pc2
+                                                                };
+
+                                                                // Add metadata values for each category to the newObj
+                                                                metadataCategories.forEach((category, index) => {
+                                                                    newObj[category] = metadata[index][gsm];
+                                                                });
+
+                                                                // Push the new object to the pca_data array
+                                                                pca_data.push(newObj);
+                                                            });
+
+                                                            heatmap_data = []
+                                                            json.scores_var.forEach(function (obj) {
+                                                                // Push PC1, PC2, and Group values to the arrays
+                                                                var gene = obj._row
+                                                                var pc1 = obj.PC1
+                                                                var pc2 = obj.PC2
+                                                                var pc3 = obj.PC3
+                                                                var pc4 = obj.PC4
+                                                                var pc5 = obj.PC5
+                                                                var pc6 = obj.PC6
+
+                                                                var newObj = {
+                                                                    gene: gene,
+                                                                    pc1: pc1,
+                                                                    pc2: pc2,
+                                                                    pc3: pc3,
+                                                                    pc4: pc4,
+                                                                    pc5: pc5,
+                                                                    pc6: pc6
+                                                                };
+                                                                heatmap_data.push(newObj);
+                                                            })
+                                                            // Display the newData array
+                                                            console.log("PCA, first try ", pca_data);
+
+
+                                                            pca(pca_data);
+                                                            heatmap(heatmap_data);
+
+                                                        })
+
+
+
+
+
+                                                })
+                                                // DEG(data_copy_pval,parsedLogFC,old_p_adj)
+                                                // var req = ocpu.call("enrichment", {
+                                                //     data: data_copy
+                                                //     }, function (session) {
+
+                                                // })
+                                            });
+
+
+                                    })
+                                } else if (chosen_statistic == 'deseq2') {
+                                }
+
+
+                                ///// DATI FILTRATI DAL PRIMO PVALUE, GIA' FILTRATI DAL PRIMO LOGFC, CHE ERANO GIA FILTRATI DA PRIMO IQR IN dataC_copy dataN_copy data_copy parsedLogFC ///////
+
+
+                                // Calculate the quantile
+                                log_thr_fc = Math.log2(thr_fc);
                             }
-                            return result;
-                        }, []);
+                            const ind2 = parsedLogFC_origin.reduce((result, entry, index) => {
 
-                        // const geneCountDiv2 = document.getElementById('geneCount2');
-                        // geneCountDiv2.innerHTML = `First filtering number of genes: ${first_filter_number_genes}<br>Number of genes after filtering: ${data_copy.length - ind2.length}`;
+                                if (Math.abs(entry.logFC) < Math.log2(thr_fc)) {
+                                    result.push(index);
+                                }
+                                return result;
+                            }, []);
+
+                            // const geneCountDiv2 = document.getElementById('geneCount2');
+                            // geneCountDiv2.innerHTML = `First filtering number of genes: ${first_filter_number_genes}<br>Number of genes after filtering: ${data_copy.length - ind2.length}`;
 
 
-                    });
+                        });
 
-            })
-
+                })
+            }
         }
 
 
@@ -6580,6 +6606,10 @@
                         });
                 })
 
+            } else if (chosen_statistic == 'deseq2') {
+
+                //da implementare
+
             }
 
 
@@ -7865,13 +7895,15 @@
                             .classed('pulse1', false)
                             .raise();  // Move this element to the top
 
-                        // Find the corresponding scatterplot circle and toggle its selection
-                        var correspondingSquare = square
-                            .filter(function (squaredata) {
-                                return squaredata.gene === d.gene;
-                            });
+                        console.log(d)
 
-                        correspondingSquare.style("stroke", "none");
+                        // Find the corresponding scatterplot circle and toggle its selection
+                        // var correspondingSquare = square
+                        //     .filter(function (squaredata) {
+                        //         return squaredata.gene === d.gene;
+                        //     });
+
+                        // correspondingSquare.style("stroke", "none");
 
                         // On click, filter data for the selected gene
                         selectedGeneData.push(d.gene);
@@ -8153,12 +8185,12 @@
                                     .raise();  // Move this element to the top
 
                                 // Find the corresponding scatterplot circle and toggle its selection
-                                var correspondingSquare = square
-                                    .filter(function (squaredata) {
-                                        return squaredata.gene === d.gene;
-                                    });
+                                // var correspondingSquare = square
+                                //     .filter(function (squaredata) {
+                                //         return squaredata.gene === d.gene;
+                                //     });
 
-                                correspondingSquare.style("stroke", "none");
+                                // correspondingSquare.style("stroke", "none");
 
                                 // On click, filter data for the selected gene
                                 selectedGeneData.push(d.gene);
@@ -9294,12 +9326,12 @@
                                     .raise();  // Move this element to the top
 
                                 // Find the corresponding scatterplot circle and toggle its selection
-                                var correspondingSquare = square
-                                    .filter(function (squaredata) {
-                                        return squaredata.gene === d.gene;
-                                    });
+                                // var correspondingSquare = square
+                                //     .filter(function (squaredata) {
+                                //         return squaredata.gene === d.gene;
+                                //     });
 
-                                correspondingSquare.style("stroke", "none");
+                                // correspondingSquare.style("stroke", "none");
 
                                 // On click, filter data for the selected gene
                                 selectedGeneData.push(d.gene);
@@ -10396,10 +10428,13 @@
 
             console.log(geneselected)
 
+            console.log(dataN)
+
             geneselected.forEach(geneName => {
                 var geneDataN = dataN.filter(d => d.gene === geneName);
                 var geneDataC = dataC.filter(d => d.gene === geneName);
-
+                console.log(geneDataN)
+                console.log(geneDataC)
                 if (geneDataN.length == 0) {
                     selectedGeneData = [];
                     geneselected = [];
@@ -12366,16 +12401,29 @@
                 "<span style='display: inline-block; width: 70px; text-align: center; font-weight: bold;'>" + data_copy_pval.length + "</span>"
             );
 
-            counterDiv1.html(
-                "<span style='display: inline-block; width: 200px; margin-left: 20px; font-weight: bold;'>Parameters:</span>" +
-                "<span style='display: inline-block; width: 100px; text-align: center; font-weight: bold;'> </span><br>" +
-                "<span style='display: inline-block; width: 200px; margin-left: 20px; font-weight: bold;'>IQR threshold:</span>" +
-                "<span style='display: inline-block; width: 100px; text-align: center; font-weight: bold;'>" + thr_prc.toFixed(3) + "</span><br>" +
-                "<span style='display: inline-block; width: 200px; margin-left: 20px; font-weight: bold;'>Log FC threshold:</span>" +
-                "<span style='display: inline-block; width: 100px; text-align: center; font-weight: bold;'>" + log_thr_fc.toFixed(3) + "</span><br>" +
-                "<span style='display: inline-block; width: 200px; margin-left: 20px; font-weight: bold;'>Significance level:</span>" +
-                "<span style='display: inline-block; width: 100px; text-align: center; font-weight: bold;'>" + threshold + "</span>"
-            );
+            if (chosen_statistic != "deseq2") {
+                counterDiv1.html(
+                    "<span style='display: inline-block; width: 200px; margin-left: 20px; font-weight: bold;'>Parameters:</span>" +
+                    "<span style='display: inline-block; width: 100px; text-align: center; font-weight: bold;'> </span><br>" +
+                    "<span style='display: inline-block; width: 200px; margin-left: 20px; font-weight: bold;'>IQR threshold:</span>" +
+                    "<span style='display: inline-block; width: 100px; text-align: center; font-weight: bold;'>" + thr_prc.toFixed(3) + "</span><br>" +
+                    "<span style='display: inline-block; width: 200px; margin-left: 20px; font-weight: bold;'>Log FC threshold:</span>" +
+                    "<span style='display: inline-block; width: 100px; text-align: center; font-weight: bold;'>" + log_thr_fc.toFixed(3) + "</span><br>" +
+                    "<span style='display: inline-block; width: 200px; margin-left: 20px; font-weight: bold;'>Significance level:</span>" +
+                    "<span style='display: inline-block; width: 100px; text-align: center; font-weight: bold;'>" + threshold + "</span>"
+                );
+            } else {
+                counterDiv1.html(
+                    "<span style='display: inline-block; width: 200px; margin-left: 20px; font-weight: bold;'>Parameters:</span>" +
+                    "<span style='display: inline-block; width: 100px; text-align: center; font-weight: bold;'> </span><br>" +
+                    "<span style='display: inline-block; width: 200px; margin-left: 20px; font-weight: bold;'>Log FC threshold:</span>" +
+                    "<span style='display: inline-block; width: 100px; text-align: center; font-weight: bold;'>" + log_thr_fc.toFixed(3) + "</span><br>" +
+                    "<span style='display: inline-block; width: 200px; margin-left: 20px; font-weight: bold;'>Significance level:</span>" +
+                    "<span style='display: inline-block; width: 100px; text-align: center; font-weight: bold;'>" + threshold + "</span>"
+                );
+
+            }
+
         }
 
         document.getElementById("exportGenesButton").addEventListener("click", exportGenes);
