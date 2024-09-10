@@ -551,40 +551,88 @@
 <body>
     <div id="overlay"
         style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 1000; display: none;">
+
         <div
-            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 20px; border-radius: 5px;">
-            <h2>Do you want to load your dataset or try example?</h2>
-            <button id="loadDatasetBtn">Load Dataset</button>
-            <button id="tryExampleBtn">Try Example</button>
+            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); width: 80%; max-width: 400px; text-align: center;">
+
+            <h2 style="margin-bottom: 20px; font-size: 20px; color: #333;">What would you like to do?</h2>
+
+            <p style="margin-bottom: 30px; font-size: 16px; color: #555;">Choose one of the following options to
+                proceed:</p>
+
+            <div style="display: flex; justify-content: center; gap: 20px;">
+                <button id="loadDatasetBtn"
+                    style="padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer;">Load
+                    Dataset</button>
+                <button id="tryExampleBtn"
+                    style="padding: 10px 20px; background-color: #2196F3; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer;">Try
+                    Example</button>
+            </div>
         </div>
     </div>
     <div id="loadDatasetOverlay"
         style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 1001; display: none;">
+
         <div id="containeDatasetOverlay"
-            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 20px; border-radius: 5px;">
-            <h2>Load raw RNA-Seq CSV files
-                <br>
-                File 1: Expression Data, File 2: Metadata
-            </h2>
-            <input type="file" id="fileInput1">
-            <input type="file" id="fileInput2">
-            <button id="loadCsvBtn">Load Dataset</button>
+            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); width: 80%; max-width: 600px;">
+
+            <h2 style="margin-bottom: 20px;">Load Raw RNA-Seq CSV Files</h2>
+            <p style="margin-bottom: 20px; font-size: 16px; color: #555;">Please upload two CSV files:</p>
+            <ul style="margin-bottom: 30px; font-size: 16px; color: #333;">
+                <li><strong>File 1:</strong> Expression Data</li>
+                <li><strong>File 2:</strong> Metadata</li>
+            </ul>
+
+            <div style="margin-bottom: 20px;">
+                <input type="file" id="fileInput1"
+                    style="display: block; margin-bottom: 10px; width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                <input type="file" id="fileInput2"
+                    style="display: block; width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+
+            <button id="loadCsvBtn"
+                style="display: block; width: 100%; padding: 10px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer;">Load
+                Dataset</button>
         </div>
     </div>
 
     <div id="displayCsvOverlay"
         style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 1002; display: none;">
         <div
-            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 20px; border-radius: 5px;">
-            <h2>CSV Data (First 5 columns)</h2>
-            <div style="display: flex;">
-                <table id="csvTableData1" class="display" style="flex: 1; margin-right: 20px;"></table>
-                <table id="csvTableData2" class="display" style="flex: 1;"></table>
+            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); width: 90%; max-width: 1200px;">
+
+            <h2 style="margin-bottom: 20px; font-size: 24px; color: #333; text-align: center;">CSV Data (First 5
+                Columns)</h2>
+
+            <div style="display: flex; gap: 20px; margin-bottom: 20px; overflow-x: auto;">
+                <div style="flex: 1; min-width: 0; overflow-x: auto;">
+                    <table id="csvTableData1" class="display"
+                        style="width: 100%; border-collapse: collapse; border: 1px solid #ddd; border-radius: 4px; overflow: hidden;">
+                        <!-- Table content will be dynamically injected -->
+                    </table>
+                </div>
+                <div style="flex: 1; min-width: 0; overflow-x: auto;">
+                    <table id="csvTableData2" class="display"
+                        style="width: 100%; border-collapse: collapse; border: 1px solid #ddd; border-radius: 4px; overflow: hidden;">
+                        <!-- Table content will be dynamically injected -->
+                    </table>
+                </div>
             </div>
-            <div style="clear: both;"></div> <!-- Clear float -->
-            <p>Total Columns File 1: <span id="totalColumns1"></span></p>
-            <p>Total Columns File 2: <span id="totalColumns2"></span></p>
-            <button id="selectMetadataBtn">Select Metadata Rows</button>
+
+            <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+                <p style="margin: 0; font-size: 16px; color: #555;">Total Columns File 1: <span
+                        id="totalColumns1"></span></p>
+                <p style="margin: 0; font-size: 16px; color: #555;">Total Columns File 2: <span
+                        id="totalColumns2"></span></p>
+            </div>
+
+            <button id="selectMetadataBtn"
+                style="display: block; margin: 0 auto; padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer;">Select
+                Metadata Rows</button>
+
+            <!-- Message container -->
+            <div id="messageContainer" style="margin-top: 20px; font-size: 16px; text-align: center;"></div>
+
         </div>
     </div>
 
@@ -1960,23 +2008,41 @@
                 return header.length > 8 ? header.slice(0, 8) + "..." : header;
             }
 
+            // Function to create a header with a tooltip
+            function createHeaderCell(header) {
+                const truncated = truncateHeader(header);
+                return `<th title="${header}">${truncated}</th>`;
+            }
+
             // Display headers for data1
             headersData1.forEach(function (key) {
-                tableData1 += "<th>" + truncateHeader(key) + "</th>";
+                tableData1 += createHeaderCell(key);
             });
             tableData1 += "</tr></thead><tbody>";
 
             // Display headers for data2
             headersData2.forEach(function (key) {
-                tableData2 += "<th>" + truncateHeader(key) + "</th>";
+                tableData2 += createHeaderCell(key);
             });
             tableData2 += "</tr></thead><tbody>";
+
+            // Function to truncate text longer than a given length
+            function truncateText(text, maxLength) {
+                return text.length > maxLength ? text.slice(0, maxLength) + "..." : text;
+            }
+
+            // Function to create a cell with a tooltip
+            function createCell(text, maxLength) {
+                const truncated = truncateText(text, maxLength);
+                return `<td title="${text}">${truncated}</td>`;
+            }
+
 
             // Display data rows for data1
             for (var i = 0; i < data1.length; i++) {
                 tableData1 += "<tr>";
                 headersData1.forEach(function (key) {
-                    tableData1 += "<td>" + (data1[i][key] || '') + "</td>";
+                    tableData1 += createCell(data1[i][key] || '', 9);
                 });
                 tableData1 += "</tr>";
             }
@@ -1986,7 +2052,7 @@
             for (var i = 0; i < data2.length; i++) {
                 tableData2 += "<tr>";
                 headersData2.forEach(function (key) {
-                    tableData2 += "<td>" + (data2[i][key] || '') + "</td>";
+                    tableData2 += createCell(data2[i][key] || '', 9);
                 });
                 tableData2 += "</tr>";
             }
@@ -2030,12 +2096,7 @@
             var headersMatch = JSON.stringify(headers1ToCompare) === JSON.stringify(headers2ToCompare);
 
             // Create the message container and message element
-            var messageContainer = document.createElement('div');
-            messageContainer.style.position = 'absolute';
-            messageContainer.style.bottom = '20px';
-            messageContainer.style.right = '20px';
-            messageContainer.style.fontSize = '16px';
-
+            var messageContainer = document.getElementById('messageContainer');
             var messageElement = document.createElement('span');
 
             if (headersMatch) {
@@ -2048,11 +2109,12 @@
                 document.getElementById("selectMetadataBtn").disabled = true;
             }
 
-            // Add the message element to the container
+            // Clear any existing message and add the new message
+            messageContainer.innerHTML = ''; // Clear previous message
             messageContainer.appendChild(messageElement);
 
-            // Add the container to the overlay
-            document.getElementById("displayCsvOverlay").querySelector('div').appendChild(messageContainer);
+            // Make sure the message container is visible
+            document.getElementById("displayCsvOverlay").style.display = "block";
 
             document.getElementById("selectMetadataBtn").addEventListener("click", function () {
 
