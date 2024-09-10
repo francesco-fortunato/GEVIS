@@ -2024,6 +2024,36 @@
 
             $('#csvTableData1_wrapper').css('margin-right', '40px');
 
+            // Compare the headers excluding the first element
+            var headers1ToCompare = Object.keys(data1[0]).slice(1);
+            var headers2ToCompare = Object.keys(data2[0]).slice(1);
+            var headersMatch = JSON.stringify(headers1ToCompare) === JSON.stringify(headers2ToCompare);
+
+            // Create the message container and message element
+            var messageContainer = document.createElement('div');
+            messageContainer.style.position = 'absolute';
+            messageContainer.style.bottom = '20px';
+            messageContainer.style.right = '20px';
+            messageContainer.style.fontSize = '16px';
+
+            var messageElement = document.createElement('span');
+
+            if (headersMatch) {
+                messageElement.style.color = '#228B22'; // Better green color
+                messageElement.innerHTML = '<span style="color: #228B22; font-weight: bold;">&#10003;</span> <strong>Everything looks good!</strong> The headers match, and the files are ready for analysis.';
+                document.getElementById("selectMetadataBtn").disabled = false;
+            } else {
+                messageElement.style.color = 'red';
+                messageElement.innerHTML = '<span style="color: red; font-weight: bold;">&#10008;</span> <strong>Heads up!</strong> The headers do not match. Please check the files and try again.';
+                document.getElementById("selectMetadataBtn").disabled = true;
+            }
+
+            // Add the message element to the container
+            messageContainer.appendChild(messageElement);
+
+            // Add the container to the overlay
+            document.getElementById("displayCsvOverlay").querySelector('div').appendChild(messageContainer);
+
             document.getElementById("selectMetadataBtn").addEventListener("click", function () {
 
                 // Hide the current overlay
