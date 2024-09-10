@@ -596,6 +596,41 @@
         </div>
     </div>
 
+    <!-- Try Example Overlay -->
+    <div id="tryExampleOverlay"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 1002; display: none;">
+        <div
+            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); width: 80%; max-width: 600px; text-align: center;">
+            <h2 style="margin-bottom: 20px; font-size: 20px; color: #333;">Try Example Data</h2>
+            <p style="margin-bottom: 30px; font-size: 16px; color: #555;">Select an example dataset to use:</p>
+
+            <div style="text-align: left; margin-bottom: 30px;">
+                <label style="display: block; margin-bottom: 15px; font-size: 16px;">
+                    <input type="radio" name="exampleOption" value="example1" style="margin-right: 10px;">
+                    <strong>Example 1:</strong> Gene expression signature of cigarette smoking and lung
+                    adenocarcinoma development and survival. Based on GEO Series GSE10072.
+                </label>
+                <label style="display: block; margin-bottom: 15px; font-size: 16px;">
+                    <input type="radio" name="exampleOption" value="example2" style="margin-right: 10px;">
+                    <strong>Example 2:</strong> Gene expression signature of myeloma neoplasm
+                </label>
+                <label style="display: block; margin-bottom: 15px; font-size: 16px;">
+                    <input type="radio" name="exampleOption" value="example3" style="margin-right: 10px;">
+                    <strong>Example 3:</strong> TBD.
+                </label>
+            </div>
+
+            <div style="display: flex; justify-content: center; gap: 20px;">
+                <button id="chooseExampleBtn"
+                    style="padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer;">Choose
+                    Example</button>
+                <button id="closeExampleOverlayBtn"
+                    style="padding: 10px 20px; background-color: #F44336; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer;">Back</button>
+            </div>
+        </div>
+    </div>
+
+
     <div id="displayCsvOverlay"
         style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 1002; display: none;">
         <div
@@ -1479,8 +1514,8 @@
 
 
         // File paths
-        const filePath1 = 'example/matrix.csv';
-        const filePath2 = 'example/metadata.csv';
+        const filePath1 = 'examples/matrix_lung.csv';
+        const filePath2 = 'examples/metadata_lung.csv';
 
         // Fetch file data and create File objects
         function preloadFile(filePath, inputElement) {
@@ -1610,10 +1645,92 @@
             showLoadCsvOverlay();
         });
 
-        document.getElementById("tryExampleBtn").addEventListener("click", function () {
+        // Get references to the buttons and overlays
+        var tryExampleBtn = document.getElementById("tryExampleBtn");
+        var exampleOverlay = document.getElementById("tryExampleOverlay");
+
+        // Function to show the example overlay
+        function showExampleOverlay() {
             hideOverlay();
-            showLoadCsvOverlay();
-        })
+            exampleOverlay.style.display = "flex"; // Show the overlay
+        }
+
+        // Function to hide the example overlay
+        function hideExampleOverlay() {
+            exampleOverlay.style.display = "none"; // Hide the overlay
+        }
+
+        // Add event listener to the "Try Example" button
+        tryExampleBtn.addEventListener("click", showExampleOverlay);
+
+        // Add event listener to close the overlay if clicked outside the content
+        exampleOverlay.addEventListener("click", function (event) {
+            if (event.target === exampleOverlay) {
+                hideExampleOverlay();
+            }
+        });
+
+        document.getElementById('chooseExampleBtn').addEventListener('click', () => {
+            const selectedExample = document.querySelector('input[name="exampleOption"]:checked');
+
+            if (selectedExample) {
+                const exampleValue = selectedExample.value;
+
+                let filePath1 = '';
+                let filePath2 = '';
+
+                // Set file paths based on selected example
+                if (exampleValue === 'example1') {
+                    filePath1 = 'examples/matrix_lung.csv';
+                    filePath2 = 'examples/metadata_lung.csv';
+                } else if (exampleValue === 'example2') {
+                    filePath1 = 'examples/matrix_myeloma.csv';
+                    filePath2 = 'examples/metadata_myeloma.csv';
+                } else if (exampleValue === 'example3') {
+                    filePath1 = 'examples/airway_scaledcounts.csv';
+                    filePath2 = 'examples/airway_metadata.csv';
+                }
+
+                // Load the first file
+                fetch(filePath1)
+                    .then(response => response.text())
+                    .then(contents1 => {
+                        const data1 = parseCsv(contents1);
+
+                        // Load the second file
+                        fetch(filePath2)
+                            .then(response => response.text())
+                            .then(contents2 => {
+                                const data2 = parseCsv(contents2);
+
+                                // Hide the overlay
+                                document.getElementById('tryExampleOverlay').style.display = 'none';
+
+                                // Display the CSV contents
+                                showDisplayCsvOverlay(data1, data2);
+
+                            })
+                            .catch(error => {
+                                console.error('Error loading the second file:', error);
+                            });
+                    })
+                    .catch(error => {
+                        console.error('Error loading the first file:', error);
+                    });
+
+            } else {
+                alert('Please select an example to proceed.');
+            }
+        });
+
+
+        // Event listener for the "Back" button
+        document.getElementById('closeExampleOverlayBtn').addEventListener('click', () => {
+            document.getElementById('tryExampleOverlay').style.display = 'none';
+            showOverlay();
+        });
+
+
 
         //**********************     INIZIO VECCHIA FUNZIONE INIZIALE LOADING DI TUTTI I VARI FILE  ******************************//
         /*
@@ -2127,12 +2244,14 @@
                 selectMetadataOverlay.setAttribute("style", "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 1000; display: flex; justify-content: center; align-items: center;");
                 document.body.appendChild(selectMetadataOverlay);
 
-
-                // Here you can add the logic to display the rows of metadata from the second file
-                // For now, let's just display a message
+                // Create content for the overlay
                 var selectMetadataContent = document.createElement("div");
-                selectMetadataContent.setAttribute("style", "background-color: white; padding: 20px; border-radius: 5px; width: 600px;");
-                selectMetadataContent.innerHTML = "<h2>Select Metadata Category</h2><p>Please choose the category within the metadata that contains binary classifications (e.g., case vs. normal, male vs. female) for conducting the Differential Expression Gene (DEG) analysis:</p>";
+                selectMetadataContent.setAttribute("style", "background-color: white; padding: 30px; border-radius: 8px; width: 80%; max-width: 800px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);");
+                selectMetadataContent.innerHTML = `
+        <h2 style="margin-bottom: 20px; font-size: 24px; color: #333; text-align: center;">Select Metadata Category</h2>
+        <p style="margin-bottom: 20px; font-size: 16px; color: #555;">Please choose the category within the metadata that contains binary classifications (e.g., case vs. normal, male vs. female) for conducting the Differential Expression Gene (DEG) analysis:</p>
+    `;
+
 
                 // Create an array to keep track of all dropdown pairs
                 var dropdownPairs = [];
@@ -2145,10 +2264,11 @@
                 // Create dropdown menus for each row in data2
                 data2.forEach(function (row, index) {
                     var dropdownContainer = document.createElement("div");
-                    dropdownContainer.classList.add("dropdown-container");
+                    dropdownContainer.setAttribute("style", "display: flex; align-items: center; margin-bottom: 10px;");
 
                     // Create radio button label
                     var radioLabel = document.createElement("label");
+                    radioLabel.setAttribute("style", "margin-right: 10px;");
                     var radioButton = document.createElement("input");
                     radioButton.setAttribute("type", "radio");
                     radioButton.setAttribute("name", "metadataRow"); // Set the same name for all radio buttons to make them mutually exclusive
@@ -2159,8 +2279,6 @@
                     radioLabel.appendChild(radioButton);
                     radioLabel.appendChild(document.createTextNode(row[Object.keys(row)[0]])); // Display the value of the first column
                     dropdownContainer.appendChild(radioLabel);
-                    selectMetadataContent.appendChild(dropdownContainer);
-                    selectMetadataContent.appendChild(document.createElement("br")); // Add line break
 
                     // Get the values of the selected row
                     var rowData = Object.values(data2[index]);
@@ -2170,8 +2288,7 @@
                     // Create the first dropdown menu (dropdown1)
                     var dropdown1 = document.createElement("select");
                     dropdown1.setAttribute("name", "dropdown1");
-                    dropdown1.setAttribute("style", "margin-left:20px"); // Example styling
-                    dropdown1.setAttribute("style", "width:150px"); // Example styling
+                    dropdown1.setAttribute("style", "margin-left: 10px; width: 150px;");
 
                     // Create options for dropdown1
                     uniqueValues.forEach(function (value) {
@@ -2184,13 +2301,13 @@
                     // Set the first value as selected in dropdown1
                     dropdown1.selectedIndex = 0;
                     if (index === 0) {
-                        selectedValue1 = dropdown1.options[0].value
+                        selectedValue1 = dropdown1.options[0].value;
                     }
 
                     // Create the second dropdown menu (dropdown2)
                     var dropdown2 = document.createElement("select");
                     dropdown2.setAttribute("name", "dropdown2");
-                    dropdown2.setAttribute("style", "width:150px"); // Example styling
+                    dropdown2.setAttribute("style", "width: 150px;");
 
                     // Create options for dropdown2 (same options as dropdown1)
                     uniqueValues.forEach(function (value) {
@@ -2204,8 +2321,7 @@
                     dropdown2.selectedIndex = 1;
 
                     if (index === 0) {
-                        selectedValue2 = dropdown2.options[1].value
-
+                        selectedValue2 = dropdown2.options[1].value;
                     }
 
                     // Disable dropdowns initially (except for the first pair)
@@ -2222,7 +2338,6 @@
 
                     dropdown2.addEventListener("change", function () {
                         selectedValue2 = dropdown2.value;
-
                         synchronizeDropdowns(dropdown2, dropdown1);
                     });
 
@@ -2231,12 +2346,10 @@
                         var selectedValue = dropdown1n.value;
                         var selectedValuesec = dropdown2n.value;
                         if (selectedValuesec === selectedValue) {
-                            console.log(selectedValuesec, selectedValue)
                             dropdown2n.selectedIndex = (dropdown2n.selectedIndex + 1) % dropdown2n.options.length;
                             selectedValue2 = dropdown2n.value;
                         }
                     }
-
 
                     // Add event listener to radio button to enable/disable dropdowns
                     radioButton.addEventListener("change", function () {
@@ -2245,7 +2358,6 @@
                         }
                     });
 
-                    // Function to enable/disable dropdowns based on radio button selection
                     // Function to enable/disable dropdowns based on radio button selection
                     function enableDropdowns(selectedIndex) {
                         dropdownPairs.forEach(function (pair, i) {
@@ -2256,8 +2368,6 @@
                                 // Update the selected values
                                 selectedValue1 = pair.dropdown1.value;
                                 selectedValue2 = pair.dropdown2.value;
-                                console.log("Selected Value 1:", selectedValue1);
-                                console.log("Selected Value 2:", selectedValue2);
                             }
                         });
                     }
@@ -2265,10 +2375,7 @@
                     // Create a span for the "vs" text
                     var vsText = document.createElement("span");
                     vsText.textContent = " vs ";
-                    vsText.style.marginLeft = "5px";
-                    vsText.style.marginRight = "5px";
-                    // Add some padding between the label and the dropdowns
-                    radioLabel.style.paddingRight = "10px";
+                    vsText.setAttribute("style", "margin: 0 10px;");
 
                     dropdownContainer.appendChild(dropdown1);
                     dropdownContainer.appendChild(vsText); // Add "vs" text between dropdowns
@@ -2276,32 +2383,30 @@
 
                     dropdownPairs.push({ dropdown1: dropdown1, dropdown2: dropdown2 });
 
-                    selectMetadataContent.appendChild(document.createElement("br")); // Add line break
+                    selectMetadataContent.appendChild(dropdownContainer);
                 });
-                console.log(selectedValue1)
-                console.log(selectedValue2)
+
+                var buttonContainer = document.createElement("div");
+                buttonContainer.setAttribute("style", "margin-top: 20px; display: flex; justify-content: space-between; gap: 10px;");
 
                 var selectRowBtn = document.createElement("button");
-                selectRowBtn.textContent = "Perform DEG with t-test \n(This may take a while. Don't panic if it seems stuck)";
-                selectRowBtn.style.marginLeft = "10px"; // Adjust the value to move it more to the left
-                selectRowBtn.style.width = "300px"; // Set an appropriate width to fit the text content
-                selectRowBtn.disabled = true; // Disable the button initially
+                selectRowBtn.textContent = "Perform DEG with t-test\n(This may take a while. Don't panic if it seems stuck)";
+                selectRowBtn.setAttribute("style", "flex: 1; padding: 10px; background-color: #CE2029; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; white-space: pre-line; opacity: 0.6;");
+                selectRowBtn.disabled = true;
 
                 var selectRowBtn2 = document.createElement("button");
-                selectRowBtn2.textContent = "Perform DEG with limma \n(This may take a while. Don't panic if it seems stuck)";
-                selectRowBtn2.style.marginLeft = "10px"; // Adjust the value to move it more to the left
-                selectRowBtn2.style.width = "300px"; // Set an appropriate width to fit the text content
-                selectRowBtn2.disabled = true; // Disable the button initially
+                selectRowBtn2.textContent = "Perform DEG with limma\n(This may take a while. Don't panic if it seems stuck)";
+                selectRowBtn2.setAttribute("style", "flex: 1; padding: 10px; background-color: #CE2029; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; white-space: pre-line; opacity: 0.6;");
+                selectRowBtn2.disabled = true;
 
                 var selectRowBtn3 = document.createElement("button");
-                selectRowBtn3.textContent = "Perform DEG with deseq2 \n(This may take a while. Don't panic if it seems stuck)";
-                selectRowBtn3.style.marginLeft = "10px"; // Adjust the value to move it more to the left
-                selectRowBtn3.style.width = "300px"; // Set an appropriate width to fit the text content
-                selectRowBtn3.disabled = true; // Disable the button initially
+                selectRowBtn3.textContent = "Perform DEG with deseq2\n(This may take a while. Don't panic if it seems stuck)";
+                selectRowBtn3.setAttribute("style", "flex: 1; padding: 10px; background-color: #CE2029; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; white-space: pre-line; opacity: 0.6;");
+                selectRowBtn3.disabled = true;
 
                 var selectColors = document.createElement("button");
-                selectColors.textContent = "Select color";
-                selectMetadataContent.appendChild(selectColors)
+                selectColors.textContent = "Select Color";
+                selectColors.setAttribute("style", "padding: 10px; background-color: #FFC107; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer;");
 
                 selectColors.addEventListener("click", function () {
                     // Create a new overlay for selecting colors
@@ -2520,10 +2625,15 @@
                     backBtn.textContent = "Save";
                     backBtn.addEventListener("click", function () {
                         selectColorOverlay.remove();
-                        selectRowBtn.disabled = false; // Enable the button once colors are confirmed
+                        selectRowBtn.disabled = false; // Enable the button once colors are confirme
+                        selectRowBtn.setAttribute("style", "flex: 1; padding: 10px; background-color: #CE2029; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; white-space: pre-line; opacity: 1.0;");
                         selectRowBtn2.disabled = false; // Enable the button once colors are confirmed
-                        if (all_int) selectRowBtn3.disabled = false; // Enable the button once colors are confirmed
-                        document.body.appendChild(selectMetadataOverlay); // Assuming selectMetadataOverlay is defined earlier
+                        selectRowBtn2.setAttribute("style", "flex: 1; padding: 10px; background-color: #CE2029; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; white-space: pre-line; opacity: 1.0;");
+                        if (all_int) {
+                            selectRowBtn3.disabled = false;
+                            selectRowBtn4.setAttribute("style", "flex: 1; padding: 10px; background-color: #CE2029; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; white-space: pre-line; opacity: 1.0;");
+                        }
+                        document.body.appendChild(selectMetadataOverlay);
                     });
 
                     selectColorContent.appendChild(backBtn);
@@ -3287,12 +3397,12 @@
 
 
                 });
+                buttonContainer.appendChild(selectRowBtn);
+                buttonContainer.appendChild(selectRowBtn2);
+                buttonContainer.appendChild(selectRowBtn3);
+
                 selectMetadataContent.appendChild(selectColors);
-
-                selectMetadataContent.appendChild(selectRowBtn);
-                selectMetadataContent.appendChild(selectRowBtn2);
-                selectMetadataContent.appendChild(selectRowBtn3);
-
+                selectMetadataContent.appendChild(buttonContainer);
                 selectMetadataOverlay.appendChild(selectMetadataContent);
 
             });
