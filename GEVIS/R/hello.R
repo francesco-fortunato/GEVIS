@@ -421,22 +421,12 @@ surv <- function (metadata,dataC, gene){
   # Remove the last element from gsm_cods
   gsm_cods <- names(dataC)
 
-
   # Remove the last element from gene_expression
   gene_expression <- unlist(dataC, use.names = FALSE)
 
-
-
-
-
   df <- data.frame(case_id = gsm_cods, counts = gene_expression)
 
-
-
-
   medianValue = median(df$counts)
-
-
 
   df$strata = ifelse (df$counts >= medianValue,"HIGH","LOW")
 
@@ -460,8 +450,6 @@ surv <- function (metadata,dataC, gene){
 
   members <- c("time", "n.risk", "n.event","n.censor","surv","strata")
 
-
-
   last = list(unclass(fit)[members])
 
   ####### UTILE PER CALCOLARE IL PVALUE DEL GENE PASSATO#######
@@ -472,6 +460,5 @@ surv <- function (metadata,dataC, gene){
   #############################################################
 
   return(list (obj = last, pval = pval))
-
 
 }

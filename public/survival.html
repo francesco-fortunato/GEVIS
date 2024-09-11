@@ -2,481 +2,651 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GEVIS - Survival Analysis</title>
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-  <link rel="manifest" href="/site.webmanifest">
-  <script src="d3.v7.8.5.min.js"></script>
-  <script src="//code.jquery.com/jquery-1.11.1.min.js"></script>
-  <script src="//cdn.opencpu.org/opencpu-0.4.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/simple-statistics/7.0.0/simple-statistics.min.js"></script>
-  <script src='https://cdn.jsdelivr.net/gh/kdpsingh/rjs@master/r.js'></script>
-  <script src="https://d3js.org/d3.v4.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GEVIS - Survival Analysis</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <script src="//code.jquery.com/jquery-1.11.1.min.js"></script>
+    <script src="//cdn.opencpu.org/opencpu-0.4.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/simple-statistics/7.0.0/simple-statistics.min.js"></script>
+    <script src='https://cdn.jsdelivr.net/gh/kdpsingh/rjs@master/r.js'></script>
+    <script src="https://d3js.org/d3.v4.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.js"
-    integrity="sha512-5mCB0Kvv97yTzqo0174qxPjMisck/WlK51+mw/RV7UfYbtHI8LuLR82BzZuxHUKSfbh75u9cZHgUcqrZDaBJuA=="
-    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
-    integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
-    crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.3/dist/umd/popper.min.js"
-    integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
-    crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.js"
+        integrity="sha512-5mCB0Kvv97yTzqo0174qxPjMisck/WlK51+mw/RV7UfYbtHI8LuLR82BzZuxHUKSfbh75u9cZHgUcqrZDaBJuA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+        integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.3/dist/umd/popper.min.js"
+        integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
+        crossorigin="anonymous"></script>
 
-  <link rel="stylesheet" type="text/css" href="css/bootstrap.css">
-  <script src="css/bootstrap.js"></script>
+    <link rel="stylesheet" type="text/css" href="css/bootstrap.css">
+    <script src="css/bootstrap.js"></script>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-color/3.0.0/d3-color.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-interpolate/1.5.0/d3-interpolate.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-scale/3.2.2/d3-scale.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-scale-chromatic/1.6.0/d3-scale-chromatic.min.js"></script>
-  <link rel="stylesheet" href="https://cdn.datatables.net/2.0.7/css/dataTables.dataTables.css" />
-  <script src="https://cdn.datatables.net/2.0.7/js/dataTables.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-color/3.0.0/d3-color.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-interpolate/1.5.0/d3-interpolate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-scale/3.2.2/d3-scale.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-scale-chromatic/1.6.0/d3-scale-chromatic.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.0.7/css/dataTables.dataTables.css" />
+    <script src="https://cdn.datatables.net/2.0.7/js/dataTables.js"></script>
 
 
-  <style>
-    body {
-      background-color: #0e0d0d;
-      color: white;
-    }
+    <style>
+        body {
+            background-color: #121212;
+            color: #FFFFFF;
+            font-family: Arial, sans-serif;
+        }
 
-    .flex {
-            display: flex;
-            flex-direction: row;
-            max-width: space-between;
-            height: 100%;
-            width: 100%
+        .container {
+            margin-top: 30px;
+        }
+
+        h4 {
+            color: #FFFFFF;
         }
 
         .flex1 {
             display: flex;
-            flex-direction: row;
-            max-width: space-between;
+            justify-content: space-between;
+            align-items: flex-start;
             height: auto;
-            width: 50%;
-
+            width: 100%;
         }
 
         .flex-container {
             display: flex;
             flex-direction: column;
-            max-width: fit-content;
-
+            flex: 1;
+            margin-right: 20px;
         }
 
-        .flex-container>div {
-            margin-right: 3.2px;
-            /* Add spacing between items */
+        .dotplot-container {
+            background-color: #1E1E1E;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            flex: 1;
+            overflow: hidden;
         }
 
+        .btn-secondary {
+            background-color: #FFA726;
+            border-color: #FFA726;
+            color: #FFFFFF;
+        }
 
+        .btn-secondary:hover {
+            background-color: #FF8C00;
+            border-color: #FF8C00;
+        }
 
+        .dataTable-container {
+            background-color: #292727;
+            padding: 15px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        table.dataTable {
+            width: 100% !important;
+            background-color: #2C2C2C;
+            border-radius: 8px;
+        }
+
+        table.dataTable th,
+        table.dataTable td {
+            color: #FFFFFF;
+        }
+
+        table.dataTable thead th {
+            background-color: #FFA726;
+            color: #121212;
+        }
+
+        .tooltip {
+            position: absolute;
+            text-align: center;
+            width: 100px;
+            height: auto;
+            padding: 5px;
+            font-size: 12px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            border-radius: 3px;
+            pointer-events: none;
+        }
     </style>
-    </head>
+</head>
 
-    <body>
-
+<body>
+    <div class="container">
+        <h1>GEVIS - Survival Analysis</h1>
         <div class="flex1">
-
             <div>
-                    
-                    <h4 style="color: white; width: 100%;">Gene list</h4>
-                    <div id="radio-container" style="background-color: #292727;"></div>
-                    <button id="submission" type="button" class="btn btn-secondary" >Submit</button>
-                
+                <h4 style="color: white; width: 100%;">Gene list</h4>
+                <div id="radio-container" style="background-color: #292727;"></div>
+                <button id="submission" type="button" class="btn btn-secondary">Submit</button>
             </div>
-            
-            <div>   
+            <div>
                 <div id="survival"></div>
-                
             </div>
-            
         </div>
+    </div>
 
 
 
-        <script>
-            try {
-              ocpu.seturl("//localhost:8004/ocpu/lib/GEVIS/R");
-            } catch (error) {
-              // If an error occurs (e.g., ocpu is not defined), reload the page
-              window.location.reload();
+    <script>
+        try {
+            ocpu.seturl("//localhost:8004/ocpu/lib/GEVIS/R");
+        } catch (error) {
+            // If an error occurs (e.g., ocpu is not defined), reload the page
+            window.location.reload();
+        }
+
+
+        // Function to parse URL query parameters
+        function getUrlParameter(name) {
+            name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+            var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+            var results = regex.exec(location.search);
+            return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+        }
+
+        // Retrieve sessionId from query parameter
+        const sessionId = getUrlParameter('sessionId');
+
+        if (sessionId) {
+            // Send a fetch request to retrieve data
+            fetch(`/retrieveData?sessionId=${sessionId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+
+                    showLoadingMessageSurv(data);
+
+
+                })
+        } else {
+            alert('Session ID not found');
+        }
+
+
+        var btn2 = document.getElementById("submission");
+
+        // Function to display loading message inside the modal
+        function showLoadingMessageSurv(data) {
+            var btn2 = document.getElementById("submission");
+            var survivalContainer = document.getElementById("survival");
+            console.log(data.selectedGeneData)
+            // Create initial radio buttons
+            createRadioButtons(data.selectedGeneData);
+
+
+            survivalContainer.innerHTML = "<h3 style='color: white; margin-left: 50px; width:100%'>Select a gene </h3>";
+            // Form submission handler
+            document.getElementById('submission').onclick = function (event) {
+                event.preventDefault(); // Prevent default form submission
+
+                // Get selected radio input value
+                const selectedGene = document.querySelector('input[name="gene"]:checked');
+
+                if (selectedGene) {
+                    survivalContainer.innerHTML = "<h3 style='color: white; margin-left: 50px'>Computing the plot... </h3>";
+                    // Call your function to create the dot plot here
+                    //btn2.disabled = true;
+
+                    survival(data.filteredMetadata, data.dataC_copy_pval, selectedGene.value)
+
+                    // You can handle the selected gene value as needed
+                } else {
+                    alert('No gene selected!');
+                }
+
+            };
+
+        }
+
+
+        function createRadioButtons(data) {
+            const container = document.getElementById('radio-container');
+            container.innerHTML = ''; // Clear previous content
+
+            Object.keys(data).forEach(key => {
+                const value = data[key];
+                const geneName = value.split('/')[0]; // Extract part before '|'
+                console.log(geneName)
+
+                const radioWrapper = document.createElement('div');
+                radioWrapper.className = 'radio-wrapper';
+
+                const radioInput = document.createElement('input');
+                radioInput.type = 'radio';
+                radioInput.name = 'gene';
+                radioInput.id = `radio-${geneName}`;
+                radioInput.value = value;
+                radioInput.checked = true;
+
+
+                const radioLabel = document.createElement('label');
+                radioLabel.htmlFor = `radio-${geneName}`;
+                radioLabel.innerText = geneName;
+
+                radioWrapper.appendChild(radioInput);
+                radioWrapper.appendChild(radioLabel);
+                container.appendChild(radioWrapper);
+            });
+        }
+
+
+        function survival(clinical, cases, genename) {
+
+            console.log("tutto il dataset", clinical)
+            // console.log("i casi",cases)
+
+
+            var geneDataC = cases.filter(d => d.gene === genename)
+
+            console.log(clinical)
+
+            let allGSM = Object.keys(clinical[1]).slice(1);
+            let allEvent = Object.values(clinical[0]).slice(1);
+            let allTime_to_followUp = Object.values(clinical[1]).slice(1);
+
+            // Create the data structure
+            let dataStructure = allGSM.map((gsm, index) => ({
+                GSM: gsm,
+                Event: allEvent[index],
+                Time_to_followUp: allTime_to_followUp[index]
+            }));
+
+            console.log(dataStructure.length)
+
+
+
+            // Extract GSM identifiers from geneDataC
+            let relevantGSMs = geneDataC.flatMap(item => Object.keys(item));
+
+            //console.log(relevantGSMs)
+            // Filter the data structure to include only relevant GSMs
+            let filteredDataStructure = dataStructure.filter(item => relevantGSMs.includes(item.GSM));
+
+            console.log(filteredDataStructure.length);
+
+
+            //console.log(dataStructure);
+
+
+
+
+            var req = ocpu.call("surv", {
+                metadata: filteredDataStructure,
+                dataC: geneDataC,
+                gene: genename
+            }, function (session) {
+                var filteredDataURL = session.loc + "/R/.val/json";
+                console.log(filteredDataURL)
+                // Fetch the filtered data from the URL
+                fetch(filteredDataURL)
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log(filteredDataURL)
+                        //console.log(data.pval[0].pval)
+                        survivalplot(data.obj, genename, data.pval[0].pval);
+
+                        btn2.disabled = false;
+                    })
+
+
+
+            })
+
+        }
+
+        function survivalplot(data, name, pvalue) {
+            console.log(data);
+
+            // Calculate survival probability
+            const survivalProb = [];
+            let survival = 1; // Initial survival probability
+
+            function computeSurvivalProbability(data) {
+                const survivalProb = [];
+                let survival = 1; // Initial survival probability
+
+                for (let i = 0; i < data.time.length; i++) {
+                    const nRisk = data['n.risk'][i];
+                    const nEvent = data['n.event'][i];
+
+                    if (nRisk === 0) break; // Avoid division by zero
+
+                    const hazard = nEvent / nRisk;
+                    survival *= Math.pow((1 - hazard), 1);
+                    survivalProb.push(survival);
+                }
+                return survivalProb;
             }
 
-
-            // Function to parse URL query parameters
-    function getUrlParameter(name) {
-      name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
-      var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
-      var results = regex.exec(location.search);
-      return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
-    }
-
-     // Retrieve sessionId from query parameter
-     const sessionId = getUrlParameter('sessionId');
-
-     if (sessionId) {
-      // Send a fetch request to retrieve data
-      fetch(`/retrieveData?sessionId=${sessionId}`)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('Network response was not ok');
-          }
-          return response.json();
-        })
-        .then(data => {
-
-            showLoadingMessageSurv(data);
-
-
-        })
-    } else {
-      alert('Session ID not found');
-    }
-
-
-    var btn2 = document.getElementById("submission");
-
-    // Function to display loading message inside the modal
-function showLoadingMessageSurv(data) {
-    var btn2 = document.getElementById("submission");
-    var survivalContainer = document.getElementById("survival");
-    console.log(data.selectedGeneData)
-    // Create initial radio buttons
-    createRadioButtons(data.selectedGeneData);
-
-   
-    survivalContainer.innerHTML = "<h3 style='color: white; margin-left: 50px; width:100%'>Select a gene </h3>";
-    // Form submission handler
-    document.getElementById('submission').onclick = function(event) {
-            event.preventDefault(); // Prevent default form submission
-
-            // Get selected radio input value
-        const selectedGene = document.querySelector('input[name="gene"]:checked');
-
-        if (selectedGene) {
-            survivalContainer.innerHTML = "<h3 style='color: white; margin-left: 50px'>Computing the plot... </h3>";
-            // Call your function to create the dot plot here
-            //btn2.disabled = true;
-
-            survival(data.filteredMetadata, data.dataC_copy_pval, selectedGene.value)
-
-            // You can handle the selected gene value as needed
-        } else {
-            alert('No gene selected!');
-        }
-
-    };
-
-}
-
-
-function createRadioButtons(data) {
-        const container = document.getElementById('radio-container');
-        container.innerHTML = ''; // Clear previous content
-
-        Object.keys(data).forEach(key => {
-            const value = data[key];
-            const geneName = value.split('/')[0]; // Extract part before '|'
-            console.log(geneName)
-
-            const radioWrapper = document.createElement('div');
-            radioWrapper.className = 'radio-wrapper';
-
-            const radioInput = document.createElement('input');
-            radioInput.type = 'radio';
-            radioInput.name = 'gene';
-            radioInput.id = `radio-${geneName}`;
-            radioInput.value = value;
-            radioInput.checked = true;
-            
-
-            const radioLabel = document.createElement('label');
-            radioLabel.htmlFor = `radio-${geneName}`;
-            radioLabel.innerText = geneName;
-
-            radioWrapper.appendChild(radioInput);
-            radioWrapper.appendChild(radioLabel);
-            container.appendChild(radioWrapper);
-        });
-    }
-
-
-function survival(clinical,cases,genename) {
-
-console.log("tutto il dataset",clinical)
-// console.log("i casi",cases)
-
-        
-    var geneDataC = cases.filter(d => d.gene === genename)
-
-console.log(clinical)
-
-    let allGSM = Object.keys(clinical[1]).slice(1);
-        let allEvent = Object.values(clinical[0]).slice(1);
-        let allTime_to_followUp = Object.values(clinical[1]).slice(1);
-
-    // Create the data structure
-    let dataStructure = allGSM.map((gsm, index) => ({
-            GSM: gsm,
-            Event: allEvent[index],
-            Time_to_followUp: allTime_to_followUp[index]
-        }));
-
-        console.log(dataStructure.length)
-
-
-
-    // Extract GSM identifiers from geneDataC
-    let relevantGSMs = geneDataC.flatMap(item => Object.keys(item));
-
-    //console.log(relevantGSMs)
-    // Filter the data structure to include only relevant GSMs
-    let filteredDataStructure = dataStructure.filter(item => relevantGSMs.includes(item.GSM));
-
-    console.log(filteredDataStructure.length);
-
-
-    //console.log(dataStructure);
-
-
-
-
-    var req = ocpu.call("surv", {
-                            metadata: filteredDataStructure,
-                            dataC: geneDataC,
-                            gene: genename
-                        }, function (session) {
-                            var filteredDataURL = session.loc + "/R/.val/json";
-                            console.log(filteredDataURL)
-                            // Fetch the filtered data from the URL
-                            fetch(filteredDataURL)
-                                .then(response => response.json())
-                                .then(data => {
-                                console.log(filteredDataURL)
-                                //console.log(data.pval[0].pval)
-                                survivalplot(data.obj,genename,data.pval[0].pval);
-
-                                btn2.disabled = false;
-                                })
-                            
-                                
-                            
-                            })
-
-}
-
-function survivalplot(data,name,pvalue) {
-
-console.log(data)
-
-
-
-// Calculate survival probability
-const survivalProb = [];
-let survival = 1; // Initial survival probability
-
-// Compute survival probability for each group
-function computeSurvivalProbability(data) {
-    const survivalProb = [];
-    let survival = 1; // Initial survival probability
-
-    for (let i = 0; i < data.time.length; i++) {
-        const nRisk = data['n.risk'][i];
-        const nEvent = data['n.event'][i];
-
-        if (nRisk === 0) break; // Avoid division by zero
-
-        const hazard = nEvent / nRisk;
-        survival *= Math.pow((1 - hazard), 1);
-        survivalProb.push(survival);
-    }
-    return survivalProb;
-}
-
-// Filter data by high and low expression
-const highExprData = {
-    time: data[0].time.slice(0, data[0].strata[0]),
-    "n.risk": data[0]['n.risk'].slice(0, data[0].strata[0]),
-    "n.event": data[0]['n.event'].slice(0, data[0].strata[0]),
-    "n.censor": data[0]['n.censor'].slice(0, data[0].strata[0]),
-    surv: data[0].surv.slice(0, data[0].strata[0])
-};
-
-const lowExprData = {
-    time: data[0].time.slice(data[0].strata[0]),
-    "n.risk": data[0]['n.risk'].slice(data[0].strata[0]),
-    "n.event": data[0]['n.event'].slice(data[0].strata[0]),
-    "n.censor": data[0]['n.censor'].slice(data[0].strata[0]),
-    surv: data[0].surv.slice(data[0].strata[0])
-};
-
-const highExprSurvivalProb = computeSurvivalProbability(highExprData);
-const lowExprSurvivalProb = computeSurvivalProbability(lowExprData);
-
-// Prepare data for D3.js
-const highExprPlotData = highExprData.time.map((time, index) => ({
-    time: time,
-    survivalProb: highExprSurvivalProb[index]
-}));
-
-const lowExprPlotData = lowExprData.time.map((time, index) => ({
-    time: time,
-    survivalProb: lowExprSurvivalProb[index]
-}));
-
-console.log("High Expression Data:", highExprPlotData);
-console.log("Low Expression Data:", lowExprPlotData);
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-// Append the svg object to the body of the page
-
-const margin = { top: 20, right: 30, bottom: 50, left: 50 },
-            width = 800 - margin.left - margin.right,
-            height = 600 - margin.top - margin.bottom;
-
-
-// Append the svg object to the body of the page
-const svg = d3.select("#survival")
-    .html("")
-    .append("svg")
-    .attr("width", width + margin.left + margin.right) // Adjusted width and height to include margins
-    .attr("height", height + margin.top + margin.bottom)
-    .append("g")
-    .attr("transform", `translate(${margin.left},${margin.top})`);
-
-// Add X axis
-const x = d3.scaleLinear()
-    .domain([0, d3.max(data[0].time)])
-    .range([0, width]);
-
-xAxis= svg.append("g") // Appending a group element for the x-axis
-    .attr("transform", `translate(0,${height})`) // Translate it to the bottom
-    .call(d3.axisBottom(x)); 
-
-    xAxis.selectAll("line, path")
+            // Filter data by high and low expression
+            const highExprData = {
+                time: data[0].time.slice(0, data[0].strata[0]),
+                "n.risk": data[0]['n.risk'].slice(0, data[0].strata[0]),
+                "n.event": data[0]['n.event'].slice(0, data[0].strata[0]),
+                "n.censor": data[0]['n.censor'].slice(0, data[0].strata[0]),
+                surv: data[0].surv.slice(0, data[0].strata[0])
+            };
+
+            const lowExprData = {
+                time: data[0].time.slice(data[0].strata[0]),
+                "n.risk": data[0]['n.risk'].slice(data[0].strata[0]),
+                "n.event": data[0]['n.event'].slice(data[0].strata[0]),
+                "n.censor": data[0]['n.censor'].slice(data[0].strata[0]),
+                surv: data[0].surv.slice(data[0].strata[0])
+            };
+
+            const highExprSurvivalProb = computeSurvivalProbability(highExprData);
+            const lowExprSurvivalProb = computeSurvivalProbability(lowExprData);
+
+            const highExprPlotData = highExprData.time.map((time, index) => ({
+                time: time,
+                survivalProb: highExprSurvivalProb[index]
+            }));
+
+            const lowExprPlotData = lowExprData.time.map((time, index) => ({
+                time: time,
+                survivalProb: lowExprSurvivalProb[index]
+            }));
+
+            console.log("High Expression Data:", highExprPlotData);
+            console.log("Low Expression Data:", lowExprPlotData);
+
+            const margin = { top: 20, right: 30, bottom: 50, left: 50 },
+                width = 800 - margin.left - margin.right,
+                height = 600 - margin.top - margin.bottom;
+
+            const svg = d3.select("#survival")
+                .html("")
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            const x = d3.scaleLinear()
+                .domain([0, d3.max(data[0].time)])
+                .range([0, width]);
+
+            const xAxis = svg.append("g")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(x));
+
+            xAxis.selectAll("line, path")
                 .style("stroke", "white");
             xAxis.selectAll("text")
                 .style("fill", "white");
 
+            const y = d3.scaleLinear()
+                .domain([0, 1])
+                .range([height, 0]);
 
-// Add Y axis
-const y = d3.scaleLinear()
-    .domain([0, 1])
-    .range([height, 0]);
+            const yAxis = svg.append("g")
+                .call(d3.axisLeft(y));
 
-    yAxis= svg.append("g") // Appending a group element for the y-axis
-    .call(d3.axisLeft(y)); 
-
-    yAxis.selectAll("line, path")
+            yAxis.selectAll("line, path")
                 .style("stroke", "white");
             yAxis.selectAll("text")
                 .style("fill", "white");
 
+            svg.append("text")
+                .attr("x", width / 2)
+                .attr("y", height + margin.bottom - 10)
+                .attr("text-anchor", "middle")
+                .style("font-size", "14px")
+                .style("fill", "white")
+                .text("Time (in days)");
 
-// Add X axis label
-svg.append("text")
-    .attr("x", width / 2)
-    .attr("y", height + margin.bottom - 10)
-    .attr("text-anchor", "middle")
-    .style("font-size", "14px")
-    .style("fill", "white")
-    .text("Time (in days)");
+            svg.append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("x", -height / 2)
+                .attr("y", -margin.left + 12)
+                .attr("text-anchor", "middle")
+                .style("font-size", "14px")
+                .style("fill", "white")
+                .text("Survival Probability");
 
-// Add Y axis label
-svg.append("text")
-    .attr("transform", "rotate(-90)")
-    .attr("x", -height / 2)
-    .attr("y", -margin.left + 12)
-    .attr("text-anchor", "middle")
-    .style("font-size", "14px")
-    .style("fill", "white")
-    .text("Survival Probability");
+            const legend = svg.append("g")
+                .attr("class", "legend")
+                .attr("transform", `translate(${width - 100}, 20)`);
+
+            legend.append("rect")
+                .attr("x", 0)
+                .attr("y", 0)
+                .attr("width", 10)
+                .attr("height", 10)
+                .attr("fill", "#F8766D");
+
+            legend.append("text")
+                .attr("x", 15)
+                .attr("y", 8)
+                .style("fill", "white")
+                .text("High Expression");
+
+            legend.append("rect")
+                .attr("x", 0)
+                .attr("y", 20)
+                .attr("width", 10)
+                .attr("height", 10)
+                .attr("fill", "#00BFC4");
+
+            legend.append("text")
+                .attr("x", 15)
+                .attr("y", 28)
+                .style("fill", "white")
+                .text("Low Expression");
+
+            legend.append("text")
+                .attr("x", 15)
+                .attr("y", 48)
+                .style("fill", "white")
+                .text("p-value: " + pvalue);
+
+            svg.append("text")
+                .attr("x", width / 2)
+                .attr("y", 15)
+                .attr("text-anchor", "middle")
+                .style("font-size", "18px")
+                .text("Survival plot for " + name.split('|')[0])
+                .style("fill", "white");
+
+                            // Define the lines for the survival plot
+            const highLine = d3.line()
+                .x(d => x(d.time))
+                .y(d => y(d.survivalProb));
+
+            const lowLine = d3.line()
+                .x(d => x(d.time))
+                .y(d => y(d.survivalProb));
+
+            // Add paths
+            svg.append("path")
+                .datum(highExprPlotData)
+                .attr("fill", "none")
+                .attr("stroke", "#F8766D")
+                .attr("stroke-width", 2)
+                .attr("d", highLine);
+
+            svg.append("path")
+                .datum(lowExprPlotData)
+                .attr("fill", "none")
+                .attr("stroke", "#00BFC4")
+                .attr("stroke-width", 2)
+                .attr("d", lowLine);
+
+            // Add crosshairs
+            const crosshairGroup = svg.append("g")
+                .attr("class", "crosshair")
+                .style("display", "none");
+
+            // Vertical line
+            crosshairGroup.append("line")
+                .attr("class", "crosshair-line vertical")
+                .attr("stroke", "gray")
+                .attr("stroke-width", 1)
+                .attr("stroke-dasharray", "4 4") // Dashed line
+                .attr("y1", 0)
+                .attr("y2", height);
+
+            // Horizontal line
+            crosshairGroup.append("line")
+                .attr("class", "crosshair-line horizontal")
+                .attr("stroke", "gray")
+                .attr("stroke-width", 1)
+                .attr("stroke-dasharray", "4 4") // Dashed line
+                .attr("x1", 0)
+                .attr("x2", width);
+
+            // Intersection circle
+            crosshairGroup.append("circle")
+                .attr("class", "crosshair-circle")
+                .attr("r", 4)
+                .attr("stroke", "gray")
+                .attr("fill", "white");
+
+                                            // Tooltip for showing data
+            const tooltip = d3.select("#survival")
+                .append("div")
+                .attr("class", "tooltip")
+                .style("opacity", 0)
+                .style("position", "absolute")
+                .style("background-color", "black")
+                .style("padding", "5px")
+                .style("border-radius", "5px")
+                .style("border", "1px solid gray");
 
 
-// Add the high expression line
-const highLine = d3.line()
-    .x(d => x(d.time))
-    .y(d => y(d.survivalProb));
 
-svg.append("path")
-    .datum(highExprPlotData)
-    .attr("fill", "none")
-    .attr("stroke", "#F8766D")
-    .attr("stroke-width", 2)
-    .attr("d", highLine);
+            // Capture mouse events
+            const mouseCapture = svg.append("rect")
+                .attr("width", width)
+                .attr("height", height)
+                .attr("fill", "none")
+                .attr("pointer-events", "all")
+                .on("mousemove", function () {
+                    const [mouseX, mouseY] = d3.mouse(this); // Use d3.mouse() for v4
 
-// Add the low expression line
-const lowLine = d3.line()
-    .x(d => x(d.time))
-    .y(d => y(d.survivalProb));
+                    crosshairGroup.style("display", null);
 
-svg.append("path")
-    .datum(lowExprPlotData)
-    .attr("fill", "none")
-    .attr("stroke", "#00BFC4")
-    .attr("stroke-width", 2)
-    .attr("d", lowLine);
+                    crosshairGroup.select(".vertical")
+                        .attr("x1", mouseX)
+                        .attr("x2", mouseX)
+                        .transition().duration(50); // Smooth transition
 
+                    crosshairGroup.select(".horizontal")
+                        .attr("y1", mouseY)
+                        .attr("y2", mouseY)
+                        .transition().duration(50); // Smooth transition
 
-    // Add legend
-const legend = svg.append("g")
-    .attr("class", "legend")
-    .attr("transform", `translate(${width - 100}, 20)`); // Adjust position of legend
+                    crosshairGroup.select(".crosshair-circle")
+                        .attr("cx", mouseX)
+                        .attr("cy", mouseY)
+                        .transition().duration(50); // Smooth transition
+                    
+                    // Convert mouse coordinates to time and survival probability
+                    const time = x.invert(mouseX);
+                    const survivalProb = y.invert(mouseY);
+                    
+                    // Show tooltip
+                    tooltip.transition().duration(200).style("opacity", 0.9);
+                    tooltip.html(`Time: ${time.toFixed(2)}<br>Survival: ${survivalProb.toFixed(2)}`)
+                        .style("left", (d3.event.pageX + 10) + "px")
+                        .style("top", (d3.event.pageY - 28) + "px");
+                })
+                .on("mouseleave", function () {
+                    crosshairGroup.style("display", "none");
+                    tooltip.transition().duration(500).style("opacity", 0);
 
-legend.append("rect")
-    .attr("x", 0)
-    .attr("y", 0)
-    .attr("width", 10)
-    .attr("height", 10)
-    .attr("fill", "#F8766D");
-
-legend.append("text")
-    .attr("x", 15)
-    .attr("y", 8)
-    .style("fill", "white")
-    .text("High Expression");
-
-legend.append("rect")
-    .attr("x", 0)
-    .attr("y", 20)
-    .attr("width", 10)
-    .attr("height", 10)
-    .attr("fill", "#00BFC4");
-
-legend.append("text")
-    .attr("x", 15)
-    .attr("y", 28)
-    .style("fill", "white")
-    .text("Low Expression");
-
-legend.append("text")
-    .attr("x", 15)
-    .attr("y", 48)
-    .style("fill", "white")
-    .text("p-value: " +pvalue);
-
-// Add title
-svg.append("text")
-    .attr("x", width / 2)
-    .attr("y", 15)
-    .attr("text-anchor", "middle")
-    .style("font-size", "18px")
-    .text("Survival plot for "+name.split('|')[0])
-    .style("fill", "white");
+                });
 
 
-}
+            // // Apply event listeners to paths for line hover effects
+            // svg.selectAll("path")
+            //     .on("mouseover", function () {
+            //         d3.select(this).style("stroke-width", 4);
+            //     })
+            //     .on("mouseout", function () {
+            //         d3.select(this).style("stroke-width", 2);
+            //     });
+
+
+            // Get the nearest point
+            // const mouseCapture = svg.append("rect")
+            //     .attr("width", width)
+            //     .attr("height", height)
+            //     .attr("fill", "none")
+            //     .attr("pointer-events", "all")
+            //     .on("mousemove", function () {
+            //         const [mouseX, mouseY] = d3.mouse(this);
+
+            //         // Find the closest data point for high and low expression lines
+            //         const closestHigh = getClosestDataPoint(highExprPlotData, x.invert(mouseX));
+            //         const closestLow = getClosestDataPoint(lowExprPlotData, x.invert(mouseX));
+
+            //         // Determine which line is closer to the mouse
+            //         const isHighExprCloser = Math.abs(y(closestHigh.survivalProb) - mouseY) < Math.abs(y(closestLow.survivalProb) - mouseY);
+            //         const closestPoint = isHighExprCloser ? closestHigh : closestLow;
+
+            //         crosshairGroup.style("display", null);
+
+            //         crosshairGroup.select(".vertical")
+            //             .attr("x1", x(closestPoint.time))
+            //             .attr("x2", x(closestPoint.time))
+            //             .transition().duration(50);
+
+            //         crosshairGroup.select(".horizontal")
+            //             .attr("y1", y(closestPoint.survivalProb))
+            //             .attr("y2", y(closestPoint.survivalProb))
+            //             .transition().duration(50);
+
+            //         crosshairGroup.select(".crosshair-circle")
+            //             .attr("cx", x(closestPoint.time))
+            //             .attr("cy", y(closestPoint.survivalProb))
+            //             .transition().duration(50);
+
+            //         // Show tooltip
+            //         tooltip.transition().duration(200).style("opacity", 0.9);
+            //         tooltip.html(`Time: ${closestPoint.time}<br>Survival: ${closestPoint.survivalProb.toFixed(2)}`)
+            //             .style("left", (d3.event.pageX + 10) + "px")
+            //             .style("top", (d3.event.pageY - 28) + "px");
+            //     })
+            //     .on("mouseleave", function () {
+            //         crosshairGroup.style("display", "none");
+            //         tooltip.transition().duration(500).style("opacity", 0);
+            //     });
+
+
+            // // Function to find the closest data point
+            // function getClosestDataPoint(data, mouseX) {
+            //     return data.reduce((prev, curr) => {
+            //         return (Math.abs(curr.time - mouseX) < Math.abs(prev.time - mouseX) ? curr : prev);
+            //     });
+            // }
+
+        }
 
 
     </script>
 
 
-    </body>
+</body>
 
-    </html>
+</html>
