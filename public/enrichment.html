@@ -299,8 +299,8 @@ table.dataTable thead th {
       }, function (session) {
         console.log(session); // Log the session object
         var filteredDataURL = session.loc + "/R/.val/json"; // Extract JSON data URL
-        d3.json(filteredDataURL, function (data) {
-          createDotPlot1(data); // Process data and create dot plot
+        d3.json(filteredDataURL, function (data1) {
+          createDotPlot1(data1); // Process data and create dot plot
         });
       }).fail(function () {
         console.log("Error: OpenCPU call failed.");
@@ -718,10 +718,10 @@ table.dataTable thead th {
             });
         }
 
-        function createDotPlot1(data) {
+        function createDotPlot1(data1) {
           document.getElementById("loadingMessage1").style.display = 'none';
 
-            data_disgen = data.annotation_top
+            data_disgen = data1.annotation_top
             var minValue = d3.min(data_disgen, function (d) { return d['Adjusted.P.value']; });
             var maxValue = d3.max(data_disgen, function (d) { return d['Adjusted.P.value']; });
             data_disgen.sort((a, b) => b.Gene_count - a.Gene_count);
@@ -736,7 +736,7 @@ table.dataTable thead th {
             // Create the select element
             var selectDot = d3.select("#select_dot1").append('select');
 
-            // Bind the data to options and enter the new options
+            // Bind the data1 to options and enter the new options
             selectDot.selectAll('myOptions') // Next 4 lines add 6 options = 6 colors
                 .data(options)
                 .enter()
@@ -824,7 +824,7 @@ table.dataTable thead th {
 
             // Sort the data array based on gene count in descending order
 
-            console.log(data)
+            console.log(data1)
             // Define a scaling factor that the user can adjust
             var scalingFactor = 20; // Default scaling factor
 
@@ -966,33 +966,33 @@ table.dataTable thead th {
 
 
 
-            function update(selectedGroup, data) {
+            function update(selectedGroup, data1) {
                 var minValue;
                 var maxValue;
 
-                // Adjust data based on selected group
+                // Adjust data1 based on selected group
                 if (selectedGroup == 'DisGenNet') {
-                    data = data.annotation_top;
-                    data.sort((a, b) => b.Gene_count - a.Gene_count);
-                    minValue = d3.min(data, function (d) { return d['Adjusted.P.value']; });
-                    maxValue = d3.max(data, function (d) { return d['Adjusted.P.value']; });
+                    data1 = data1.annotation_top;
+                    data1.sort((a, b) => b.Gene_count - a.Gene_count);
+                    minValue = d3.min(data1, function (d) { return d['Adjusted.P.value']; });
+                    maxValue = d3.max(data1, function (d) { return d['Adjusted.P.value']; });
                 } else if (selectedGroup == 'Bio. Process') {
-                    data = data.annotation_top1;
-                    data.sort((a, b) => b.Gene_count - a.Gene_count);
-                    minValue = d3.min(data, function (d) { return d['Adjusted.P.value']; });
-                    maxValue = d3.max(data, function (d) { return d['Adjusted.P.value']; });
+                    data1 = data1.annotation_top1;
+                    data1.sort((a, b) => b.Gene_count - a.Gene_count);
+                    minValue = d3.min(data1, function (d) { return d['Adjusted.P.value']; });
+                    maxValue = d3.max(data1, function (d) { return d['Adjusted.P.value']; });
                 } else if (selectedGroup == 'Molecular function') {
-                    data = data.annotation_top2;
-                    console.log("MOLECULAR FUNCTION", data)
-                    data.sort((a, b) => b.Gene_count - a.Gene_count);
-                    minValue = d3.min(data, function (d) { return d['Adjusted.P.value']; });
-                    maxValue = d3.max(data, function (d) { return d['Adjusted.P.value']; });
+                    data1 = data1.annotation_top2;
+                    console.log("MOLECULAR FUNCTION", data1)
+                    data1.sort((a, b) => b.Gene_count - a.Gene_count);
+                    minValue = d3.min(data1, function (d) { return d['Adjusted.P.value']; });
+                    maxValue = d3.max(data1, function (d) { return d['Adjusted.P.value']; });
                 }
                 else if (selectedGroup == 'KEGG') {
-                    data = data.annotation_top3;
-                    data.sort((a, b) => b.Gene_count - a.Gene_count);
-                    minValue = d3.min(data, function (d) { return d['Adjusted.P.value']; });
-                    maxValue = d3.max(data, function (d) { return d['Adjusted.P.value']; });
+                    data1 = data1.annotation_top3;
+                    data1.sort((a, b) => b.Gene_count - a.Gene_count);
+                    minValue = d3.min(data1, function (d) { return d['Adjusted.P.value']; });
+                    maxValue = d3.max(data1, function (d) { return d['Adjusted.P.value']; });
                 }
                 title.text("DOWN Genes " + selectedGroup);
 
@@ -1018,12 +1018,12 @@ table.dataTable thead th {
 
                 // Update x scale
                 var x = d3.scaleLinear()
-                    .domain([0, d3.max(data, function (d) { return d.Gene_count; })])
+                    .domain([0, d3.max(data1, function (d) { return d.Gene_count; })])
                     .range([0, width]);
 
                 // Update y scale
                 var y = d3.scaleBand()
-                    .domain(data.map(function (d) { return d.Term; }))
+                    .domain(data1.map(function (d) { return d.Term; }))
                     .range([0, height])
                     .padding(0.1);
 
@@ -1063,7 +1063,7 @@ table.dataTable thead th {
 
                 // Update dots
                 var dots = svg.selectAll("circle")
-                    .data(data);
+                    .data(data1);
 
                 // Remove existing circles
                 dots.exit().remove();
@@ -1098,8 +1098,8 @@ table.dataTable thead th {
                     });
 
                 // Update legend
-                legendScale.domain([d3.min(data, function (d) { return d['Adjusted.P.value']; }), d3.max(data, function (d) { return d['Adjusted.P.value']; })]);
-                var tickValues = [d3.min(data, function (d) { return d['Adjusted.P.value']; }), d3.max(data, function (d) { return d['Adjusted.P.value']; })];
+                legendScale.domain([d3.min(data1, function (d) { return d['Adjusted.P.value']; }), d3.max(data1, function (d) { return d['Adjusted.P.value']; })]);
+                var tickValues = [d3.min(data1, function (d) { return d['Adjusted.P.value']; }), d3.max(data1, function (d) { return d['Adjusted.P.value']; })];
                 legendAxis.tickValues(tickValues);
                 axis.call(legendAxis);
 
@@ -1119,7 +1119,7 @@ table.dataTable thead th {
             // Define the event handler for the change event
             selectDot.on("change", function () {
                 var selectedOption = d3.select(this).property("value");
-                update(selectedOption, data);
+                update(selectedOption, data1);
             });
         }
 
