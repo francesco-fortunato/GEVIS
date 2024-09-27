@@ -66,6 +66,8 @@ GEVIS is a comprehensive dashboard for conducting differential gene expression a
 
 ---
 
+## Usage
+
 1. **Data Upload:**
    - Upload raw gene expression data along with associated metadata, or select from available example datasets for analysis.
    
