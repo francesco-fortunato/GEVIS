@@ -661,6 +661,11 @@
                         id="totalColumns2"></span></p>
             </div>
 
+            <button id="quantileNormalizeBtn"
+                style="display: block; margin: 20px auto; padding: 10px 20px; background-color: #008CBA; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);">
+                Perform Quantile Normalization
+            </button>
+
             <button id="selectMetadataBtn"
                 style="display: block; margin: 0 auto; padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer;">Select
                 Metadata Rows</button>
@@ -668,6 +673,20 @@
             <!-- Message container -->
             <div id="messageContainer" style="margin-top: 20px; font-size: 16px; text-align: center;"></div>
 
+        </div>
+    </div>
+
+    <div id="geneOverlay"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); z-index: 1000;">
+        <div
+            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); width: 80%; max-width: 800px;">
+            <h2 style="margin: 0 0 20px; text-align: center;">Selected Genes</h2>
+            <table id="geneTable" class="display" style="width: 100%;"></table>
+            <button id="confirmDownloadButton"
+                style="margin-top: 20px; padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; display: none;">Download
+                CSV</button>
+            <button id="closeOverlayButton"
+                style="margin-top: 20px; padding: 10px 20px; background-color: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">Close</button>
         </div>
     </div>
 
@@ -1001,7 +1020,7 @@
         let combinedData = []
         let combinedData1 = []
         let gsmList = []
-
+        let data1;
         var json = []
         //info box plot
         let sumstat1
@@ -1580,7 +1599,7 @@
 
                 reader2.onload = function (e) {
                     var contents2 = e.target.result;
-                    var data1 = parseCsv(contents1); // Use contents1 here
+                    data1 = parseCsv(contents1); // Use contents1 here
                     var data2 = parseCsv(contents2);
                     hideLoadCsvOverlay();
                     showDisplayCsvOverlay(data1, data2);
@@ -2090,15 +2109,139 @@
         }
 
 
-        async function showDisplayCsvOverlay(data1, data2) {
-            console.log(data1)
-            // Create the all_int variable
-            let all_int = data1.every(item => {
-                // Exclude the first field, typically 'ID_REF'
-                return Object.values(item).slice(1).every(isInteger);
+        async function quantileNormalize(data) {
+            // Step 1: Extract sample values (ignoring the first key 'ID_REF')
+            const sampleValues = data.map(row => Object.values(row).slice(1).map(parseFloat));
+
+            // Step 2: Initialize rank matrix
+            const rankMatrix = Array.from({ length: sampleValues[0].length }, () => new Array(sampleValues.length));
+
+            // Step 3: Rank the values for each column
+            for (let col = 0; col < sampleValues[0].length; col++) {
+                const values = sampleValues.map(row => row[col]);
+                const sortedIndices = Array.from(values.keys()).sort((a, b) => values[a] - values[b]);
+
+                let currentRank = 1; // Start ranking from 1
+                for (let i = 0; i < sortedIndices.length; i++) {
+                    let tieCount = 1; // Count how many values are the same
+                    while (i + 1 < sortedIndices.length && values[sortedIndices[i]] === values[sortedIndices[i + 1]]) {
+                        tieCount++;
+                        i++;
+                    }
+                    // Assign the same rank to all tied values
+                    for (let j = 0; j < tieCount; j++) {
+                        rankMatrix[col][sortedIndices[i - tieCount + 1 + j]] = currentRank;
+                    }
+                    // Move to the next rank
+                    currentRank += tieCount;
+                }
+            }
+
+            console.log("Rank Matrix:", rankMatrix);
+
+            // Step 4: Rearranging the values in each column
+            const rearrangedSamples = [];
+            for (let col = 0; col < sampleValues[0].length; col++) {
+                const columnValues = sampleValues.map(row => row[col]);
+                rearrangedSamples[col] = columnValues.slice().sort((a, b) => a - b);
+            }
+
+            console.log("Rearranged Samples:", rearrangedSamples);
+
+            // Step 5: Calculate the mean of the rearranged samples for each gene (row)
+            const means = rearrangedSamples[0].map((_, rowIndex) => {
+                const sum = rearrangedSamples.reduce((acc, curr) => acc + curr[rowIndex], 0);
+                return sum / rearrangedSamples.length; // Average across the samples
             });
 
-            console.log(all_int); // This will be true if all values (excluding the first) are integers
+            console.log("Means:", means);
+
+            // Step 6: Substitute the ranks with their corresponding mean values
+            const normalizedData = data.map((row, rowIndex) => {
+                let newRow = { [Object.keys(row)[0]]: row[Object.keys(row)[0]] }; // Keep the gene ID intact
+                Object.keys(row).slice(1).forEach((_, colIndex) => {
+                    // Get the rank for the current row from the rank matrix
+                    const rank = rankMatrix[colIndex][rowIndex]; // Rank can be from 1 to the number of rows
+                    // Use the mean value corresponding to the rank
+                    newRow[Object.keys(row)[colIndex + 1]] = means[rank - 1]; // Subtract 1 for zero-based index
+                });
+                return newRow;
+            });
+
+            console.log("Normalized Data:", normalizedData);
+            return normalizedData;
+        }
+
+
+        // Function to update the table with normalized data
+        function updateTableWithNormalizedData(normalizedData) {
+            // Clear the existing table content
+            let tableBody1 = document.querySelector("#csvTableData1 tbody");
+            tableBody1.innerHTML = ''; // Clear previous rows for table 1
+
+            // Create header for normalized data
+            const headers = Object.keys(normalizedData[0]).slice(0, 5);
+            let tableData1 = "<thead><tr>";
+
+            // Function to truncate headers longer than 8 characters
+            function truncateHeader(header) {
+                return header.length > 8 ? header.slice(0, 8) + "..." : header;
+            }
+
+            // Function to create a header with a tooltip
+            function createHeaderCell(header) {
+                const truncated = truncateHeader(header);
+                return `<th title="${header}">${truncated}</th>`;
+            }
+
+            // Display headers for normalized data
+            headers.forEach(function (key) {
+                tableData1 += createHeaderCell(key);
+            });
+            tableData1 += "</tr></thead><tbody>";
+
+            // Function to truncate text longer than a given length
+            function truncateText(text, maxLength) {
+                // Convert non-string values to string
+                const textString = String(text);
+                return textString.length > maxLength ? textString.slice(0, maxLength) + "..." : textString;
+            }
+
+            // Function to create a cell with a tooltip
+            function createCell(text, maxLength) {
+                const truncated = truncateText(text, maxLength);
+                return `<td title="${text}">${truncated}</td>`;
+            }
+
+            // Display data rows for normalized data
+            for (let i = 0; i < normalizedData.length; i++) {
+                tableData1 += "<tr>";
+                headers.forEach(function (key) {
+                    let value = normalizedData[i][key]; // Get the value
+                    tableData1 += createCell(value !== undefined ? value : '', 9); // Handle undefined
+                });
+                tableData1 += "</tr>";
+            }
+            tableData1 += "</tbody>";
+
+            // Insert the created HTML into the table
+            document.getElementById("csvTableData1").innerHTML = tableData1;
+
+            // Reinitialize DataTables
+            if (table1) {
+                table1.destroy(); // Destroy the previous instance if it exists
+            }
+            table1 = $('#csvTableData1').DataTable({
+                "paging": true,
+                "pageLength": 5,
+                ordering: false,
+                searching: false,
+                "lengthChange": false
+            });
+        }
+
+        async function showDisplayCsvOverlay(data1, data2) {
+            console.log(data1)
 
             document.getElementById("displayCsvOverlay").style.display = "block";
 
@@ -2154,7 +2297,6 @@
                 return `<td title="${text}">${truncated}</td>`;
             }
 
-
             // Display data rows for data1
             for (var i = 0; i < data1.length; i++) {
                 tableData1 += "<tr>";
@@ -2185,7 +2327,7 @@
 
             table1 = $('#csvTableData1').DataTable({
                 "paging": true, // Enable pagination
-                "pageLength": 10, // Number of rows per page
+                "pageLength": 5, // Number of rows per page
                 ordering: false,
                 searching: false,
                 "lengthChange": false
@@ -2196,7 +2338,7 @@
             // Initialize DataTable for the second table with virtual scrolling
             table2 = $('#csvTableData2').DataTable({
                 "paging": true, // Enable pagination
-                "pageLength": 10, // Number of rows per page
+                "pageLength": 5, // Number of rows per page
                 ordering: false,
                 searching: false,
                 "lengthChange": false
@@ -2233,7 +2375,105 @@
             // Make sure the message container is visible
             document.getElementById("displayCsvOverlay").style.display = "block";
 
+            // Define the quantile normalization logic as a string
+            const workerScript = `
+                self.onmessage = function (event) {
+                    const data = event.data;
+
+                    function quantileNormalize(data) {
+                        const sampleValues = data.map(row => Object.values(row).slice(1).map(parseFloat));
+                        const rankMatrix = Array.from({ length: sampleValues[0].length }, () => new Array(sampleValues.length));
+
+                        for (let col = 0; col < sampleValues[0].length; col++) {
+                            const values = sampleValues.map(row => row[col]);
+                            const sortedIndices = Array.from(values.keys()).sort((a, b) => values[a] - values[b]);
+
+                            let currentRank = 1;
+                            for (let i = 0; i < sortedIndices.length; i++) {
+                                let tieCount = 1;
+                                while (i + 1 < sortedIndices.length && values[sortedIndices[i]] === values[sortedIndices[i + 1]]) {
+                                    tieCount++;
+                                    i++;
+                                }
+                                for (let j = 0; j < tieCount; j++) {
+                                    rankMatrix[col][sortedIndices[i - tieCount + 1 + j]] = currentRank;
+                                }
+                                currentRank += tieCount;
+                            }
+                        }
+
+                        const rearrangedSamples = [];
+                        for (let col = 0; col < sampleValues[0].length; col++) {
+                            const columnValues = sampleValues.map(row => row[col]);
+                            rearrangedSamples[col] = columnValues.slice().sort((a, b) => a - b);
+                        }
+
+                        const means = rearrangedSamples[0].map((_, rowIndex) => {
+                            const sum = rearrangedSamples.reduce((acc, curr) => acc + curr[rowIndex], 0);
+                            return sum / rearrangedSamples.length;
+                        });
+
+                        const normalizedData = data.map((row, rowIndex) => {
+                            let newRow = { [Object.keys(row)[0]]: row[Object.keys(row)[0]] };
+                            Object.keys(row).slice(1).forEach((_, colIndex) => {
+                                const rank = rankMatrix[colIndex][rowIndex];
+                                newRow[Object.keys(row)[colIndex + 1]] = means[rank - 1];
+                            });
+                            return newRow;
+                        });
+
+                        return normalizedData;
+                    }
+
+                    const normalizedData = quantileNormalize(data);
+                    self.postMessage(normalizedData);
+                };
+                `;
+
+            // Create a blob from the worker script
+            const blob = new Blob([workerScript], { type: 'application/javascript' });
+            const workerURL = URL.createObjectURL(blob);
+
+            // Button click event for performing quantile normalization
+            document.getElementById("quantileNormalizeBtn").addEventListener("click", function () {
+                // Show loading overlay
+                document.getElementById("loadingOverlay").style.display = "block";
+
+                // Create a new Web Worker
+                const worker = new Worker(workerURL);
+
+                // Listen for messages from the worker
+                worker.onmessage = function (event) {
+                    data1 = event.data;
+
+                    // Update the table with the normalized data
+                    updateTableWithNormalizedData(data1);
+
+                    // Remove the button after it's clicked
+                    document.getElementById("quantileNormalizeBtn").style.display = 'none';
+
+                    // Hide loading overlay
+                    document.getElementById("loadingOverlay").style.display = "none";
+
+                    // Terminate the worker
+                    worker.terminate();
+                    URL.revokeObjectURL(workerURL); // Clean up the object URL
+                };
+
+                // Send data to the worker for normalization
+                worker.postMessage(data1);
+            });
+
+
             document.getElementById("selectMetadataBtn").addEventListener("click", function () {
+
+                // Create the all_int variable
+                let all_int = data1.every(item => {
+                    // Exclude the first field, typically 'ID_REF'
+                    return Object.values(item).slice(1).every(isInteger);
+                });
+
+                console.log(all_int); // This will be true if all values (excluding the first) are integers
 
                 // Hide the current overlay
                 document.getElementById("displayCsvOverlay").style.display = "none";
@@ -2918,6 +3158,8 @@
 
                 selectRowBtn3.addEventListener("click", async function () {
                     chosen_statistic = 'deseq2'
+                    document.getElementById("thresholdSlider").style.display = "none"
+                    document.getElementById("thresholdValue").style.display = "none"
                     event.stopPropagation(); // Prevent event bubbling
                     var selectedRowIndex = document.querySelector('input[name="metadataRow"]:checked').value;
                     var rowData = Object.values(data2[selectedRowIndex]); // Get the values of the selected row
@@ -3609,14 +3851,23 @@
 
                                 console.log(mostUpregulatedGene)
 
-                                var mostUpregulatedGeneName = mostUpregulatedGene.Gene
-                                //var secondMostUpregulatedGeneName = secondMostUpregulatedGene.Gene
-                                var mostDownregulatedGeneName = mostDownregulatedGene.Gene
-                                //var secondMostDownregulatedGeneName = secondMostDownregulatedGene.Gene
+                                // Function to find the adjusted p-value for a given gene
+                                function getAdjustedPValue(geneName) {
+                                    const geneInfo = old_p_adj.find(g => g.Gene === geneName);
+                                    return geneInfo ? geneInfo.pval_adj : null; // Return the p-value if the gene is found
+                                }
 
+                                var mostUpregulatedGeneName = mostUpregulatedGene.Gene;
+                                var mostDownregulatedGeneName = mostDownregulatedGene.Gene;
 
-                                selectedGeneData.push(mostUpregulatedGeneName)
-                                selectedGeneData.push(mostDownregulatedGeneName)
+                                // Check the adjusted p-values and push the genes into selectedGeneData if conditions are met
+                                if (getAdjustedPValue(mostUpregulatedGeneName) < 0.05) {
+                                    selectedGeneData.push(mostUpregulatedGeneName);
+                                }
+
+                                if (getAdjustedPValue(mostDownregulatedGeneName) < 0.05) {
+                                    selectedGeneData.push(mostDownregulatedGeneName);
+                                }
 
                                 // Find the select element
                                 var selectElement = document.getElementById("selectButton");
@@ -3624,18 +3875,21 @@
                                 // Clear existing options
                                 selectElement.innerHTML = "";
 
-                                // Add the new options dynamically
-                                var option1 = document.createElement("option");
-                                option1.value = mostUpregulatedGene.Gene;
-                                option1.text = `Most Upregulated (${mostUpregulatedGene.Gene})`;
-                                option1.selected = true;
-                                selectElement.appendChild(option1);
+                                if (getAdjustedPValue(mostUpregulatedGeneName) < 0.05) {
+                                    // Add the new options dynamically
+                                    var option1 = document.createElement("option");
+                                    option1.value = mostUpregulatedGene.Gene;
+                                    option1.text = `${mostUpregulatedGene.Gene}`;
+                                    option1.selected = true;
+                                    selectElement.appendChild(option1);
+                                }
 
-                                var option2 = document.createElement("option");
-                                option2.value = mostDownregulatedGene.Gene;
-                                option2.text = `Most Downregulated (${mostDownregulatedGene.Gene})`;
-                                selectElement.appendChild(option2);
-
+                                if (getAdjustedPValue(mostDownregulatedGeneName) < 0.05) {
+                                    var option2 = document.createElement("option");
+                                    option2.value = mostDownregulatedGene.Gene;
+                                    option2.text = `${mostDownregulatedGene.Gene}`;
+                                    selectElement.appendChild(option2);
+                                }
 
                                 // updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
                                 updateVolcanoPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
@@ -3808,6 +4062,9 @@
                             var pc1Values = [];
                             var pc2Values = [];
                             var groupValues = [];
+                            if (data_copy_pval === undefined) {
+                                alert("No deg found!")
+                            }
                             console.log(data_copy_pval)
                             console.log(dataC_copy_pval)
                             console.log(dataN_copy_pval)
@@ -4158,13 +4415,13 @@
                                                     // Add the new options dynamically
                                                     var option1 = document.createElement("option");
                                                     option1.value = mostUpregulatedGene.Gene;
-                                                    option1.text = `Most Upregulated (${mostUpregulatedGene.Gene})`;
+                                                    option1.text = `${mostUpregulatedGene.Gene}`;
                                                     option1.selected = true;
                                                     selectElement.appendChild(option1);
 
                                                     var option2 = document.createElement("option");
                                                     option2.value = mostDownregulatedGene.Gene;
-                                                    option2.text = `Most Downregulated (${mostDownregulatedGene.Gene})`;
+                                                    option2.text = `${mostDownregulatedGene.Gene}`;
                                                     selectElement.appendChild(option2);
 
 
@@ -4555,13 +4812,13 @@
                                                     // Add the new options dynamically
                                                     var option1 = document.createElement("option");
                                                     option1.value = mostUpregulatedGene.Gene;
-                                                    option1.text = `Most Upregulated (${mostUpregulatedGene.Gene})`;
+                                                    option1.text = `${mostUpregulatedGene.Gene}`;
                                                     option1.selected = true;
                                                     selectElement.appendChild(option1);
 
                                                     var option2 = document.createElement("option");
                                                     option2.value = mostDownregulatedGene.Gene;
-                                                    option2.text = `Most Downregulated (${mostDownregulatedGene.Gene})`;
+                                                    option2.text = `${mostDownregulatedGene.Gene}`;
                                                     selectElement.appendChild(option2);
 
 
@@ -6231,13 +6488,13 @@
                             // Add the new options dynamically
                             var option1 = document.createElement("option");
                             option1.value = mostUpregulatedGene.Gene;
-                            option1.text = `Most Upregulated (${mostUpregulatedGene.Gene})`;
+                            option1.text = `${mostUpregulatedGene.Gene}`;
                             option1.selected = true;
                             selectElement.appendChild(option1);
 
                             var option2 = document.createElement("option");
                             option2.value = mostDownregulatedGene.Gene;
-                            option2.text = `Most Downregulated (${mostDownregulatedGene.Gene})`;
+                            option2.text = `${mostDownregulatedGene.Gene}`;
                             selectElement.appendChild(option2);
 
                             if (currentPlot === 'volcano') {
@@ -12870,8 +13127,67 @@
         document.getElementById("exportGenesButton").addEventListener("click", exportGenes);
 
         function exportGenes() {
-            // Convert parsedLogFC array to CSV format
-            const csvContent = "data:text/csv;charset=utf-8,Gene,LogFC\n" + parsedLogFC.map(gene => `${gene.Gene},${gene.logFC}`).join("\n");
+            // Create a map for quick lookup of logFC based on gene names
+            const logFCMap = parsedLogFC_origin1.reduce((map, gene) => {
+                map[gene.Gene] = gene.logFC;
+                return map;
+            }, {});
+
+            // Sort old_p_adj by pval_adj (lowest first)
+            const sortedOldPAdj = old_p_adj.sort((a, b) => a.pval_adj - b.pval_adj);
+
+            // Prepare data for DataTables
+            const geneData = sortedOldPAdj.map(gene => {
+                const logFC = logFCMap[gene.Gene] !== undefined ? logFCMap[gene.Gene] : ""; // Handle cases where logFC is missing
+                return {
+                    Gene: gene.Gene,
+                    AdjPVal: gene.pval_adj,
+                    LogFC: logFC
+                };
+            });
+
+            // Initialize DataTable
+            const geneTable = $('#geneTable').DataTable({
+                data: geneData,
+                columns: [
+                    { title: "Gene", data: "Gene" },
+                    { title: "AdjPVal", data: "AdjPVal" },
+                    { title: "LogFC", data: "LogFC" }
+                ],
+                destroy: true, // Allow re-initialization
+                paging: true, // Enable pagination
+                pageLength: 5, // Number of rows per page
+                ordering: true,
+                searching: false,
+                lengthChange: false
+            });
+
+            // Show the overlay
+            document.getElementById("geneOverlay").style.display = "block";
+
+            // Show the download button
+            document.getElementById("confirmDownloadButton").style.display = "block";
+
+            // Set up the download button action
+            document.getElementById("confirmDownloadButton").onclick = function () {
+                downloadCSV(geneTable);
+            };
+
+            // Close button functionality
+            document.getElementById("closeOverlayButton").onclick = function () {
+                document.getElementById("geneOverlay").style.display = "none";
+            };
+        }
+
+        function downloadCSV(geneTable) {
+            // Get data from the DataTable in the current order
+            const data = geneTable.rows({ order: 'current' }).data().toArray();
+
+            // Convert the data to CSV format
+            const csvContent = "data:text/csv;charset=utf-8,Gene,AdjPVal,LogFC\n" +
+                data.map(gene => {
+                    return `${gene.Gene},${gene.AdjPVal},${gene.LogFC}`;
+                }).join("\n");
 
             // Create a link element
             const encodedUri = encodeURI(csvContent);
@@ -12882,6 +13198,12 @@
             // Append the link to the document body and click it programmatically to initiate download
             document.body.appendChild(link);
             link.click();
+
+            // Clean up by removing the link from the document
+            document.body.removeChild(link);
+
+            // Close the overlay after download
+            document.getElementById("geneOverlay").style.display = "none";
         }
 
 
