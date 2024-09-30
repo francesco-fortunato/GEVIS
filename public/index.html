@@ -37,6 +37,11 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/2.0.7/css/dataTables.dataTables.css" />
     <script src="https://cdn.datatables.net/2.0.7/js/dataTables.js"></script>
 
+    <link rel="stylesheet" href="https://unpkg.com/tippy.js@6/dist/tippy.css" />
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script src="https://unpkg.com/tippy.js@6"></script>
+
+
     <style>
         /*------ Style 1 ------*/
         #style1 {
@@ -972,29 +977,31 @@
 
         </div>
     </div>
-    <div id="myModal1" class="modal">
-        <div class="modal-content">
-            <span class="close1">&times;</span>
-            <div class="flex1">
+    <div id="myModal1"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); z-index: 1000;">
+        <div
+            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); width: 80%; max-width: 800px;">
+            <span class="close1"
+                style="position: absolute; top: 10px; right: 20px; font-size: 24px; font-weight: bold; cursor: pointer;">&times;</span>
 
-                <div>
+            <h2 style="margin-bottom: 20px; text-align: center; color: #333;">Select Clinical Data for Survival Analysis
+            </h2>
 
-                    <h4 style="color: white; width: 100%;">Select clinical data for the survival analysis</h4>
-                    <form id="dropdownForm">
-                    </form>
-                    <form id="dropdownForm1">
-                    </form>
-                    <button id="submission" type="button" class="btn btn-secondary" disabled>Submit</button>
+            <form id="dropdownForm" style="margin-bottom: 20px;">
+                <!-- Dropdown options go here -->
+            </form>
 
-                </div>
+            <form id="dropdownForm1" style="margin-bottom: 20px;">
+                <!-- Additional dropdown options go here -->
+            </form>
 
-                <div>
-                    <div id="survival"></div>
-                </div>
+            <button id="submission" type="button" class="btn btn-secondary"
+                style="padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;"
+                disabled>Submit</button>
 
+            <div id="survival" style="margin-top: 20px;">
+                <!-- Survival analysis content goes here -->
             </div>
-
-
         </div>
     </div>
 
@@ -1250,7 +1257,6 @@
 
 
         document.getElementById("openModalBtn1").addEventListener("click", function () {
-
             modal1.style.display = "block";
 
             console.log(metadata);
@@ -1263,14 +1269,23 @@
 
             // First dropdown label and menu
             const label = document.createElement('label');
-            label.textContent = "Select the Event:";
-            label.style.color = 'white';
+            label.textContent = "Select the Event: Event Status: Death (0 = Alive, 1 = Deceased) ";
+            label.style.display = 'block';
+            label.style.color = '#333';  // Use a more subtle color than black
+            label.style.marginBottom = '8px';  // Add spacing between the label and dropdown
+            label.style.fontSize = '16px';  // Increase font size for better readability
             label.setAttribute('for', 'metadataDropdown1');
             form.appendChild(label);
 
             const select = document.createElement('select');
             select.id = 'metadataDropdown1';
             select.name = 'metadataSelection1';
+            select.style.width = '100%';  // Make the dropdown take up the full width
+            select.style.padding = '10px';  // Add padding for better appearance
+            select.style.borderRadius = '4px';  // Rounded corners
+            select.style.border = '1px solid #ccc';  // Light gray border
+            select.style.marginBottom = '20px';  // Add space between this dropdown and the next element
+            select.style.fontSize = '14px';  // Improve font size
 
             metadata.forEach((item) => {
                 const option = document.createElement('option');
@@ -1283,14 +1298,23 @@
 
             // Second dropdown label and menu
             const label1 = document.createElement('label');
-            label1.textContent = "Select Time to Follow Up:";
-            label1.style.color = 'white';
+            label1.textContent = "Select Time to Follow Up: (days)";
+            label1.style.display = 'block';
+            label1.style.color = '#333';
+            label1.style.marginBottom = '8px';
+            label1.style.fontSize = '16px';
             label1.setAttribute('for', 'metadataDropdown2');
-            form1.appendChild(label1);  // Corrected from appending 'label' to 'label1'
+            form1.appendChild(label1);
 
             const select1 = document.createElement('select');
             select1.id = 'metadataDropdown2';
             select1.name = 'metadataSelection2';
+            select1.style.width = '100%';
+            select1.style.padding = '10px';
+            select1.style.borderRadius = '4px';
+            select1.style.border = '1px solid #ccc';
+            select1.style.marginBottom = '20px';
+            select1.style.fontSize = '14px';
 
             metadata.forEach((item) => {
                 const option = document.createElement('option');
@@ -1301,11 +1325,7 @@
 
             form1.appendChild(select1);
 
-            btn2.addEventListener('click', filterMetadata)
-
-
-
-
+            btn2.addEventListener('click', filterMetadata);
         });
 
         function filterMetadata() {
@@ -2490,6 +2510,16 @@
             const blob = new Blob([workerScript], { type: 'application/javascript' });
             const workerURL = URL.createObjectURL(blob);
 
+            // Initialize Tippy.js for 'quantileNormalizeBtn'
+            var quantileNormalizeBtn = document.getElementById("quantileNormalizeBtn");
+
+            var tippyInstanceQuantile = tippy(quantileNormalizeBtn, {
+                content: "Quantile normalization ensures that the distribution of expression values is the same across all samples. If you choose to apply quantile normalization, DESeq2 will no longer be available as it requires raw, unnormalized count data.",
+                placement: 'top',
+                theme: 'light',
+                interactive: true,  // Allow interaction with the tooltip
+            });
+
             // Button click event for performing quantile normalization
             document.getElementById("quantileNormalizeBtn").addEventListener("click", function () {
                 // Show loading overlay
@@ -2687,24 +2717,73 @@
 
                 var selectRowBtn = document.createElement("button");
                 selectRowBtn.textContent = "Perform DEG with t-test\n(This may take a while. Don't panic if it seems stuck)";
-                selectRowBtn.setAttribute("style", "flex: 1; padding: 10px; background-color: #CE2029; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: default; white-space: pre-line; opacity: 0.6;");
+                selectRowBtn.setAttribute("style", "flex: 1; padding: 10px; background-color: #CE2029; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: not-allowed; white-space: pre-line; opacity: 0.6;");
                 selectRowBtn.disabled = true;
 
                 var selectRowBtn2 = document.createElement("button");
                 selectRowBtn2.textContent = "Perform DEG with limma\n(This may take a while. Don't panic if it seems stuck)";
-                selectRowBtn2.setAttribute("style", "flex: 1; padding: 10px; background-color: #CE2029; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: default; white-space: pre-line; opacity: 0.6;");
+                selectRowBtn2.setAttribute("style", "flex: 1; padding: 10px; background-color: #CE2029; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: not-allowed; white-space: pre-line; opacity: 0.6;");
                 selectRowBtn2.disabled = true;
 
                 var selectRowBtn3 = document.createElement("button");
                 selectRowBtn3.textContent = "Perform DEG with deseq2\n(This may take a while. Don't panic if it seems stuck)";
-                selectRowBtn3.setAttribute("style", "flex: 1; padding: 10px; background-color: #CE2029; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: default; white-space: pre-line; opacity: 0.6;");
+                selectRowBtn3.setAttribute("style", "flex: 1; padding: 10px; background-color: #CE2029; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: not-allowed; white-space: pre-line; opacity: 0.6;");
                 selectRowBtn3.disabled = true;
+
+                // Create div containers for each disabled button
+                var div1 = document.createElement("div");
+                div1.style.display = "inline-block";  // Ensure inline display for proper alignment
+                div1.style.pointerEvents = "auto";    // Allow pointer events on the div
+                div1.appendChild(selectRowBtn);
+
+                var div2 = document.createElement("div");
+                div2.style.display = "inline-block";
+                div2.style.pointerEvents = "auto";
+                div2.appendChild(selectRowBtn2);
+
+                var div3 = document.createElement("div");
+                div3.style.display = "inline-block";
+                div3.style.pointerEvents = "auto";
+                div3.appendChild(selectRowBtn3);
+
+
+                // Initialize Tippy.js for tooltips on div containers
+                var tippyInstance1 = tippy(div1, {
+                    content: "Select a color scheme for the visualization before proceeding. The t-test is a parametric test that compares the means of two groups to identify statistically significant differences. It assumes that the data follows a normal distribution and is suitable for comparing two conditions.",
+                    placement: 'bottom',
+                    theme: 'light',
+                    interactive: true,  // Allow interaction with the tooltip
+                });
+
+                var tippyInstance2 = tippy(div2, {
+                    content: "Select a color scheme for the visualization before proceeding. Limma (Linear Models for Microarray Data) is an advanced statistical method that borrows information across genes to improve detection power in differential expression analysis.",
+                    placement: 'bottom',
+                    theme: 'light',
+                    interactive: true,  // Allow interaction with the tooltip
+                });
+
+                var tippyInstance3 = tippy(div3, {
+                    content: "Select a color scheme for the visualization before proceeding. DESeq2 (Differential Expression using RNA-Seq 2) is a popular tool for analyzing RNA-Seq data. It requires raw count data with integer values. If your data contains non-integer or pre-processed values, DESeq2 will be disabled.",
+                    placement: 'bottom',
+                    theme: 'light',
+                    interactive: true,  // Allow interaction with the tooltip
+                });
 
                 var selectColors = document.createElement("button");
                 selectColors.textContent = "Select Color";
                 selectColors.setAttribute("style", "padding: 10px; background-color: #FFC107; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer;");
 
                 selectColors.addEventListener("click", function () {
+
+                    // Modify the content of the t-test tooltip
+                    tippyInstance1.setContent("The t-test is a statistical test that compares the means of two groups to identify significant differences. Make sure to select a color scheme for visualization.");
+
+                    // Modify the content of the t-test tooltip
+                    tippyInstance2.setContent("Limma (Linear Models for Microarray Data) is an advanced statistical method that borrows information across genes to improve detection power in differential expression analysis.");
+
+                    // Modify the content of the t-test tooltip
+                    tippyInstance3.setContent("DESeq2 (Differential Expression using RNA-Seq 2) is a popular tool for analyzing RNA-Seq data. It requires raw count data with integer values. If your data contains non-integer or pre-processed values, DESeq2 will be disabled.");
+
                     // Create a new overlay for selecting colors
                     var selectColorOverlay = document.createElement("div");
                     selectColorOverlay.setAttribute("id", "selectColorOverlay");
@@ -2936,6 +3015,7 @@
 
                     selectColorOverlay.appendChild(selectColorContent);
                     document.body.appendChild(selectColorOverlay);
+
                 });
 
                 // console.log(data2)
@@ -3695,9 +3775,9 @@
 
 
                 });
-                buttonContainer.appendChild(selectRowBtn);
-                buttonContainer.appendChild(selectRowBtn2);
-                buttonContainer.appendChild(selectRowBtn3);
+                buttonContainer.appendChild(div1);
+                buttonContainer.appendChild(div2);
+                buttonContainer.appendChild(div3);
 
                 selectMetadataContent.appendChild(selectColors);
                 selectMetadataContent.appendChild(buttonContainer);
@@ -8024,15 +8104,15 @@
             // Create x and y scales with offsets
             var xScale = d3.scaleLinear()
                 .domain([
-                    d3.min(pc1Values) - 5, // Apply offset to min value
-                    d3.max(pc1Values) + 5  // Apply offset to max value
+                    d3.min(pc1Values) - 2, // Apply offset to min value
+                    d3.max(pc1Values) + 2  // Apply offset to max value
                 ])
                 .range([0, width]);
 
             var yScale = d3.scaleLinear()
                 .domain([
-                    d3.min(pc2Values) - 5, // Apply offset to min value
-                    d3.max(pc2Values) + 5  // Apply offset to max value
+                    d3.min(pc2Values) - 2, // Apply offset to min value
+                    d3.max(pc2Values) + 2  // Apply offset to max value
                 ])
                 .range([height, 0]);
 
@@ -8277,13 +8357,13 @@
 
                 // Update scales with offsets
                 xScale.domain([
-                    d3.min(xValues) - 5, // Apply offset to min value
-                    d3.max(xValues) + 5  // Apply offset to max value
+                    d3.min(xValues) - 2, // Apply offset to min value
+                    d3.max(xValues) + 2  // Apply offset to max value
                 ]);
 
                 yScale.domain([
-                    d3.min(yValues) - 5, // Apply offset to min value
-                    d3.max(yValues) + 5  // Apply offset to max value
+                    d3.min(yValues) - 2, // Apply offset to min value
+                    d3.max(yValues) + 2  // Apply offset to max value
                 ]);
 
                 // Update circles

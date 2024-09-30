@@ -2,318 +2,332 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GEVIS - Enrichment Results</title>
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-  <link rel="manifest" href="/site.webmanifest">
-  <script src="d3.v7.8.5.min.js"></script>
-  <script src="//code.jquery.com/jquery-1.11.1.min.js"></script>
-  <script src="//cdn.opencpu.org/opencpu-0.4.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/simple-statistics/7.0.0/simple-statistics.min.js"></script>
-  <script src='https://cdn.jsdelivr.net/gh/kdpsingh/rjs@master/r.js'></script>
-  <script src="https://d3js.org/d3.v4.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GEVIS - Enrichment Results</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <script src="d3.v7.8.5.min.js"></script>
+    <script src="//code.jquery.com/jquery-1.11.1.min.js"></script>
+    <script src="//cdn.opencpu.org/opencpu-0.4.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/simple-statistics/7.0.0/simple-statistics.min.js"></script>
+    <script src='https://cdn.jsdelivr.net/gh/kdpsingh/rjs@master/r.js'></script>
+    <script src="https://d3js.org/d3.v4.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.js"
-    integrity="sha512-5mCB0Kvv97yTzqo0174qxPjMisck/WlK51+mw/RV7UfYbtHI8LuLR82BzZuxHUKSfbh75u9cZHgUcqrZDaBJuA=="
-    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
-    integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
-    crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.3/dist/umd/popper.min.js"
-    integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
-    crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.js"
+        integrity="sha512-5mCB0Kvv97yTzqo0174qxPjMisck/WlK51+mw/RV7UfYbtHI8LuLR82BzZuxHUKSfbh75u9cZHgUcqrZDaBJuA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+        integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.3/dist/umd/popper.min.js"
+        integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
+        crossorigin="anonymous"></script>
 
-  <link rel="stylesheet" type="text/css" href="css/bootstrap.css">
-  <script src="css/bootstrap.js"></script>
+    <link rel="stylesheet" type="text/css" href="css/bootstrap.css">
+    <script src="css/bootstrap.js"></script>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-color/3.0.0/d3-color.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-interpolate/1.5.0/d3-interpolate.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-scale/3.2.2/d3-scale.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-scale-chromatic/1.6.0/d3-scale-chromatic.min.js"></script>
-  <link rel="stylesheet" href="https://cdn.datatables.net/2.0.7/css/dataTables.dataTables.css" />
-  <script src="https://cdn.datatables.net/2.0.7/js/dataTables.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-color/3.0.0/d3-color.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-interpolate/1.5.0/d3-interpolate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-scale/3.2.2/d3-scale.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-scale-chromatic/1.6.0/d3-scale-chromatic.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.0.7/css/dataTables.dataTables.css" />
+    <script src="https://cdn.datatables.net/2.0.7/js/dataTables.js"></script>
 
-  <style>
-body {
-  background-color: #121212;
-  color: #FFFFFF;
-  font-family: Arial, sans-serif;
-}
+    <style>
+        body {
+            background-color: #121212;
+            color: #FFFFFF;
+            font-family: Arial, sans-serif;
+        }
 
-.container {
-  margin-top: 30px;
-}
+        .container {
+            margin-top: 30px;
+        }
 
-h1 {
-  text-align: center;
-  margin-bottom: 30px;
-  font-weight: bold;
-  color: #FFA726;
-}
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: bold;
+            color: #FFA726;
+        }
 
-.content-wrapper {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
+        .content-wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
 
-.table-container {
-  flex: 2;
-  margin-right: 40px; /* Increased space between table and graphs */
-  margin-left: -100px; /* Move table on the left */
-  min-width: 440px; /* Adjusted as needed */
-  overflow: hidden; /* Prevents content overflow */
-}
+        .table-container {
+            flex: 2;
+            margin-right: 40px;
+            /* Increased space between table and graphs */
+            margin-left: -100px;
+            /* Move table on the left */
+            min-width: 440px;
+            /* Adjusted as needed */
+            overflow: hidden;
+            /* Prevents content overflow */
+        }
 
-.graph-container {
-  flex: 2;
-  display: flex;
-  flex-direction: column; /* Stack plots vertically */
-  gap: 20px; /* Space between the plots */
-}
+        .graph-container {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            /* Stack plots vertically */
+            gap: 20px;
+            /* Space between the plots */
+        }
 
-.dotplot-container {
-  background-color: #1E1E1E;
-  padding: 15px;
-  border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-  flex: 1; /* Ensures each plot container gets equal space */
-  overflow: hidden; /* Prevents content overflow */
-}
+        .dotplot-container {
+            background-color: #1E1E1E;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            flex: 1;
+            /* Ensures each plot container gets equal space */
+            overflow: hidden;
+            /* Prevents content overflow */
+        }
 
-.loading-message {
-  text-align: center;
-  font-size: 18px;
-  margin-top: 20px;
-  color: #FFA726;
-}
+        .loading-message {
+            text-align: center;
+            font-size: 18px;
+            margin-top: 20px;
+            color: #FFA726;
+        }
 
-.loading-spinner {
-  border: 8px solid rgba(255, 255, 255, 0.3); /* Light grey background */
-  border-top: 8px solid #FFA726; /* Orange spinner color */
-  border-radius: 50%;
-  width: 50px;
-  height: 50px;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  animation: spin 1s cubic-bezier(0.25, 0.3, 0.5, 1) infinite; /* Custom easing for variable speed */
-}
+        .loading-spinner {
+            border: 8px solid rgba(255, 255, 255, 0.3);
+            /* Light grey background */
+            border-top: 8px solid #FFA726;
+            /* Orange spinner color */
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: spin 1s cubic-bezier(0.25, 0.3, 0.5, 1) infinite;
+            /* Custom easing for variable speed */
+        }
 
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
 
-table.dataTable {
-  width: 100% !important;
-  background-color: #2C2C2C;
-  border-radius: 8px;
-  overflow: hidden;
-}
+            100% {
+                transform: rotate(360deg);
+            }
+        }
 
-table.dataTable th, table.dataTable td {
-  color: #FFFFFF;
-}
+        table.dataTable {
+            width: 100% !important;
+            background-color: #2C2C2C;
+            border-radius: 8px;
+            overflow: hidden;
+        }
 
-table.dataTable thead th {
-  background-color: #FFA726;
-  color: #121212;
-}
+        table.dataTable th,
+        table.dataTable td {
+            color: #FFFFFF;
+        }
 
-.x-axis-label, .y-axis-label {
-  font-size: 14px;
-  fill: white;
-}
+        table.dataTable thead th {
+            background-color: #FFA726;
+            color: #121212;
+        }
 
-.axis line,
-.axis path {
-  stroke: #FFFFFF;
-}
-  </style>
+        .x-axis-label,
+        .y-axis-label {
+            font-size: 14px;
+            fill: white;
+        }
+
+        .axis line,
+        .axis path {
+            stroke: #FFFFFF;
+        }
+    </style>
 </head>
 
 <body>
     <div class="container">
-        <h1>Enrichment Results</h1>
+        <h1>GEVIS - Enrichment Results</h1>
         <div class="content-wrapper">
-          <div class="table-container">
-            <table id="dataTable" class="table table-striped table-bordered">
-              <thead>
-                <tr>
-                  <th>Gene</th>
-                  <th>pval adj</th>
-                  <th>logFC</th>
-                </tr>
-              </thead>
-              <tbody>
-                <!-- Table rows will be dynamically populated -->
-              </tbody>
-            </table>
-          </div>
-    
-          <div class="graph-container">
-            <div class="dotplot-container">
-              <div id="dotplot">
-                <div class="loading-spinner" id="loadingMessage"></div>
-              </div>
-              <div id="slider_dot_plot"></div>
-              <div id="select_dot"></div>
+            <div class="table-container">
+                <table id="dataTable" class="table table-striped table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Gene</th>
+                            <th>pval adj</th>
+                            <th>logFC</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Table rows will be dynamically populated -->
+                    </tbody>
+                </table>
             </div>
-    
-            <div class="dotplot-container">
-              <div id="dotplot1">
-                <div class="loading-spinner" id="loadingMessage1"></div>
-              </div>
-              <div id="slider_dot_plot1"></div>
-              <div id="select_dot1"></div>
+
+            <div class="graph-container">
+                <div class="dotplot-container">
+                    <div id="dotplot">
+                        <div class="loading-spinner" id="loadingMessage"></div>
+                    </div>
+                    <div id="slider_dot_plot"></div>
+                    <div id="select_dot"></div>
+                </div>
+
+                <div class="dotplot-container">
+                    <div id="dotplot1">
+                        <div class="loading-spinner" id="loadingMessage1"></div>
+                    </div>
+                    <div id="slider_dot_plot1"></div>
+                    <div id="select_dot1"></div>
+                </div>
             </div>
-          </div>
         </div>
-      </div>
-    
-
-  <script>
-    try {
-      ocpu.seturl("//localhost:8004/ocpu/lib/GEVIS/R");
-    } catch (error) {
-      // If an error occurs (e.g., ocpu is not defined), reload the page
-      window.location.reload();
-    }
+    </div>
 
 
-    // Function to parse URL query parameters
-    function getUrlParameter(name) {
-      name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
-      var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
-      var results = regex.exec(location.search);
-      return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
-    }
-
-    // Retrieve sessionId from query parameter
-    const sessionId = getUrlParameter('sessionId');
-
-    // Retrieve data from server based on sessionId
-    if (sessionId) {
-      // Send a fetch request to retrieve data
-      fetch(`/retrieveData?sessionId=${sessionId}`)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('Network response was not ok');
-          }
-          return response.json();
-        })
-        .then(data => {
-          // Process the data and populate DataTable
-          populateDataTable(data);
-          // Perform DEG analysis and enrichment
-          DEG(data.data_copy_pval, data.parsedLogFC_pval, data.old_p_adj);
-        })
-        .catch(error => {
-          console.error('Error:', error);
-          alert('Failed to retrieve data for enrichment');
-        });
-    } else {
-      alert('Session ID not found');
-    }
-
-    // Function to populate DataTable with retrieved data
-    function populateDataTable(data) {
-        console.log(data)
-      const tableData = data.data_copy_pval.map((item, index) => ({
-        gene: data.old_p_adj[index].Gene,
-        pval_adj: data.old_p_adj[index].pval_adj, 
-        logFC: data.parsedLogFC_pval[index].logFC 
-      }));
-
-      const dataTable = $('#dataTable').DataTable({
-        "data": tableData,
-        "columns": [
-          { "data": "gene" },
-          { "data": "pval_adj" },
-          { "data": "logFC" }
-        ],
-        "paging": true,
-        "searching": true,
-        "ordering": true,
-        "info": true
-      });
-    }
-
-    // DEG function to analyze differentially expressed genes
-    function DEG(data, logFC, pval_adj) {
-      var result = [];
-
-      for (var i = 0; i < logFC.length; i++) {
-        var geneData = {
-          gene: logFC[i].Gene,
-          pval_adj: null,
-          logFC: logFC[i].logFC,
-          direction: logFC[i].logFC >= 0 ? 'UP' : 'DOWN'
-        };
-
-        for (var j = 0; j < pval_adj.length; j++) {
-          if (pval_adj[j].Gene === logFC[i].Gene) {
-            geneData.pval_adj = pval_adj[j].pval_adj;
-            break;
-          }
+    <script>
+        try {
+            ocpu.seturl("//localhost:8004/ocpu/lib/GEVIS/R");
+        } catch (error) {
+            // If an error occurs (e.g., ocpu is not defined), reload the page
+            window.location.reload();
         }
 
-        result.push(geneData);
-      }
 
-      console.log(result); // Log the final structure
-      enrichment(result); // Call enrichment function with the processed data
-    }
+        // Function to parse URL query parameters
+        function getUrlParameter(name) {
+            name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+            var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+            var results = regex.exec(location.search);
+            return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+        }
 
-    // Function to perform enrichment analysis using OpenCPU
-    function enrichment(list) {
-      // Call OpenCPU for 'UP' direction
-      var reqUp = ocpu.call("enrichment", {
-        data: list,
-        direction: 'UP'
-      }, function (session) {
-        console.log(session); // Log the session object
-        var filteredDataURL = session.loc + "/R/.val/json"; // Extract JSON data URL
-        d3.json(filteredDataURL, function (data) {
-          createDotPlot(data); // Process data and create dot plot
-        });
-      }).fail(function () {
-        console.log("Error: OpenCPU call failed.");
-        showError("EnrichR takes too much to respond. Please try again!!");
-      });
+        // Retrieve sessionId from query parameter
+        const sessionId = getUrlParameter('sessionId');
 
-      // Call OpenCPU for 'DOWN' direction
-      var reqDown = ocpu.call("enrichment", {
-        data: list,
-        direction: 'DOWN'
-      }, function (session) {
-        console.log(session); // Log the session object
-        var filteredDataURL = session.loc + "/R/.val/json"; // Extract JSON data URL
-        d3.json(filteredDataURL, function (data1) {
-          createDotPlot1(data1); // Process data and create dot plot
-        });
-      }).fail(function () {
-        console.log("Error: OpenCPU call failed.");
-        showError("EnrichR takes too much to respond. Please try again!!");
-      });
+        // Retrieve data from server based on sessionId
+        if (sessionId) {
+            // Send a fetch request to retrieve data
+            fetch(`/retrieveData?sessionId=${sessionId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Process the data and populate DataTable
+                    populateDataTable(data);
+                    // Perform DEG analysis and enrichment
+                    DEG(data.data_copy_pval, data.parsedLogFC_pval, data.old_p_adj);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to retrieve data for enrichment');
+                });
+        } else {
+            alert('Session ID not found');
+        }
 
-      function showError(message) {
-        alert(message); // Display error message to the user
-      }
-    }
+        // Function to populate DataTable with retrieved data
+        function populateDataTable(data) {
+            console.log(data)
+            const tableData = data.data_copy_pval.map((item, index) => ({
+                gene: data.old_p_adj[index].Gene,
+                pval_adj: data.old_p_adj[index].pval_adj,
+                logFC: data.parsedLogFC_pval[index].logFC
+            }));
 
-    function createDotPlot(data) {
-      document.getElementById("loadingMessage").style.display = 'none';
+            const dataTable = $('#dataTable').DataTable({
+                "data": tableData,
+                "columns": [
+                    { "data": "gene" },
+                    { "data": "pval_adj" },
+                    { "data": "logFC" }
+                ],
+                "paging": true,
+                "searching": true,
+                "ordering": true,
+                "info": true
+            });
+        }
+
+        // DEG function to analyze differentially expressed genes
+        function DEG(data, logFC, pval_adj) {
+            var result = [];
+
+            for (var i = 0; i < logFC.length; i++) {
+                var geneData = {
+                    gene: logFC[i].Gene,
+                    pval_adj: null,
+                    logFC: logFC[i].logFC,
+                    direction: logFC[i].logFC >= 0 ? 'UP' : 'DOWN'
+                };
+
+                for (var j = 0; j < pval_adj.length; j++) {
+                    if (pval_adj[j].Gene === logFC[i].Gene) {
+                        geneData.pval_adj = pval_adj[j].pval_adj;
+                        break;
+                    }
+                }
+
+                result.push(geneData);
+            }
+
+            console.log(result); // Log the final structure
+            enrichment(result); // Call enrichment function with the processed data
+        }
+
+        // Function to perform enrichment analysis using OpenCPU
+        function enrichment(list) {
+            // Call OpenCPU for 'UP' direction
+            var reqUp = ocpu.call("enrichment", {
+                data: list,
+                direction: 'UP'
+            }, function (session) {
+                console.log(session); // Log the session object
+                var filteredDataURL = session.loc + "/R/.val/json"; // Extract JSON data URL
+                d3.json(filteredDataURL, function (data) {
+                    createDotPlot(data); // Process data and create dot plot
+                });
+            }).fail(function () {
+                console.log("Error: OpenCPU call failed.");
+                showError("EnrichR takes too much to respond. Please try again!!");
+            });
+
+            // Call OpenCPU for 'DOWN' direction
+            var reqDown = ocpu.call("enrichment", {
+                data: list,
+                direction: 'DOWN'
+            }, function (session) {
+                console.log(session); // Log the session object
+                var filteredDataURL = session.loc + "/R/.val/json"; // Extract JSON data URL
+                d3.json(filteredDataURL, function (data1) {
+                    createDotPlot1(data1); // Process data and create dot plot
+                });
+            }).fail(function () {
+                console.log("Error: OpenCPU call failed.");
+                showError("EnrichR takes too much to respond. Please try again!!");
+            });
+
+            function showError(message) {
+                alert(message); // Display error message to the user
+            }
+        }
+
+        function createDotPlot(data) {
+            document.getElementById("loadingMessage").style.display = 'none';
 
             data_disgen = data.annotation_top
             var minValue = d3.min(data_disgen, function (d) { return d['Adjusted.P.value']; });
@@ -423,7 +437,7 @@ table.dataTable thead th {
             var scalingFactor = 20; // Default scaling factor
 
             // Add an input element for the user to adjust the scaling factor
-            var scalingFactorInput = d3.select("#slider_dot_polot")
+            var scalingFactorInput = d3.select("#slider_dot_plot")
                 .html("")
                 .append("input")
                 .attr("type", "range")
@@ -594,7 +608,7 @@ table.dataTable thead th {
                 var scalingFactor = 20; // Default scaling factor
 
                 // Add an input element for the user to adjust the scaling factor
-                var scalingFactorInput = d3.select("#slider_dot_polot")
+                var scalingFactorInput = d3.select("#slider_dot_plot")
                     .html("")
                     .append("input")
                     .attr("type", "range")
@@ -719,7 +733,7 @@ table.dataTable thead th {
         }
 
         function createDotPlot1(data1) {
-          document.getElementById("loadingMessage1").style.display = 'none';
+            document.getElementById("loadingMessage1").style.display = 'none';
 
             data_disgen = data1.annotation_top
             var minValue = d3.min(data_disgen, function (d) { return d['Adjusted.P.value']; });
@@ -829,7 +843,7 @@ table.dataTable thead th {
             var scalingFactor = 20; // Default scaling factor
 
             // Add an input element for the user to adjust the scaling factor
-            var scalingFactorInput = d3.select("#slider_dot_polot1")
+            var scalingFactorInput = d3.select("#slider_dot_plot1")
                 .html("")
                 .append("input")
                 .attr("type", "range")
@@ -1000,7 +1014,7 @@ table.dataTable thead th {
                 var scalingFactor = 20; // Default scaling factor
 
                 // Add an input element for the user to adjust the scaling factor
-                var scalingFactorInput = d3.select("#slider_dot_polot1")
+                var scalingFactorInput = d3.select("#slider_dot_plot1")
                     .html("")
                     .append("input")
                     .attr("type", "range")
@@ -1126,7 +1140,7 @@ table.dataTable thead th {
 
 
 
-  </script>
+    </script>
 </body>
 
 </html>

@@ -53,10 +53,10 @@
         }
 
         h1 {
-            color: #FFA726;
-            font-size: 36px;
             text-align: center;
             margin-bottom: 30px;
+            font-weight: bold;
+            color: #FFA726;
         }
 
         h4 {
@@ -66,60 +66,68 @@
         }
 
         .flex1 {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 20px;
-}
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 20px;
+        }
 
-/* Adjust the width ratios */
-.dataTable-container {
-    background-color: #1E1E1E;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
-    flex: 0.4; /* Decreased width */
-    overflow: hidden;
-    min-width: 250px; /* Minimum width of the table container */
-}
+        /* Adjust the width ratios */
+        .dataTable-container {
+            background-color: #1E1E1E;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+            flex: 0.4;
+            /* Decreased width */
+            overflow: hidden;
+            min-width: 250px;
+            /* Minimum width of the table container */
+        }
 
-.dotplot-container {
-    background-color: #1E1E1E;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
-    flex: 0.6; /* Increased width */
-    overflow: hidden;
-    min-width: 500px; /* Minimum width of the plot container */
-}
+        .dotplot-container {
+            background-color: #1E1E1E;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+            flex: 0.6;
+            /* Increased width */
+            overflow: hidden;
+            min-width: 500px;
+            /* Minimum width of the plot container */
+        }
 
-.flex1 {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 20px;
-}
+        .flex1 {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 20px;
+        }
 
-/* Adjust the width ratios */
-.dataTable-container {
-    background-color: #1E1E1E;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
-    flex: 0.4; /* Decreased width */
-    overflow: hidden;
-    min-width: 250px; /* Minimum width of the table container */
-}
+        /* Adjust the width ratios */
+        .dataTable-container {
+            background-color: #1E1E1E;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+            flex: 0.4;
+            /* Decreased width */
+            overflow: hidden;
+            min-width: 250px;
+            /* Minimum width of the table container */
+        }
 
-.dotplot-container {
-    background-color: #1E1E1E;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
-    flex: 1.2; /* Increased width */
-    overflow: hidden;
-    min-width: 500px; /* Minimum width of the plot container */
-}
+        .dotplot-container {
+            background-color: #1E1E1E;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+            flex: 1.2;
+            /* Increased width */
+            overflow: hidden;
+            min-width: 500px;
+            /* Minimum width of the plot container */
+        }
 
 
         .btn-secondary {
@@ -163,7 +171,24 @@
 
         table.dataTable tbody tr:hover {
             background-color: rgba(255, 138, 101, 0.2);
+            /* Hover color */
             cursor: pointer;
+        }
+
+        /* Change the background color of the selected row */
+        table.dataTable tbody tr.selected {
+            background-color: #FF8C00 !important;
+            /* Selected row color */
+            color: #FFFFFF !important;
+            /* Text color for selected row */
+        }
+
+        /* Remove box-shadow from the selected cells */
+        #geneTable tbody tr.selected>* {
+            box-shadow: none !important;
+            /* Remove blue box-shadow */
+            color: #FFFFFF !important;
+            /* Ensure white text color for all cells */
         }
 
         .tooltip {
@@ -180,22 +205,22 @@
             z-index: 10;
         }
 
-/* Ensure proper layout on smaller screens */
-@media (max-width: 768px) {
-    .flex1 {
-        flex-direction: column;
-        align-items: center;
-    }
+        /* Ensure proper layout on smaller screens */
+        @media (max-width: 768px) {
+            .flex1 {
+                flex-direction: column;
+                align-items: center;
+            }
 
-    .dataTable-container,
-    .dotplot-container {
-        min-width: 100%;
-    }
+            .dataTable-container,
+            .dotplot-container {
+                min-width: 100%;
+            }
 
-    .btn-secondary {
-        width: 100%;
-    }
-}
+            .btn-secondary {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 
@@ -245,45 +270,45 @@
         const sessionId = getUrlParameter('sessionId');
 
         function createGeneDataTable(data) {
-    const maxGeneLength = 10; // Set a maximum length for gene display
+            const maxGeneLength = 10; // Set a maximum length for gene display
 
-    const tableData = data.map(item => ({
-        Gene: item.Gene.length > maxGeneLength 
-            ? `<span title="${item.Gene}">${item.Gene.substring(0, maxGeneLength)}...</span>`
-            : item.Gene, // Truncate if necessary, otherwise show the full name
-            pval_adj: Number(item.pval_adj).toExponential(4) // Format p-values in scientific notation
-        }));
+            const tableData = data.map(item => ({
+                Gene: item.Gene.length > maxGeneLength
+                    ? `<span title="${item.Gene}">${item.Gene.substring(0, maxGeneLength)}...</span>`
+                    : item.Gene, // Truncate if necessary, otherwise show the full name
+                pval_adj: Number(item.pval_adj).toExponential(4) // Format p-values in scientific notation
+            }));
 
-    // Initialize DataTable
-    table = $('#geneTable').DataTable({
-        data: tableData,
-        columns: [
-            { 
-                title: "Gene", 
-                data: "Gene", 
-                render: function(data, type, row) {
-                    return data; // Render the truncated gene with tooltip
-                }
-            },
-            { title: "pval_adj", data: "pval_adj" }
-        ],
-        destroy: true, // Allow re-initialization
-        paging: true,
-        pageLength: 5,
-        ordering: true,
-        searching: true,
-        lengthChange: false
-    });
+            // Initialize DataTable
+            table = $('#geneTable').DataTable({
+                data: tableData,
+                columns: [
+                    {
+                        title: "Gene",
+                        data: "Gene",
+                        render: function (data, type, row) {
+                            return data; // Render the truncated gene with tooltip
+                        }
+                    },
+                    { title: "pval_adj", data: "pval_adj" }
+                ],
+                destroy: true, // Allow re-initialization
+                paging: true,
+                pageLength: 5,
+                ordering: true,
+                searching: true,
+                lengthChange: false
+            });
 
-    // Handle row selection
-    $('#geneTable tbody').on('click', 'tr', function () {
-        // Deselect other rows
-        table.$('tr.selected').removeClass('selected');
+            // Handle row selection
+            $('#geneTable tbody').on('click', 'tr', function () {
+                // Deselect other rows
+                table.$('tr.selected').removeClass('selected');
 
-        // Select the clicked row
-        $(this).addClass('selected');
-    });
-}
+                // Select the clicked row
+                $(this).addClass('selected');
+            });
+        }
         ////*******************************CACHE******************************////
 
         // Global variable to hold plot data
