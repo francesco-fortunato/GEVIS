@@ -901,6 +901,30 @@
             <div id="style_scatter">
                 <div>
                     <div id="pca"></div>
+                    <!-- Dropdown for X-axis selection -->
+                    <label for="x-axis-select" style="color: white;">Select X-axis:</label>
+                    <select id="x-axis-select">
+                        <option value="pc1">PC1</option>
+                        <option value="pc2">PC2</option>
+                        <option value="pc3">PC3</option>
+                        <option value="pc4">PC4</option>
+                        <option value="pc5">PC5</option>
+                        <option value="pc6">PC6</option>
+                    </select>
+
+                    <!-- Dropdown for Y-axis selection -->
+                    <label for="y-axis-select" style="color: white;">Select Y-axis:</label>
+                    <select id="y-axis-select">
+                        <option value="pc2">PC2</option>
+                        <option value="pc1">PC1</option>
+                        <option value="pc3">PC3</option>
+                        <option value="pc4">PC4</option>
+                        <option value="pc5">PC5</option>
+                        <option value="pc6">PC6</option>
+                    </select>
+
+                    <button id="update-plot">Update Plot</button>
+
                 </div>
                 <div id="heatmap"></div>
 
@@ -1027,6 +1051,8 @@
         let newdataCJSON
         let first_filter_number_genes;
         let p_val_adj;
+        let explainedVariance;
+        let availablePCs
         let threshold = 0.05;
         let averageExpressions10C;
         let averageExpressions10N;
@@ -4147,16 +4173,19 @@
                                             // Retrieve additional data from metadata based on _row
                                             var gsm = obj._row;
                                             var group = obj.Group;
-                                            var pc1 = obj.PC1;
-                                            var pc2 = obj.PC2;
-
                                             // Create an object with the required fields
                                             var newObj = {
                                                 GSM: gsm,
                                                 group: group,
-                                                pc1: pc1,
-                                                pc2: pc2
                                             };
+
+                                            // Check for the existence of each principal component before adding to newObj
+                                            if (obj.PC1 !== undefined) newObj.pc1 = obj.PC1;
+                                            if (obj.PC2 !== undefined) newObj.pc2 = obj.PC2;
+                                            if (obj.PC3 !== undefined) newObj.pc3 = obj.PC3;
+                                            if (obj.PC4 !== undefined) newObj.pc4 = obj.PC4;
+                                            if (obj.PC5 !== undefined) newObj.pc5 = obj.PC5;
+                                            if (obj.PC6 !== undefined) newObj.pc6 = obj.PC6;
 
                                             // Add metadata values for each category to the newObj
                                             metadataCategories.forEach((category, index) => {
@@ -4171,31 +4200,74 @@
                                         json.scores_var.forEach(function (obj) {
                                             // Push PC1, PC2, and Group values to the arrays
                                             var gene = obj._row
-                                            var pc1 = obj.PC1
-                                            var pc2 = obj.PC2
-                                            var pc3 = obj.PC3
-                                            var pc4 = obj.PC4
-                                            var pc5 = obj.PC5
-                                            var pc6 = obj.PC6
 
                                             var newObj = {
                                                 gene: gene,
-                                                pc1: pc1,
-                                                pc2: pc2,
-                                                pc3: pc3,
-                                                pc4: pc4,
-                                                pc5: pc5,
-                                                pc6: pc6
                                             };
+                                            // Check for the existence of each principal component before adding to newObj
+                                            if (obj.PC1 !== undefined) newObj.pc1 = obj.PC1;
+                                            if (obj.PC2 !== undefined) newObj.pc2 = obj.PC2;
+                                            if (obj.PC3 !== undefined) newObj.pc3 = obj.PC3;
+                                            if (obj.PC4 !== undefined) newObj.pc4 = obj.PC4;
+                                            if (obj.PC5 !== undefined) newObj.pc5 = obj.PC5;
+                                            if (obj.PC6 !== undefined) newObj.pc6 = obj.PC6;
+
                                             heatmap_data.push(newObj);
                                         })
+
+                                        // Assuming you want to work with the first object in the array
+                                        let obj = json.scores_df[0]; // Get the first object
+
+                                        // Initialize an array to hold available principal components
+                                        availablePCs = [];
+
+                                        // Check for the existence of each principal component
+                                        if (obj.PC1 !== undefined) availablePCs.push('pc1');
+                                        if (obj.PC2 !== undefined) availablePCs.push('pc2');
+                                        if (obj.PC3 !== undefined) availablePCs.push('pc3');
+                                        if (obj.PC4 !== undefined) availablePCs.push('pc4');
+                                        if (obj.PC5 !== undefined) availablePCs.push('pc5');
+                                        if (obj.PC6 !== undefined) availablePCs.push('pc6');
+
+                                        // Function to update the dropdowns based on available PCs
+                                        function updateDropdowns() {
+                                            const xAxisSelect = document.getElementById("x-axis-select");
+                                            const yAxisSelect = document.getElementById("y-axis-select");
+
+                                            // Clear existing options
+                                            xAxisSelect.innerHTML = '';
+                                            yAxisSelect.innerHTML = '';
+
+                                            // Add available options to the X-axis dropdown
+                                            availablePCs.forEach(function (pc) {
+                                                const option = document.createElement("option");
+                                                option.value = pc;
+                                                option.textContent = pc.toUpperCase(); // Set text to uppercase
+                                                xAxisSelect.appendChild(option);
+                                            });
+
+                                            // Add available options to the Y-axis dropdown
+                                            availablePCs.forEach(function (pc) {
+                                                const option = document.createElement("option");
+                                                option.value = pc;
+                                                option.textContent = pc.toUpperCase(); // Set text to uppercase
+                                                yAxisSelect.appendChild(option);
+                                            });
+
+                                            // Set the default selected value for the Y-axis to PC2, if available
+                                            if (availablePCs.includes("pc2")) {
+                                                yAxisSelect.value = "pc2"; // Set PC2 as the selected value
+                                            }
+
+                                        }
+
+                                        // Call the function to update dropdowns
+                                        updateDropdowns();
+
                                         // Display the newData array
                                         console.log("PCA, first try ", pca_data);
-
-
                                         pca(pca_data);
                                         heatmap(heatmap_data);
-
                                     })
 
 
@@ -4638,8 +4710,6 @@
                                                             var pc2Key = "PC2";
                                                             var groupKey = "Group";
 
-                                                            // Arrays to store PC1 and PC2 values
-
 
                                                             // Iterate over each object in the JSON array
                                                             json.scores_df.forEach(function (obj) {
@@ -4654,6 +4724,9 @@
                                                             var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
                                                             console.log("Metadata categories:", metadataCategories);
 
+                                                            explainedVariance = json.explained_variance; // Access explained variance
+                                                            console.log("Explained variance", explainedVariance)
+
                                                             // Initialize pca_data array
                                                             pca_data = [];
 
@@ -4662,16 +4735,19 @@
                                                                 // Retrieve additional data from metadata based on _row
                                                                 var gsm = obj._row;
                                                                 var group = obj.Group;
-                                                                var pc1 = obj.PC1;
-                                                                var pc2 = obj.PC2;
-
                                                                 // Create an object with the required fields
                                                                 var newObj = {
                                                                     GSM: gsm,
                                                                     group: group,
-                                                                    pc1: pc1,
-                                                                    pc2: pc2
                                                                 };
+
+                                                                // Check for the existence of each principal component before adding to newObj
+                                                                if (obj.PC1 !== undefined) newObj.pc1 = obj.PC1;
+                                                                if (obj.PC2 !== undefined) newObj.pc2 = obj.PC2;
+                                                                if (obj.PC3 !== undefined) newObj.pc3 = obj.PC3;
+                                                                if (obj.PC4 !== undefined) newObj.pc4 = obj.PC4;
+                                                                if (obj.PC5 !== undefined) newObj.pc5 = obj.PC5;
+                                                                if (obj.PC6 !== undefined) newObj.pc6 = obj.PC6;
 
                                                                 // Add metadata values for each category to the newObj
                                                                 metadataCategories.forEach((category, index) => {
@@ -4686,24 +4762,70 @@
                                                             json.scores_var.forEach(function (obj) {
                                                                 // Push PC1, PC2, and Group values to the arrays
                                                                 var gene = obj._row
-                                                                var pc1 = obj.PC1
-                                                                var pc2 = obj.PC2
-                                                                var pc3 = obj.PC3
-                                                                var pc4 = obj.PC4
-                                                                var pc5 = obj.PC5
-                                                                var pc6 = obj.PC6
 
                                                                 var newObj = {
                                                                     gene: gene,
-                                                                    pc1: pc1,
-                                                                    pc2: pc2,
-                                                                    pc3: pc3,
-                                                                    pc4: pc4,
-                                                                    pc5: pc5,
-                                                                    pc6: pc6
                                                                 };
+                                                                // Check for the existence of each principal component before adding to newObj
+                                                                if (obj.PC1 !== undefined) newObj.pc1 = obj.PC1;
+                                                                if (obj.PC2 !== undefined) newObj.pc2 = obj.PC2;
+                                                                if (obj.PC3 !== undefined) newObj.pc3 = obj.PC3;
+                                                                if (obj.PC4 !== undefined) newObj.pc4 = obj.PC4;
+                                                                if (obj.PC5 !== undefined) newObj.pc5 = obj.PC5;
+                                                                if (obj.PC6 !== undefined) newObj.pc6 = obj.PC6;
+
                                                                 heatmap_data.push(newObj);
                                                             })
+
+                                                            // Assuming you want to work with the first object in the array
+                                                            let obj = json.scores_df[0]; // Get the first object
+
+                                                            // Initialize an array to hold available principal components
+                                                            availablePCs = [];
+
+                                                            // Check for the existence of each principal component
+                                                            if (obj.PC1 !== undefined) availablePCs.push('pc1');
+                                                            if (obj.PC2 !== undefined) availablePCs.push('pc2');
+                                                            if (obj.PC3 !== undefined) availablePCs.push('pc3');
+                                                            if (obj.PC4 !== undefined) availablePCs.push('pc4');
+                                                            if (obj.PC5 !== undefined) availablePCs.push('pc5');
+                                                            if (obj.PC6 !== undefined) availablePCs.push('pc6');
+
+                                                            // Function to update the dropdowns based on available PCs
+                                                            function updateDropdowns() {
+                                                                const xAxisSelect = document.getElementById("x-axis-select");
+                                                                const yAxisSelect = document.getElementById("y-axis-select");
+
+                                                                // Clear existing options
+                                                                xAxisSelect.innerHTML = '';
+                                                                yAxisSelect.innerHTML = '';
+
+                                                                // Add available options to the X-axis dropdown
+                                                                availablePCs.forEach(function (pc) {
+                                                                    const option = document.createElement("option");
+                                                                    option.value = pc;
+                                                                    option.textContent = pc.toUpperCase(); // Set text to uppercase
+                                                                    xAxisSelect.appendChild(option);
+                                                                });
+
+                                                                // Add available options to the Y-axis dropdown
+                                                                availablePCs.forEach(function (pc) {
+                                                                    const option = document.createElement("option");
+                                                                    option.value = pc;
+                                                                    option.textContent = pc.toUpperCase(); // Set text to uppercase
+                                                                    yAxisSelect.appendChild(option);
+                                                                });
+
+                                                                // Set the default selected value for the Y-axis to PC2, if available
+                                                                if (availablePCs.includes("pc2")) {
+                                                                    yAxisSelect.value = "pc2"; // Set PC2 as the selected value
+                                                                }
+
+                                                            }
+
+                                                            // Call the function to update dropdowns
+                                                            updateDropdowns();
+
                                                             // Display the newData array
                                                             console.log("PCA, first try ", pca_data);
                                                             pca(pca_data);
@@ -5037,9 +5159,6 @@
                                                             var pc2Key = "PC2";
                                                             var groupKey = "Group";
 
-                                                            // Arrays to store PC1 and PC2 values
-
-
                                                             // Iterate over each object in the JSON array
                                                             json.scores_df.forEach(function (obj) {
                                                                 // Push PC1, PC2, and Group values to the arrays
@@ -5053,6 +5172,8 @@
                                                             var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
                                                             console.log("Metadata categories:", metadataCategories);
 
+                                                            explainedVariance = json.explained_variance; // Access explained variance
+                                                            console.log("Explained variance", explainedVariance)
                                                             // Initialize pca_data array
                                                             pca_data = [];
 
@@ -5061,16 +5182,19 @@
                                                                 // Retrieve additional data from metadata based on _row
                                                                 var gsm = obj._row;
                                                                 var group = obj.Group;
-                                                                var pc1 = obj.PC1;
-                                                                var pc2 = obj.PC2;
-
                                                                 // Create an object with the required fields
                                                                 var newObj = {
                                                                     GSM: gsm,
                                                                     group: group,
-                                                                    pc1: pc1,
-                                                                    pc2: pc2
                                                                 };
+
+                                                                // Check for the existence of each principal component before adding to newObj
+                                                                if (obj.PC1 !== undefined) newObj.pc1 = obj.PC1;
+                                                                if (obj.PC2 !== undefined) newObj.pc2 = obj.PC2;
+                                                                if (obj.PC3 !== undefined) newObj.pc3 = obj.PC3;
+                                                                if (obj.PC4 !== undefined) newObj.pc4 = obj.PC4;
+                                                                if (obj.PC5 !== undefined) newObj.pc5 = obj.PC5;
+                                                                if (obj.PC6 !== undefined) newObj.pc6 = obj.PC6;
 
                                                                 // Add metadata values for each category to the newObj
                                                                 metadataCategories.forEach((category, index) => {
@@ -5085,28 +5209,72 @@
                                                             json.scores_var.forEach(function (obj) {
                                                                 // Push PC1, PC2, and Group values to the arrays
                                                                 var gene = obj._row
-                                                                var pc1 = obj.PC1
-                                                                var pc2 = obj.PC2
-                                                                var pc3 = obj.PC3
-                                                                var pc4 = obj.PC4
-                                                                var pc5 = obj.PC5
-                                                                var pc6 = obj.PC6
 
                                                                 var newObj = {
                                                                     gene: gene,
-                                                                    pc1: pc1,
-                                                                    pc2: pc2,
-                                                                    pc3: pc3,
-                                                                    pc4: pc4,
-                                                                    pc5: pc5,
-                                                                    pc6: pc6
                                                                 };
+                                                                // Check for the existence of each principal component before adding to newObj
+                                                                if (obj.PC1 !== undefined) newObj.pc1 = obj.PC1;
+                                                                if (obj.PC2 !== undefined) newObj.pc2 = obj.PC2;
+                                                                if (obj.PC3 !== undefined) newObj.pc3 = obj.PC3;
+                                                                if (obj.PC4 !== undefined) newObj.pc4 = obj.PC4;
+                                                                if (obj.PC5 !== undefined) newObj.pc5 = obj.PC5;
+                                                                if (obj.PC6 !== undefined) newObj.pc6 = obj.PC6;
+
                                                                 heatmap_data.push(newObj);
                                                             })
+
+                                                            // Assuming you want to work with the first object in the array
+                                                            let obj = json.scores_df[0]; // Get the first object
+
+                                                            // Initialize an array to hold available principal components
+                                                            availablePCs = [];
+
+                                                            // Check for the existence of each principal component
+                                                            if (obj.PC1 !== undefined) availablePCs.push('pc1');
+                                                            if (obj.PC2 !== undefined) availablePCs.push('pc2');
+                                                            if (obj.PC3 !== undefined) availablePCs.push('pc3');
+                                                            if (obj.PC4 !== undefined) availablePCs.push('pc4');
+                                                            if (obj.PC5 !== undefined) availablePCs.push('pc5');
+                                                            if (obj.PC6 !== undefined) availablePCs.push('pc6');
+
+                                                            // Function to update the dropdowns based on available PCs
+                                                            function updateDropdowns() {
+                                                                const xAxisSelect = document.getElementById("x-axis-select");
+                                                                const yAxisSelect = document.getElementById("y-axis-select");
+
+                                                                // Clear existing options
+                                                                xAxisSelect.innerHTML = '';
+                                                                yAxisSelect.innerHTML = '';
+
+                                                                // Add available options to the X-axis dropdown
+                                                                availablePCs.forEach(function (pc) {
+                                                                    const option = document.createElement("option");
+                                                                    option.value = pc;
+                                                                    option.textContent = pc.toUpperCase(); // Set text to uppercase
+                                                                    xAxisSelect.appendChild(option);
+                                                                });
+
+                                                                // Add available options to the Y-axis dropdown
+                                                                availablePCs.forEach(function (pc) {
+                                                                    const option = document.createElement("option");
+                                                                    option.value = pc;
+                                                                    option.textContent = pc.toUpperCase(); // Set text to uppercase
+                                                                    yAxisSelect.appendChild(option);
+                                                                });
+
+                                                                // Set the default selected value for the Y-axis to PC2, if available
+                                                                if (availablePCs.includes("pc2")) {
+                                                                    yAxisSelect.value = "pc2"; // Set PC2 as the selected value
+                                                                }
+
+                                                            }
+
+                                                            // Call the function to update dropdowns
+                                                            updateDropdowns();
+
                                                             // Display the newData array
                                                             console.log("PCA, first try ", pca_data);
-
-
                                                             pca(pca_data);
                                                             heatmap(heatmap_data);
 
@@ -6340,16 +6508,19 @@
                                             // Retrieve additional data from metadata based on _row
                                             var gsm = obj._row;
                                             var group = obj.Group;
-                                            var pc1 = obj.PC1;
-                                            var pc2 = obj.PC2;
-
                                             // Create an object with the required fields
                                             var newObj = {
                                                 GSM: gsm,
                                                 group: group,
-                                                pc1: pc1,
-                                                pc2: pc2
                                             };
+
+                                            // Check for the existence of each principal component before adding to newObj
+                                            if (obj.PC1 !== undefined) newObj.pc1 = obj.PC1;
+                                            if (obj.PC2 !== undefined) newObj.pc2 = obj.PC2;
+                                            if (obj.PC3 !== undefined) newObj.pc3 = obj.PC3;
+                                            if (obj.PC4 !== undefined) newObj.pc4 = obj.PC4;
+                                            if (obj.PC5 !== undefined) newObj.pc5 = obj.PC5;
+                                            if (obj.PC6 !== undefined) newObj.pc6 = obj.PC6;
 
                                             // Add metadata values for each category to the newObj
                                             metadataCategories.forEach((category, index) => {
@@ -6364,31 +6535,74 @@
                                         json.scores_var.forEach(function (obj) {
                                             // Push PC1, PC2, and Group values to the arrays
                                             var gene = obj._row
-                                            var pc1 = obj.PC1
-                                            var pc2 = obj.PC2
-                                            var pc3 = obj.PC3
-                                            var pc4 = obj.PC4
-                                            var pc5 = obj.PC5
-                                            var pc6 = obj.PC6
 
                                             var newObj = {
                                                 gene: gene,
-                                                pc1: pc1,
-                                                pc2: pc2,
-                                                pc3: pc3,
-                                                pc4: pc4,
-                                                pc5: pc5,
-                                                pc6: pc6
                                             };
+                                            // Check for the existence of each principal component before adding to newObj
+                                            if (obj.PC1 !== undefined) newObj.pc1 = obj.PC1;
+                                            if (obj.PC2 !== undefined) newObj.pc2 = obj.PC2;
+                                            if (obj.PC3 !== undefined) newObj.pc3 = obj.PC3;
+                                            if (obj.PC4 !== undefined) newObj.pc4 = obj.PC4;
+                                            if (obj.PC5 !== undefined) newObj.pc5 = obj.PC5;
+                                            if (obj.PC6 !== undefined) newObj.pc6 = obj.PC6;
+
                                             heatmap_data.push(newObj);
                                         })
 
+                                        // Assuming you want to work with the first object in the array
+                                        let obj = json.scores_df[0]; // Get the first object
+
+                                        // Initialize an array to hold available principal components
+                                        availablePCs = [];
+
+                                        // Check for the existence of each principal component
+                                        if (obj.PC1 !== undefined) availablePCs.push('pc1');
+                                        if (obj.PC2 !== undefined) availablePCs.push('pc2');
+                                        if (obj.PC3 !== undefined) availablePCs.push('pc3');
+                                        if (obj.PC4 !== undefined) availablePCs.push('pc4');
+                                        if (obj.PC5 !== undefined) availablePCs.push('pc5');
+                                        if (obj.PC6 !== undefined) availablePCs.push('pc6');
+
+                                        // Function to update the dropdowns based on available PCs
+                                        function updateDropdowns() {
+                                            const xAxisSelect = document.getElementById("x-axis-select");
+                                            const yAxisSelect = document.getElementById("y-axis-select");
+
+                                            // Clear existing options
+                                            xAxisSelect.innerHTML = '';
+                                            yAxisSelect.innerHTML = '';
+
+                                            // Add available options to the X-axis dropdown
+                                            availablePCs.forEach(function (pc) {
+                                                const option = document.createElement("option");
+                                                option.value = pc;
+                                                option.textContent = pc.toUpperCase(); // Set text to uppercase
+                                                xAxisSelect.appendChild(option);
+                                            });
+
+                                            // Add available options to the Y-axis dropdown
+                                            availablePCs.forEach(function (pc) {
+                                                const option = document.createElement("option");
+                                                option.value = pc;
+                                                option.textContent = pc.toUpperCase(); // Set text to uppercase
+                                                yAxisSelect.appendChild(option);
+                                            });
+
+                                            // Set the default selected value for the Y-axis to PC2, if available
+                                            if (availablePCs.includes("pc2")) {
+                                                yAxisSelect.value = "pc2"; // Set PC2 as the selected value
+                                            }
+
+                                        }
+
+                                        // Call the function to update dropdowns
+                                        updateDropdowns();
+
                                         // Display the newData array
-                                        console.log(pca_data);
-
-
+                                        console.log("PCA, first try ", pca_data);
                                         pca(pca_data);
-                                        heatmap(heatmap_data)
+                                        heatmap(heatmap_data);
 
                                     })
 
@@ -6588,16 +6802,19 @@
                                             // Retrieve additional data from metadata based on _row
                                             var gsm = obj._row;
                                             var group = obj.Group;
-                                            var pc1 = obj.PC1;
-                                            var pc2 = obj.PC2;
-
                                             // Create an object with the required fields
                                             var newObj = {
                                                 GSM: gsm,
                                                 group: group,
-                                                pc1: pc1,
-                                                pc2: pc2
                                             };
+
+                                            // Check for the existence of each principal component before adding to newObj
+                                            if (obj.PC1 !== undefined) newObj.pc1 = obj.PC1;
+                                            if (obj.PC2 !== undefined) newObj.pc2 = obj.PC2;
+                                            if (obj.PC3 !== undefined) newObj.pc3 = obj.PC3;
+                                            if (obj.PC4 !== undefined) newObj.pc4 = obj.PC4;
+                                            if (obj.PC5 !== undefined) newObj.pc5 = obj.PC5;
+                                            if (obj.PC6 !== undefined) newObj.pc6 = obj.PC6;
 
                                             // Add metadata values for each category to the newObj
                                             metadataCategories.forEach((category, index) => {
@@ -6612,32 +6829,74 @@
                                         json.scores_var.forEach(function (obj) {
                                             // Push PC1, PC2, and Group values to the arrays
                                             var gene = obj._row
-                                            var pc1 = obj.PC1
-                                            var pc2 = obj.PC2
-                                            var pc3 = obj.PC3
-                                            var pc4 = obj.PC4
-                                            var pc5 = obj.PC5
-                                            var pc6 = obj.PC6
 
                                             var newObj = {
                                                 gene: gene,
-                                                pc1: pc1,
-                                                pc2: pc2,
-                                                pc3: pc3,
-                                                pc4: pc4,
-                                                pc5: pc5,
-                                                pc6: pc6
                                             };
+                                            // Check for the existence of each principal component before adding to newObj
+                                            if (obj.PC1 !== undefined) newObj.pc1 = obj.PC1;
+                                            if (obj.PC2 !== undefined) newObj.pc2 = obj.PC2;
+                                            if (obj.PC3 !== undefined) newObj.pc3 = obj.PC3;
+                                            if (obj.PC4 !== undefined) newObj.pc4 = obj.PC4;
+                                            if (obj.PC5 !== undefined) newObj.pc5 = obj.PC5;
+                                            if (obj.PC6 !== undefined) newObj.pc6 = obj.PC6;
+
                                             heatmap_data.push(newObj);
                                         })
 
+                                        // Assuming you want to work with the first object in the array
+                                        let obj = json.scores_df[0]; // Get the first object
+
+                                        // Initialize an array to hold available principal components
+                                        availablePCs = [];
+
+                                        // Check for the existence of each principal component
+                                        if (obj.PC1 !== undefined) availablePCs.push('pc1');
+                                        if (obj.PC2 !== undefined) availablePCs.push('pc2');
+                                        if (obj.PC3 !== undefined) availablePCs.push('pc3');
+                                        if (obj.PC4 !== undefined) availablePCs.push('pc4');
+                                        if (obj.PC5 !== undefined) availablePCs.push('pc5');
+                                        if (obj.PC6 !== undefined) availablePCs.push('pc6');
+
+                                        // Function to update the dropdowns based on available PCs
+                                        function updateDropdowns() {
+                                            const xAxisSelect = document.getElementById("x-axis-select");
+                                            const yAxisSelect = document.getElementById("y-axis-select");
+
+                                            // Clear existing options
+                                            xAxisSelect.innerHTML = '';
+                                            yAxisSelect.innerHTML = '';
+
+                                            // Add available options to the X-axis dropdown
+                                            availablePCs.forEach(function (pc) {
+                                                const option = document.createElement("option");
+                                                option.value = pc;
+                                                option.textContent = pc.toUpperCase(); // Set text to uppercase
+                                                xAxisSelect.appendChild(option);
+                                            });
+
+                                            // Add available options to the Y-axis dropdown
+                                            availablePCs.forEach(function (pc) {
+                                                const option = document.createElement("option");
+                                                option.value = pc;
+                                                option.textContent = pc.toUpperCase(); // Set text to uppercase
+                                                yAxisSelect.appendChild(option);
+                                            });
+
+                                            // Set the default selected value for the Y-axis to PC2, if available
+                                            if (availablePCs.includes("pc2")) {
+                                                yAxisSelect.value = "pc2"; // Set PC2 as the selected value
+                                            }
+
+                                        }
+
+                                        // Call the function to update dropdowns
+                                        updateDropdowns();
+
                                         // Display the newData array
-                                        console.log(pca_data);
-
-
+                                        console.log("PCA, first try ", pca_data);
                                         pca(pca_data);
-                                        heatmap(heatmap_data)
-
+                                        heatmap(heatmap_data);
                                     })
 
 
@@ -6842,16 +7101,19 @@
                                             // Retrieve additional data from metadata based on _row
                                             var gsm = obj._row;
                                             var group = obj.Group;
-                                            var pc1 = obj.PC1;
-                                            var pc2 = obj.PC2;
-
                                             // Create an object with the required fields
                                             var newObj = {
                                                 GSM: gsm,
                                                 group: group,
-                                                pc1: pc1,
-                                                pc2: pc2
                                             };
+
+                                            // Check for the existence of each principal component before adding to newObj
+                                            if (obj.PC1 !== undefined) newObj.pc1 = obj.PC1;
+                                            if (obj.PC2 !== undefined) newObj.pc2 = obj.PC2;
+                                            if (obj.PC3 !== undefined) newObj.pc3 = obj.PC3;
+                                            if (obj.PC4 !== undefined) newObj.pc4 = obj.PC4;
+                                            if (obj.PC5 !== undefined) newObj.pc5 = obj.PC5;
+                                            if (obj.PC6 !== undefined) newObj.pc6 = obj.PC6;
 
                                             // Add metadata values for each category to the newObj
                                             metadataCategories.forEach((category, index) => {
@@ -6862,33 +7124,78 @@
                                             pca_data.push(newObj);
                                         });
 
-                                        // Display the newData array
-                                        console.log(pca_data);
                                         heatmap_data = []
                                         json.scores_var.forEach(function (obj) {
                                             // Push PC1, PC2, and Group values to the arrays
                                             var gene = obj._row
-                                            var pc1 = obj.PC1
-                                            var pc2 = obj.PC2
-                                            var pc3 = obj.PC3
-                                            var pc4 = obj.PC4
-                                            var pc5 = obj.PC5
-                                            var pc6 = obj.PC6
 
                                             var newObj = {
                                                 gene: gene,
-                                                pc1: pc1,
-                                                pc2: pc2,
-                                                pc3: pc3,
-                                                pc4: pc4,
-                                                pc5: pc5,
-                                                pc6: pc6
                                             };
+                                            // Check for the existence of each principal component before adding to newObj
+                                            if (obj.PC1 !== undefined) newObj.pc1 = obj.PC1;
+                                            if (obj.PC2 !== undefined) newObj.pc2 = obj.PC2;
+                                            if (obj.PC3 !== undefined) newObj.pc3 = obj.PC3;
+                                            if (obj.PC4 !== undefined) newObj.pc4 = obj.PC4;
+                                            if (obj.PC5 !== undefined) newObj.pc5 = obj.PC5;
+                                            if (obj.PC6 !== undefined) newObj.pc6 = obj.PC6;
+
                                             heatmap_data.push(newObj);
                                         })
 
+                                        // Assuming you want to work with the first object in the array
+                                        let obj = json.scores_df[0]; // Get the first object
+
+                                        // Initialize an array to hold available principal components
+                                        availablePCs = [];
+
+                                        // Check for the existence of each principal component
+                                        if (obj.PC1 !== undefined) availablePCs.push('pc1');
+                                        if (obj.PC2 !== undefined) availablePCs.push('pc2');
+                                        if (obj.PC3 !== undefined) availablePCs.push('pc3');
+                                        if (obj.PC4 !== undefined) availablePCs.push('pc4');
+                                        if (obj.PC5 !== undefined) availablePCs.push('pc5');
+                                        if (obj.PC6 !== undefined) availablePCs.push('pc6');
+
+                                        // Function to update the dropdowns based on available PCs
+                                        function updateDropdowns() {
+                                            const xAxisSelect = document.getElementById("x-axis-select");
+                                            const yAxisSelect = document.getElementById("y-axis-select");
+
+                                            // Clear existing options
+                                            xAxisSelect.innerHTML = '';
+                                            yAxisSelect.innerHTML = '';
+
+                                            // Add available options to the X-axis dropdown
+                                            availablePCs.forEach(function (pc) {
+                                                const option = document.createElement("option");
+                                                option.value = pc;
+                                                option.textContent = pc.toUpperCase(); // Set text to uppercase
+                                                xAxisSelect.appendChild(option);
+                                            });
+
+                                            // Add available options to the Y-axis dropdown
+                                            availablePCs.forEach(function (pc) {
+                                                const option = document.createElement("option");
+                                                option.value = pc;
+                                                option.textContent = pc.toUpperCase(); // Set text to uppercase
+                                                yAxisSelect.appendChild(option);
+                                            });
+
+                                            // Set the default selected value for the Y-axis to PC2, if available
+                                            if (availablePCs.includes("pc2")) {
+                                                yAxisSelect.value = "pc2"; // Set PC2 as the selected value
+                                            }
+
+                                        }
+
+                                        // Call the function to update dropdowns
+                                        updateDropdowns();
+
+                                        // Display the newData array
+                                        console.log("PCA, first try ", pca_data);
                                         pca(pca_data);
-                                        heatmap(heatmap_data)
+                                        heatmap(heatmap_data);
                                     })
 
                                 //DEG(data_copy_pval,parsedLogFC_pval,old_p_adj)
@@ -7041,16 +7348,19 @@
                                             // Retrieve additional data from metadata based on _row
                                             var gsm = obj._row;
                                             var group = obj.Group;
-                                            var pc1 = obj.PC1;
-                                            var pc2 = obj.PC2;
-
                                             // Create an object with the required fields
                                             var newObj = {
                                                 GSM: gsm,
                                                 group: group,
-                                                pc1: pc1,
-                                                pc2: pc2
                                             };
+
+                                            // Check for the existence of each principal component before adding to newObj
+                                            if (obj.PC1 !== undefined) newObj.pc1 = obj.PC1;
+                                            if (obj.PC2 !== undefined) newObj.pc2 = obj.PC2;
+                                            if (obj.PC3 !== undefined) newObj.pc3 = obj.PC3;
+                                            if (obj.PC4 !== undefined) newObj.pc4 = obj.PC4;
+                                            if (obj.PC5 !== undefined) newObj.pc5 = obj.PC5;
+                                            if (obj.PC6 !== undefined) newObj.pc6 = obj.PC6;
 
                                             // Add metadata values for each category to the newObj
                                             metadataCategories.forEach((category, index) => {
@@ -7061,33 +7371,78 @@
                                             pca_data.push(newObj);
                                         });
 
-                                        // Display the newData array
-                                        console.log(pca_data);
                                         heatmap_data = []
                                         json.scores_var.forEach(function (obj) {
                                             // Push PC1, PC2, and Group values to the arrays
                                             var gene = obj._row
-                                            var pc1 = obj.PC1
-                                            var pc2 = obj.PC2
-                                            var pc3 = obj.PC3
-                                            var pc4 = obj.PC4
-                                            var pc5 = obj.PC5
-                                            var pc6 = obj.PC6
 
                                             var newObj = {
                                                 gene: gene,
-                                                pc1: pc1,
-                                                pc2: pc2,
-                                                pc3: pc3,
-                                                pc4: pc4,
-                                                pc5: pc5,
-                                                pc6: pc6
                                             };
+                                            // Check for the existence of each principal component before adding to newObj
+                                            if (obj.PC1 !== undefined) newObj.pc1 = obj.PC1;
+                                            if (obj.PC2 !== undefined) newObj.pc2 = obj.PC2;
+                                            if (obj.PC3 !== undefined) newObj.pc3 = obj.PC3;
+                                            if (obj.PC4 !== undefined) newObj.pc4 = obj.PC4;
+                                            if (obj.PC5 !== undefined) newObj.pc5 = obj.PC5;
+                                            if (obj.PC6 !== undefined) newObj.pc6 = obj.PC6;
+
                                             heatmap_data.push(newObj);
                                         })
 
+                                        // Assuming you want to work with the first object in the array
+                                        let obj = json.scores_df[0]; // Get the first object
+
+                                        // Initialize an array to hold available principal components
+                                        availablePCs = [];
+
+                                        // Check for the existence of each principal component
+                                        if (obj.PC1 !== undefined) availablePCs.push('pc1');
+                                        if (obj.PC2 !== undefined) availablePCs.push('pc2');
+                                        if (obj.PC3 !== undefined) availablePCs.push('pc3');
+                                        if (obj.PC4 !== undefined) availablePCs.push('pc4');
+                                        if (obj.PC5 !== undefined) availablePCs.push('pc5');
+                                        if (obj.PC6 !== undefined) availablePCs.push('pc6');
+
+                                        // Function to update the dropdowns based on available PCs
+                                        function updateDropdowns() {
+                                            const xAxisSelect = document.getElementById("x-axis-select");
+                                            const yAxisSelect = document.getElementById("y-axis-select");
+
+                                            // Clear existing options
+                                            xAxisSelect.innerHTML = '';
+                                            yAxisSelect.innerHTML = '';
+
+                                            // Add available options to the X-axis dropdown
+                                            availablePCs.forEach(function (pc) {
+                                                const option = document.createElement("option");
+                                                option.value = pc;
+                                                option.textContent = pc.toUpperCase(); // Set text to uppercase
+                                                xAxisSelect.appendChild(option);
+                                            });
+
+                                            // Add available options to the Y-axis dropdown
+                                            availablePCs.forEach(function (pc) {
+                                                const option = document.createElement("option");
+                                                option.value = pc;
+                                                option.textContent = pc.toUpperCase(); // Set text to uppercase
+                                                yAxisSelect.appendChild(option);
+                                            });
+
+                                            // Set the default selected value for the Y-axis to PC2, if available
+                                            if (availablePCs.includes("pc2")) {
+                                                yAxisSelect.value = "pc2"; // Set PC2 as the selected value
+                                            }
+
+                                        }
+
+                                        // Call the function to update dropdowns
+                                        updateDropdowns();
+
+                                        // Display the newData array
+                                        console.log("PCA, first try ", pca_data);
                                         pca(pca_data);
-                                        heatmap(heatmap_data)
+                                        heatmap(heatmap_data);
                                     })
 
                                 //DEG(data_copy_pval,parsedLogFC_pval,old_p_adj)
@@ -7285,16 +7640,19 @@
                                 // Retrieve additional data from metadata based on _row
                                 var gsm = obj._row;
                                 var group = obj.Group;
-                                var pc1 = obj.PC1;
-                                var pc2 = obj.PC2;
-
                                 // Create an object with the required fields
                                 var newObj = {
                                     GSM: gsm,
                                     group: group,
-                                    pc1: pc1,
-                                    pc2: pc2
                                 };
+
+                                // Check for the existence of each principal component before adding to newObj
+                                if (obj.PC1 !== undefined) newObj.pc1 = obj.PC1;
+                                if (obj.PC2 !== undefined) newObj.pc2 = obj.PC2;
+                                if (obj.PC3 !== undefined) newObj.pc3 = obj.PC3;
+                                if (obj.PC4 !== undefined) newObj.pc4 = obj.PC4;
+                                if (obj.PC5 !== undefined) newObj.pc5 = obj.PC5;
+                                if (obj.PC6 !== undefined) newObj.pc6 = obj.PC6;
 
                                 // Add metadata values for each category to the newObj
                                 metadataCategories.forEach((category, index) => {
@@ -7305,33 +7663,78 @@
                                 pca_data.push(newObj);
                             });
 
-                            // Display the newData array
-                            console.log(pca_data);
                             heatmap_data = []
                             json.scores_var.forEach(function (obj) {
                                 // Push PC1, PC2, and Group values to the arrays
                                 var gene = obj._row
-                                var pc1 = obj.PC1
-                                var pc2 = obj.PC2
-                                var pc3 = obj.PC3
-                                var pc4 = obj.PC4
-                                var pc5 = obj.PC5
-                                var pc6 = obj.PC6
 
                                 var newObj = {
                                     gene: gene,
-                                    pc1: pc1,
-                                    pc2: pc2,
-                                    pc3: pc3,
-                                    pc4: pc4,
-                                    pc5: pc5,
-                                    pc6: pc6
                                 };
+                                // Check for the existence of each principal component before adding to newObj
+                                if (obj.PC1 !== undefined) newObj.pc1 = obj.PC1;
+                                if (obj.PC2 !== undefined) newObj.pc2 = obj.PC2;
+                                if (obj.PC3 !== undefined) newObj.pc3 = obj.PC3;
+                                if (obj.PC4 !== undefined) newObj.pc4 = obj.PC4;
+                                if (obj.PC5 !== undefined) newObj.pc5 = obj.PC5;
+                                if (obj.PC6 !== undefined) newObj.pc6 = obj.PC6;
+
                                 heatmap_data.push(newObj);
                             })
 
+                            // Assuming you want to work with the first object in the array
+                            let obj = json.scores_df[0]; // Get the first object
+
+                            // Initialize an array to hold available principal components
+                            availablePCs = [];
+
+                            // Check for the existence of each principal component
+                            if (obj.PC1 !== undefined) availablePCs.push('pc1');
+                            if (obj.PC2 !== undefined) availablePCs.push('pc2');
+                            if (obj.PC3 !== undefined) availablePCs.push('pc3');
+                            if (obj.PC4 !== undefined) availablePCs.push('pc4');
+                            if (obj.PC5 !== undefined) availablePCs.push('pc5');
+                            if (obj.PC6 !== undefined) availablePCs.push('pc6');
+
+                            // Function to update the dropdowns based on available PCs
+                            function updateDropdowns() {
+                                const xAxisSelect = document.getElementById("x-axis-select");
+                                const yAxisSelect = document.getElementById("y-axis-select");
+
+                                // Clear existing options
+                                xAxisSelect.innerHTML = '';
+                                yAxisSelect.innerHTML = '';
+
+                                // Add available options to the X-axis dropdown
+                                availablePCs.forEach(function (pc) {
+                                    const option = document.createElement("option");
+                                    option.value = pc;
+                                    option.textContent = pc.toUpperCase(); // Set text to uppercase
+                                    xAxisSelect.appendChild(option);
+                                });
+
+                                // Add available options to the Y-axis dropdown
+                                availablePCs.forEach(function (pc) {
+                                    const option = document.createElement("option");
+                                    option.value = pc;
+                                    option.textContent = pc.toUpperCase(); // Set text to uppercase
+                                    yAxisSelect.appendChild(option);
+                                });
+
+                                // Set the default selected value for the Y-axis to PC2, if available
+                                if (availablePCs.includes("pc2")) {
+                                    yAxisSelect.value = "pc2"; // Set PC2 as the selected value
+                                }
+
+                            }
+
+                            // Call the function to update dropdowns
+                            updateDropdowns();
+
+                            // Display the newData array
+                            console.log("PCA, first try ", pca_data);
                             pca(pca_data);
-                            heatmap(heatmap_data)
+                            heatmap(heatmap_data);
                         })
 
                     //DEG(data_copy_pval,parsedLogFC_pval,old_p_adj)
@@ -7449,16 +7852,19 @@
                                 // Retrieve additional data from metadata based on _row
                                 var gsm = obj._row;
                                 var group = obj.Group;
-                                var pc1 = obj.PC1;
-                                var pc2 = obj.PC2;
-
                                 // Create an object with the required fields
                                 var newObj = {
                                     GSM: gsm,
                                     group: group,
-                                    pc1: pc1,
-                                    pc2: pc2
                                 };
+
+                                // Check for the existence of each principal component before adding to newObj
+                                if (obj.PC1 !== undefined) newObj.pc1 = obj.PC1;
+                                if (obj.PC2 !== undefined) newObj.pc2 = obj.PC2;
+                                if (obj.PC3 !== undefined) newObj.pc3 = obj.PC3;
+                                if (obj.PC4 !== undefined) newObj.pc4 = obj.PC4;
+                                if (obj.PC5 !== undefined) newObj.pc5 = obj.PC5;
+                                if (obj.PC6 !== undefined) newObj.pc6 = obj.PC6;
 
                                 // Add metadata values for each category to the newObj
                                 metadataCategories.forEach((category, index) => {
@@ -7473,32 +7879,74 @@
                             json.scores_var.forEach(function (obj) {
                                 // Push PC1, PC2, and Group values to the arrays
                                 var gene = obj._row
-                                var pc1 = obj.PC1
-                                var pc2 = obj.PC2
-                                var pc3 = obj.PC3
-                                var pc4 = obj.PC4
-                                var pc5 = obj.PC5
-                                var pc6 = obj.PC6
 
                                 var newObj = {
                                     gene: gene,
-                                    pc1: pc1,
-                                    pc2: pc2,
-                                    pc3: pc3,
-                                    pc4: pc4,
-                                    pc5: pc5,
-                                    pc6: pc6
                                 };
+                                // Check for the existence of each principal component before adding to newObj
+                                if (obj.PC1 !== undefined) newObj.pc1 = obj.PC1;
+                                if (obj.PC2 !== undefined) newObj.pc2 = obj.PC2;
+                                if (obj.PC3 !== undefined) newObj.pc3 = obj.PC3;
+                                if (obj.PC4 !== undefined) newObj.pc4 = obj.PC4;
+                                if (obj.PC5 !== undefined) newObj.pc5 = obj.PC5;
+                                if (obj.PC6 !== undefined) newObj.pc6 = obj.PC6;
+
                                 heatmap_data.push(newObj);
                             })
 
+                            // Assuming you want to work with the first object in the array
+                            let obj = json.scores_df[0]; // Get the first object
+
+                            // Initialize an array to hold available principal components
+                            availablePCs = [];
+
+                            // Check for the existence of each principal component
+                            if (obj.PC1 !== undefined) availablePCs.push('pc1');
+                            if (obj.PC2 !== undefined) availablePCs.push('pc2');
+                            if (obj.PC3 !== undefined) availablePCs.push('pc3');
+                            if (obj.PC4 !== undefined) availablePCs.push('pc4');
+                            if (obj.PC5 !== undefined) availablePCs.push('pc5');
+                            if (obj.PC6 !== undefined) availablePCs.push('pc6');
+
+                            // Function to update the dropdowns based on available PCs
+                            function updateDropdowns() {
+                                const xAxisSelect = document.getElementById("x-axis-select");
+                                const yAxisSelect = document.getElementById("y-axis-select");
+
+                                // Clear existing options
+                                xAxisSelect.innerHTML = '';
+                                yAxisSelect.innerHTML = '';
+
+                                // Add available options to the X-axis dropdown
+                                availablePCs.forEach(function (pc) {
+                                    const option = document.createElement("option");
+                                    option.value = pc;
+                                    option.textContent = pc.toUpperCase(); // Set text to uppercase
+                                    xAxisSelect.appendChild(option);
+                                });
+
+                                // Add available options to the Y-axis dropdown
+                                availablePCs.forEach(function (pc) {
+                                    const option = document.createElement("option");
+                                    option.value = pc;
+                                    option.textContent = pc.toUpperCase(); // Set text to uppercase
+                                    yAxisSelect.appendChild(option);
+                                });
+
+                                // Set the default selected value for the Y-axis to PC2, if available
+                                if (availablePCs.includes("pc2")) {
+                                    yAxisSelect.value = "pc2"; // Set PC2 as the selected value
+                                }
+
+                            }
+
+                            // Call the function to update dropdowns
+                            updateDropdowns();
+
                             // Display the newData array
-                            console.log(pca_data);
-
-
+                            console.log("PCA, first try ", pca_data);
                             pca(pca_data);
-                            heatmap(heatmap_data)
-
+                            heatmap(heatmap_data);
                         })
 
 
@@ -7520,6 +7968,10 @@
             console.log("update pca")
             pc1Values = []
             pc2Values = []
+            pc3Values = []
+            pc4Values = []
+            pc5Values = []
+            pc6Values = []
             groupValues = []
             smokerValues = []
             stageValues = []
@@ -7531,13 +7983,21 @@
                 // Access pc1, pc2, and group values from each object
                 var pc1Value = obj.pc1;
                 var pc2Value = obj.pc2;
+                var pc3Value = obj.pc3;
+                var pc4Value = obj.pc4;
+                var pc5Value = obj.pc5;
+                var pc6Value = obj.pc6;
                 var groupValue = obj.group;
                 var gsmValue = obj.GSM; // Assuming GSM is a property in the object
 
                 pc1Values.push(pc1Value);
                 pc2Values.push(pc2Value);
+                pc3Values.push(pc3Value);
+                pc4Values.push(pc4Value);
+                pc5Values.push(pc5Value);
+                pc6Values.push(pc6Value);
                 groupValues.push(groupValue);
-                // Use the values as needed
+
                 //console.log("PC1:", pc1Value, ", PC2:", pc2Value, ", Group:", groupValue);
             });
 
@@ -7604,6 +8064,7 @@
 
                 });
 
+
             // Add x-axis
             var xAxis = svg.append("g")
                 .attr("transform", "translate(0," + height + ")")
@@ -7635,23 +8096,24 @@
 
 
             // Add X axis label
-            svg.append("text")
+            var xAxisLabel = svg.append("text")
                 .attr("x", width / 2)
                 .attr("y", height + margin.bottom - 10)
                 .attr("text-anchor", "middle")
                 .style("font-size", "14px")
                 .style("fill", "white")
-                .text("PC1");
+                .text(`PC1 (${explainedVariance[0].toFixed(2)}%)`);
 
             // Add Y axis label
-            svg.append("text")
+            var yAxisLabel = svg.append("text")
                 .attr("transform", "rotate(-90)")
                 .attr("x", -height / 2)
                 .attr("y", -margin.left + 20)
                 .attr("text-anchor", "middle")
                 .style("font-size", "14px")
                 .style("fill", "white")
-                .text("PC2");
+                .text(`PC2 (${explainedVariance[1].toFixed(2)}%)`);
+
 
             // Define brush function
             var brush = d3.brush()
@@ -7778,6 +8240,64 @@
                 .style("fill", "white")
                 .append("title") // Add tooltip with the full text
                 .text(function (d) { return d.label; }); // Full text for tooltip
+
+            // Function to update the plot based on selected axes
+            function updatePlot() {
+                var xAxisSelect = d3.select("#x-axis-select").property("value");
+                var yAxisSelect = d3.select("#y-axis-select").property("value");
+
+                var xValues = pca_data.map(d => d[xAxisSelect]);
+                var yValues = pca_data.map(d => d[yAxisSelect]);
+
+                xScale.domain(d3.extent(xValues));
+                yScale.domain(d3.extent(yValues));
+
+                // Update circles
+                var circles = svg.selectAll(".data-circle")
+                    .data(pca_data);
+
+                circles.enter()
+                    .append("circle")
+                    .attr("class", "data-circle")
+                    .attr("r", 5)
+                    .style("fill", function (d) {
+                        return d[selectedRowName] == chosen_meta1 ? d3.schemeSet1[0] : d3.schemeSet1[2];
+                    })
+                    .merge(circles) // Merge enter and update selection
+                    .transition() // Apply transition
+                    .duration(1000)
+                    .attr("cx", function (d) { return xScale(d[xAxisSelect]); })
+                    .attr("cy", function (d) { return yScale(d[yAxisSelect]); });
+
+                circles.exit().remove(); // Remove any extra circles
+
+                // Update x-axis
+                xAxis.transition().duration(1000).call(d3.axisBottom(xScale));
+
+                // Update y-axis
+                yAxis.transition().duration(1000).call(d3.axisLeft(yScale));
+                // Style ticks to be white
+                xAxis.selectAll("line, path").style("stroke", "white");
+                xAxis.selectAll("text").style("fill", "white");
+
+                yAxis.selectAll("line, path").style("stroke", "white");
+                yAxis.selectAll("text").style("fill", "white");
+
+                // Get indices of selected components
+                console.log(xAxisSelect)
+                console.log(yAxisSelect)
+                console.log(availablePCs)
+                var xIndex = availablePCs.indexOf(xAxisSelect);
+                var yIndex = availablePCs.indexOf(yAxisSelect);
+
+                // Update axis labels with explained variance
+                xAxisLabel.text(`${xAxisSelect.toUpperCase()} (${explainedVariance[xIndex].toFixed(2)}%)`); // Update X axis label with explained variance
+                yAxisLabel.text(`${yAxisSelect.toUpperCase()} (${explainedVariance[yIndex].toFixed(2)}%)`); // Update Y axis label with explained variance
+
+            }
+
+            // Add button click listener to update the plot
+            d3.select("#update-plot").on("click", updatePlot);
 
         }
 
@@ -11282,22 +11802,22 @@
             //         .range([...Array(uniqueValues.length).keys()].map(i => height - i * (height / (uniqueValues.length - 1))));
             // });
 
-// Step 1: Find the global maximum expression value across all selected genes
-var globalMax = d3.max(geneselected, function(geneName) {
-    var geneData = structureCombinedData.find(d => d.gene === geneName);
-    var expressionValues = geneData.expressions.map(d => d.expression);
-    return d3.max(expressionValues); // Get the max expression value for this gene
-});
+            // Step 1: Find the global maximum expression value across all selected genes
+            var globalMax = d3.max(geneselected, function (geneName) {
+                var geneData = structureCombinedData.find(d => d.gene === geneName);
+                var expressionValues = geneData.expressions.map(d => d.expression);
+                return d3.max(expressionValues); // Get the max expression value for this gene
+            });
 
-// Step 2: Define the Y-scale for all genes using the same domain (0 to globalMax)
-for (var i in geneselected) {
-    var name = geneselected[i];
-    
-    // Define the Y-scale for the current gene with a domain of [0, globalMax]
-    y[name] = d3.scaleLinear()
-        .domain([0, globalMax]) // Set the domain to 0 and the global max value
-        .range([height, 0]); // Map the domain to the visual height
-}            console.log("Y scales:", y);
+            // Step 2: Define the Y-scale for all genes using the same domain (0 to globalMax)
+            for (var i in geneselected) {
+                var name = geneselected[i];
+
+                // Define the Y-scale for the current gene with a domain of [0, globalMax]
+                y[name] = d3.scaleLinear()
+                    .domain([0, globalMax]) // Set the domain to 0 and the global max value
+                    .range([height, 0]); // Map the domain to the visual height
+            } console.log("Y scales:", y);
 
             // Initialize transposedData array
             var transposedData = [];
@@ -11785,78 +12305,7 @@ for (var i in geneselected) {
                 } d3.selectAll(".axis-label").classed("dragging", false);
 
             }
-            // var newPositions = [];
-            // svg.selectAll(".axis-group").each(function (d) {
-            //     var transform = d3.select(this).attr("transform");
-            //     var translateX = +transform.split("(")[1].split(")")[0];
-            //     console.log(translateX)
-            //     newPositions.push({ dimension: d, position: translateX });
-            // });
-            // console.log(newPositions)
 
-            // // Sort newPositions array based on position
-            // newPositions.sort(function (a, b) {
-            //     return a.position - b.position;
-            // });
-
-            // // Separate dimensions into geneselected, metadata (first_dims), and total ordering
-            // var geneselectedOrder = [];
-            // var metadataOrder = [];
-            // totalOrder = [];
-            // newPositions.forEach(function (d) {
-            //     if (geneselected.includes(d.dimension)) {
-            //         geneselectedOrder.push(d.dimension);
-            //     } else if (first_dims.includes(d.dimension)) {
-            //         metadataOrder.push(d.dimension);
-            //     }
-            //     totalOrder.push(d.dimension);
-            // });
-
-            // // Check if any dimension was dragged too far to the left and remove it from geneselectedOrder if it belongs to geneselected
-            // var removedDimensions = [];
-            // newPositions.forEach(function (d) {
-            //     if (d.position < -100 && geneselected.includes(d.dimension)) {
-            //         var index = geneselectedOrder.indexOf(d.dimension);
-            //         if (index !== -1) {
-            //             removedDimensions.push(geneselectedOrder.splice(index, 1)[0]);
-            //             // Remove highlighting color in the scatter plot
-            //             scatter.selectAll("circle")
-            //                 .filter(circleData => circleData.gene === d.dimension)
-            //                 .style("fill", d => {
-            //                     // Check if logFC is greater than or equal to the threshold
-            //                     if (d.logFC >= log_thr_fc && d.pval_adj <= threshold) {
-            //                         return "darkred";
-            //                     } else if (d.logFC <= -(log_thr_fc) && d.pval_adj <= threshold) {
-            //                         return "royalblue";
-            //                     } else {
-            //                         return "grey";
-            //                     }
-            //                 });
-            //         }
-            //     }
-            // });
-
-            // // // Remove corresponding data from transposedData
-            // // transposedData = transposedData.filter(function (d) {
-            // //     return !removedDimensions.includes(d.gene);
-            // // });
-
-            // // Update totalOrder by removing removedDimensions
-            // totalOrder = totalOrder.filter(function (d) {
-            //     return !removedDimensions.includes(d);
-            // });
-
-            // console.log("Geneselected order:", geneselectedOrder);
-            // console.log("Metadata order:", metadataOrder);
-            // console.log("Total order:", totalOrder);
-            // console.log("Removed dimensions:", removedDimensions);
-
-            // selectedGeneData = geneselectedOrder
-
-
-            // first_dims = metadataOrder
-
-            // ordering = totalOrder
             // Function to handle mouseover event
             function highlight(d) {
                 // Determine the value to highlight based on the selected variable

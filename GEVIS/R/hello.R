@@ -164,8 +164,14 @@ pca <- function(data, dataC, dataN) {
   gene_names <- rownames(scores_var)
   # print(gene_names)
 
-  # Return a list containing scores_df and scores_var
-  return(list(scores_df = scores_df, scores_var = scores_var))
+  # Calculate the proportion of variance explained by each principal component
+  explained_variance <- summary(pca)$importance[2, ] * 100  # Multiply by 100 to get percentage
+
+  # Add explained variance to scores_df for display purposes
+  scores_df$explained_variance <- explained_variance[1:ncol(scores_df)-1]
+
+  # Return the explained variance along with scores_df and scores_var
+  return(list(scores_df = scores_df, scores_var = scores_var, explained_variance = explained_variance))
 }
 
 
@@ -412,7 +418,6 @@ deseq2DE <- function(dataC, dataN) {
 
   return(res_df)
 }
-
 
 surv <- function (metadata,dataC, gene){
   library(survival)
