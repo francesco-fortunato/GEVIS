@@ -774,7 +774,7 @@
                 <div> <!--div(3) bottoni IQR-->
                     <input type="range" id="thresholdSlider" class="range2" min="0.1" max="0.99" step="0.01" value="0.2"
                         style="width: 200px;">
-                    <span id="thresholdValue" style="color: white;">0.1</span>
+                    <span id="thresholdValue" style="color: white;">20%</span>
                 </div><!-- div(3)-->
                 <div id="logFCHistogram"></div> <!-- div(5) FC-->
 
@@ -4165,6 +4165,9 @@
                                         var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
                                         console.log("Metadata categories:", metadataCategories);
 
+                                        explainedVariance = json.explained_variance; // Access explained variance
+                                        console.log("Explained variance", explainedVariance)
+
                                         // Initialize pca_data array
                                         pca_data = [];
 
@@ -6241,7 +6244,7 @@
         document.getElementById("thresholdSlider").addEventListener("input", function () {
             // Update the threshold value on slider change
             prc_IQR = parseFloat(this.value);
-            document.getElementById("thresholdValue").innerText = prc_IQR;
+            document.getElementById("thresholdValue").innerText = `${Math.round(prc_IQR * 100)}%`;
 
             // Calculate the quantile
             thr_prc = ss.quantile(variation_data_copy, prc_IQR);
@@ -6499,6 +6502,9 @@
                                         // Extract metadata categories from the values of the first column
                                         var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
                                         console.log("Metadata categories:", metadataCategories);
+
+                                        explainedVariance = json.explained_variance; // Access explained variance
+                                        console.log("Explained variance", explainedVariance)
 
                                         // Initialize pca_data array
                                         pca_data = [];
@@ -6793,6 +6799,9 @@
                                         // Extract metadata categories from the values of the first column
                                         var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
                                         console.log("Metadata categories:", metadataCategories);
+
+                                        explainedVariance = json.explained_variance; // Access explained variance
+                                        console.log("Explained variance", explainedVariance)
 
                                         // Initialize pca_data array
                                         pca_data = [];
@@ -7093,6 +7102,9 @@
                                         var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
                                         console.log("Metadata categories:", metadataCategories);
 
+                                        explainedVariance = json.explained_variance; // Access explained variance
+                                        console.log("Explained variance", explainedVariance)
+
                                         // Initialize pca_data array
                                         pca_data = [];
 
@@ -7339,6 +7351,9 @@
                                         // Extract metadata categories from the values of the first column
                                         var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
                                         console.log("Metadata categories:", metadataCategories);
+
+                                        explainedVariance = json.explained_variance; // Access explained variance
+                                        console.log("Explained variance", explainedVariance)
 
                                         // Initialize pca_data array
                                         pca_data = [];
@@ -7632,6 +7647,9 @@
                             var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
                             console.log("Metadata categories:", metadataCategories);
 
+                            explainedVariance = json.explained_variance; // Access explained variance
+                            console.log("Explained variance", explainedVariance)
+
                             // Initialize pca_data array
                             pca_data = [];
 
@@ -7844,6 +7862,9 @@
                             var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
                             console.log("Metadata categories:", metadataCategories);
 
+                            explainedVariance = json.explained_variance; // Access explained variance
+                            console.log("Explained variance", explainedVariance)
+
                             // Initialize pca_data array
                             pca_data = [];
 
@@ -7981,21 +8002,16 @@
             // Iterate over the newData array
             pca_data.forEach(function (obj) {
                 // Access pc1, pc2, and group values from each object
-                var pc1Value = obj.pc1;
-                var pc2Value = obj.pc2;
-                var pc3Value = obj.pc3;
-                var pc4Value = obj.pc4;
-                var pc5Value = obj.pc5;
-                var pc6Value = obj.pc6;
                 var groupValue = obj.group;
                 var gsmValue = obj.GSM; // Assuming GSM is a property in the object
+                // Check for the existence of each principal component before adding to newObj
+                if (obj.pc1 !== undefined) pc1Values.push(obj.pc1);
+                if (obj.pc2 !== undefined) pc2Values.push(obj.pc2);
+                if (obj.pc3 !== undefined) pc3Values.push(obj.pc3);
+                if (obj.pc4 !== undefined) pc4Values.push(obj.pc4);
+                if (obj.pc5 !== undefined) pc5Values.push(obj.pc5);
+                if (obj.pc6 !== undefined) pc6Values.push(obj.pc6);
 
-                pc1Values.push(pc1Value);
-                pc2Values.push(pc2Value);
-                pc3Values.push(pc3Value);
-                pc4Values.push(pc4Value);
-                pc5Values.push(pc5Value);
-                pc6Values.push(pc6Value);
                 groupValues.push(groupValue);
 
                 //console.log("PC1:", pc1Value, ", PC2:", pc2Value, ", Group:", groupValue);
@@ -8005,13 +8021,19 @@
             var width = 600;
             var height = 400;
 
-            // Create x and y scales
+            // Create x and y scales with offsets
             var xScale = d3.scaleLinear()
-                .domain(d3.extent(pc1Values))
+                .domain([
+                    d3.min(pc1Values) - 5, // Apply offset to min value
+                    d3.max(pc1Values) + 5  // Apply offset to max value
+                ])
                 .range([0, width]);
 
             var yScale = d3.scaleLinear()
-                .domain(d3.extent(pc2Values))
+                .domain([
+                    d3.min(pc2Values) - 5, // Apply offset to min value
+                    d3.max(pc2Values) + 5  // Apply offset to max value
+                ])
                 .range([height, 0]);
 
             // Create SVG container
@@ -8241,6 +8263,10 @@
                 .append("title") // Add tooltip with the full text
                 .text(function (d) { return d.label; }); // Full text for tooltip
 
+            // Store previous axis selections globally
+            var prevXAxisSelect = d3.select("#x-axis-select").property("value");
+            var prevYAxisSelect = d3.select("#y-axis-select").property("value");
+
             // Function to update the plot based on selected axes
             function updatePlot() {
                 var xAxisSelect = d3.select("#x-axis-select").property("value");
@@ -8249,8 +8275,16 @@
                 var xValues = pca_data.map(d => d[xAxisSelect]);
                 var yValues = pca_data.map(d => d[yAxisSelect]);
 
-                xScale.domain(d3.extent(xValues));
-                yScale.domain(d3.extent(yValues));
+                // Update scales with offsets
+                xScale.domain([
+                    d3.min(xValues) - 5, // Apply offset to min value
+                    d3.max(xValues) + 5  // Apply offset to max value
+                ]);
+
+                yScale.domain([
+                    d3.min(yValues) - 5, // Apply offset to min value
+                    d3.max(yValues) + 5  // Apply offset to max value
+                ]);
 
                 // Update circles
                 var circles = svg.selectAll(".data-circle")
@@ -8271,11 +8305,31 @@
 
                 circles.exit().remove(); // Remove any extra circles
 
-                // Update x-axis
-                xAxis.transition().duration(1000).call(d3.axisBottom(xScale));
+                // Update axes only if they've changed
+                if (xAxisSelect !== prevXAxisSelect) {
+                    // Update x-axis
+                    xAxis.transition().duration(1000).call(d3.axisBottom(xScale));
+                    xAxisLabel.transition() // Smooth transition for the X axis label
+                        .duration(500)
+                        .style("opacity", 0)  // Fade out
+                        .transition()  // After fading out, update the text and fade in
+                        .duration(500)
+                        .style("opacity", 1)
+                        .text(`${xAxisSelect.toUpperCase()} (${explainedVariance[availablePCs.indexOf(xAxisSelect)].toFixed(2)}%)`);
+                }
 
-                // Update y-axis
-                yAxis.transition().duration(1000).call(d3.axisLeft(yScale));
+                if (yAxisSelect !== prevYAxisSelect) {
+                    // Update y-axis
+                    yAxis.transition().duration(1000).call(d3.axisLeft(yScale));
+                    yAxisLabel.transition()  // Smooth transition for the Y axis label
+                        .duration(500)
+                        .style("opacity", 0)  // Fade out
+                        .transition()  // After fading out, update the text and fade in
+                        .duration(500)
+                        .style("opacity", 1)
+                        .text(`${yAxisSelect.toUpperCase()} (${explainedVariance[availablePCs.indexOf(yAxisSelect)].toFixed(2)}%)`);
+                }
+
                 // Style ticks to be white
                 xAxis.selectAll("line, path").style("stroke", "white");
                 xAxis.selectAll("text").style("fill", "white");
@@ -8283,18 +8337,11 @@
                 yAxis.selectAll("line, path").style("stroke", "white");
                 yAxis.selectAll("text").style("fill", "white");
 
-                // Get indices of selected components
-                console.log(xAxisSelect)
-                console.log(yAxisSelect)
-                console.log(availablePCs)
-                var xIndex = availablePCs.indexOf(xAxisSelect);
-                var yIndex = availablePCs.indexOf(yAxisSelect);
-
-                // Update axis labels with explained variance
-                xAxisLabel.text(`${xAxisSelect.toUpperCase()} (${explainedVariance[xIndex].toFixed(2)}%)`); // Update X axis label with explained variance
-                yAxisLabel.text(`${yAxisSelect.toUpperCase()} (${explainedVariance[yIndex].toFixed(2)}%)`); // Update Y axis label with explained variance
-
+                // Update the previous axis selections for the next update
+                prevXAxisSelect = xAxisSelect;
+                prevYAxisSelect = yAxisSelect;
             }
+
 
             // Add button click listener to update the plot
             d3.select("#update-plot").on("click", updatePlot);
@@ -11806,7 +11853,7 @@
             var globalMax = d3.max(geneselected, function (geneName) {
                 var geneData = structureCombinedData.find(d => d.gene === geneName);
                 var expressionValues = geneData.expressions.map(d => d.expression);
-                return d3.max(expressionValues); // Get the max expression value for this gene
+                return d3.max(expressionValues) + 3; // Get the max expression value for this gene
             });
 
             // Step 2: Define the Y-scale for all genes using the same domain (0 to globalMax)
