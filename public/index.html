@@ -4581,15 +4581,23 @@
 
                                                     console.log(mostUpregulatedGene)
 
-                                                    var mostUpregulatedGeneName = mostUpregulatedGene.Gene
-                                                    //var secondMostUpregulatedGeneName = secondMostUpregulatedGene.Gene
-                                                    var mostDownregulatedGeneName = mostDownregulatedGene.Gene
-                                                    //var secondMostDownregulatedGeneName = secondMostDownregulatedGene.Gene
+                                                    // Function to find the adjusted p-value for a given gene
+                                                    function getAdjustedPValue(geneName) {
+                                                        const geneInfo = old_p_adj.find(g => g.Gene === geneName);
+                                                        return geneInfo ? geneInfo.pval_adj : null; // Return the p-value if the gene is found
+                                                    }
 
+                                                    var mostUpregulatedGeneName = mostUpregulatedGene.Gene;
+                                                    var mostDownregulatedGeneName = mostDownregulatedGene.Gene;
 
-                                                    selectedGeneData.push(mostUpregulatedGeneName)
-                                                    selectedGeneData.push(mostDownregulatedGeneName)
+                                                    // Check the adjusted p-values and push the genes into selectedGeneData if conditions are met
+                                                    if (getAdjustedPValue(mostUpregulatedGeneName) < 0.05) {
+                                                        selectedGeneData.push(mostUpregulatedGeneName);
+                                                    }
 
+                                                    if (getAdjustedPValue(mostDownregulatedGeneName) < 0.05) {
+                                                        selectedGeneData.push(mostDownregulatedGeneName);
+                                                    }
                                                     // Find the select element
                                                     var selectElement = document.getElementById("selectButton");
 
@@ -5028,14 +5036,23 @@
 
                                                     console.log(mostUpregulatedGene)
 
-                                                    var mostUpregulatedGeneName = mostUpregulatedGene.Gene
-                                                    //var secondMostUpregulatedGeneName = secondMostUpregulatedGene.Gene
-                                                    var mostDownregulatedGeneName = mostDownregulatedGene.Gene
-                                                    //var secondMostDownregulatedGeneName = secondMostDownregulatedGene.Gene
+                                                    // Function to find the adjusted p-value for a given gene
+                                                    function getAdjustedPValue(geneName) {
+                                                        const geneInfo = old_p_adj.find(g => g.Gene === geneName);
+                                                        return geneInfo ? geneInfo.pval_adj : null; // Return the p-value if the gene is found
+                                                    }
 
+                                                    var mostUpregulatedGeneName = mostUpregulatedGene.Gene;
+                                                    var mostDownregulatedGeneName = mostDownregulatedGene.Gene;
 
-                                                    selectedGeneData.push(mostUpregulatedGeneName)
-                                                    selectedGeneData.push(mostDownregulatedGeneName)
+                                                    // Check the adjusted p-values and push the genes into selectedGeneData if conditions are met
+                                                    if (getAdjustedPValue(mostUpregulatedGeneName) < 0.05) {
+                                                        selectedGeneData.push(mostUpregulatedGeneName);
+                                                    }
+
+                                                    if (getAdjustedPValue(mostDownregulatedGeneName) < 0.05) {
+                                                        selectedGeneData.push(mostDownregulatedGeneName);
+                                                    }
 
                                                     // Find the select element
                                                     var selectElement = document.getElementById("selectButton");
@@ -6522,8 +6539,23 @@
 
                             genes = [mostUpregulatedGeneName, mostDownregulatedGeneName]
                             if (selectedGeneData == []) {
-                                selectedGeneData.push(mostUpregulatedGeneName)
-                                selectedGeneData.push(mostDownregulatedGeneName)
+                                // Function to find the adjusted p-value for a given gene
+                                function getAdjustedPValue(geneName) {
+                                    const geneInfo = old_p_adj.find(g => g.Gene === geneName);
+                                    return geneInfo ? geneInfo.pval_adj : null; // Return the p-value if the gene is found
+                                }
+
+                                var mostUpregulatedGeneName = mostUpregulatedGene.Gene;
+                                var mostDownregulatedGeneName = mostDownregulatedGene.Gene;
+
+                                // Check the adjusted p-values and push the genes into selectedGeneData if conditions are met
+                                if (getAdjustedPValue(mostUpregulatedGeneName) < 0.05) {
+                                    selectedGeneData.push(mostUpregulatedGeneName);
+                                }
+
+                                if (getAdjustedPValue(mostDownregulatedGeneName) < 0.05) {
+                                    selectedGeneData.push(mostDownregulatedGeneName);
+                                }
 
                             }
                             else {
@@ -6797,8 +6829,23 @@
 
                             genes = [mostUpregulatedGeneName, mostDownregulatedGeneName]
                             if (selectedGeneData == []) {
-                                selectedGeneData.push(mostUpregulatedGeneName)
-                                selectedGeneData.push(mostDownregulatedGeneName)
+                                // Function to find the adjusted p-value for a given gene
+                                function getAdjustedPValue(geneName) {
+                                    const geneInfo = old_p_adj.find(g => g.Gene === geneName);
+                                    return geneInfo ? geneInfo.pval_adj : null; // Return the p-value if the gene is found
+                                }
+
+                                var mostUpregulatedGeneName = mostUpregulatedGene.Gene;
+                                var mostDownregulatedGeneName = mostDownregulatedGene.Gene;
+
+                                // Check the adjusted p-values and push the genes into selectedGeneData if conditions are met
+                                if (getAdjustedPValue(mostUpregulatedGeneName) < 0.05) {
+                                    selectedGeneData.push(mostUpregulatedGeneName);
+                                }
+
+                                if (getAdjustedPValue(mostDownregulatedGeneName) < 0.05) {
+                                    selectedGeneData.push(mostDownregulatedGeneName);
+                                }
 
                             }
                             else {
