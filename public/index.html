@@ -545,6 +545,27 @@
             background-color: grey;
             /* Change background color on hover */
         }
+
+        #tooltip {
+            position: absolute;
+            text-align: center;
+            width: 120px;
+            /* Adjust width as needed */
+            padding: 10px;
+            font: 12px sans-serif;
+            background: rgba(0, 0, 0, 0.8);
+            /* Semi-transparent background */
+            color: #000000;
+            /* White text color */
+            border-radius: 5px;
+            /* Rounded corners */
+            pointer-events: none;
+            /* Prevent mouse events */
+            opacity: 0;
+            /* Initially hidden */
+            transition: opacity 0.3s;
+            /* Smooth transition */
+        }
     </style>
 </head>
 
@@ -691,7 +712,7 @@
     </div>
 
 
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light" id="nav" style="display: none;">
         <a class="navbar-brand" href="#" style="color:white">GEVis - GeneExpressionVIS</a>
         <button class="btn btn-secondary" id="openModalBtn">Get Enrichment</button>
         <span style="margin-left: 10px;"></span> <!-- Adjust the margin as needed -->
@@ -744,7 +765,7 @@
         </div>
     </div>
 
-    <div class="flex"> <!-- div(1) che mette in colonna-->
+    <div class="flex" id="main_div" style="display: none;"> <!-- div(1) che mette in colonna-->
 
         <div class="flex-container" style="margin-top : 6px; margin-left : 6px"><!--div(2) che mette in riga iqr e FC-->
             <div id="style_scatter">
@@ -1273,8 +1294,17 @@
 
             console.log('Filtered Metadata:', filteredMetadata);
 
+            // Extract gene names from dataC_copy_pval
+            const geneNamesInDataC = dataC_copy_pval.map(item => item.gene);
 
-            const data = { filteredMetadata, dataC_copy_pval, selectedGeneData }; // Assuming you have these arrays defined elsewhere
+            // Filter old_p_adj to only include genes present in dataC_copy_pval
+            const filteredOldPAdj = old_p_adj.filter(item => geneNamesInDataC.includes(item.Gene));
+
+            console.log('Filtered Metadata:', filteredMetadata);
+            console.log('Filtered Old P Adj:', filteredOldPAdj);
+
+            // Now you can send only the filtered data
+            const data = { filteredMetadata, dataC_copy_pval, old_p_adj: filteredOldPAdj };
 
             // Send data to server using fetch
             fetch('/survival', {
@@ -3658,9 +3688,8 @@
             data_original = data1
             metadata = data2
 
-
-
-
+            document.getElementById("nav").style.display = "flex"
+            document.getElementById("main_div").style.display = "flex"
 
             if (chosen_statistic == 'deseq2') {
                 console.log(dataC_original)
@@ -5372,6 +5401,7 @@
                 .on("mouseover", function (d) {
                     // Show tooltip on mouseover
                     tooltip.transition()
+                        .duration(200) // Add transition duration for mouseout
                         .duration(200)
                         .style("opacity", .9);
                     tooltip.html("Gene Ratio: " + d.Gene_ratio)
@@ -5386,6 +5416,7 @@
                 .on("mouseout", function (d) {
                     // Hide tooltip on mouseout
                     tooltip.transition()
+                        .duration(200) // Add transition duration for mouseout
                         .duration(500)
                         .style("opacity", 0);
 
@@ -5776,6 +5807,7 @@
                 .on("mouseover", function (d) {
                     // Show tooltip on mouseover
                     tooltip.transition()
+                        .duration(200) // Add transition duration for mouseout
                         .duration(200)
                         .style("opacity", .9);
                     tooltip.html("Gene Ratio: " + d.Gene_ratio)
@@ -5790,6 +5822,7 @@
                 .on("mouseout", function (d) {
                     // Hide tooltip on mouseout
                     tooltip.transition()
+                        .duration(200) // Add transition duration for mouseout
                         .duration(500)
                         .style("opacity", 0);
 
@@ -8528,6 +8561,7 @@
                         .style("stroke-width", 2);
 
                     tooltip.transition()
+                        .duration(200) // Add transition duration for mouseout
                         .style("opacity", .9);
 
                     tooltip.html(`<strong>Gene:</strong> ${d.gene}<br><strong>LogFC:</strong> ${parseFloat(d.logFC).toFixed(2)}<br><strong>pval-adj:</strong> ${d.pval_adj !== null ? d.pval_adj.toExponential(2) : 'NA'}`)
@@ -8540,6 +8574,7 @@
                         .style("stroke", "none");
 
                     tooltip.transition()
+                        .duration(200) // Add transition duration for mouseout
                         .style("opacity", 0)
                         .style("visibility", "none")
                         .style("pointer-events", "none"); // Disable pointer events for the tooltip
@@ -8817,6 +8852,7 @@
                                 .style("stroke-width", 2);
 
                             tooltip.transition()
+                                .duration(200) // Add transition duration for mouseout
                                 .style("opacity", .9);
 
                             tooltip.html(`<strong>Gene:</strong> ${d.gene}<br><strong>LogFC:</strong> ${parseFloat(d.logFC).toFixed(2)}<br><strong>pval-adj:</strong> ${d.pval_adj !== null ? d.pval_adj.toExponential(2) : 'NA'}`)
@@ -8829,6 +8865,7 @@
                                 .style("stroke", "none");
 
                             tooltip.transition()
+                                .duration(200) // Add transition duration for mouseout
                                 .style("opacity", 0)
                                 .style("visibility", "none")
                                 .style("pointer-events", "none"); // Disable pointer events for the tooltip
@@ -9103,6 +9140,7 @@
 
                             // Display tooltip on mouseover
                             tooltip.transition()
+                                .duration(200) // Add transition duration for mouseout
                                 .style("opacity", .9);
 
                             const parts = d.gene.split('|');
@@ -9119,6 +9157,7 @@
                                 .style("stroke", "none");
 
                             tooltip.transition()
+                                .duration(200) // Add transition duration for mouseout
                                 .style("opacity", 0)
                                 .style("visibility", "none")
                                 .style("pointer-events", "none"); // Disable pointer events for the tooltip
@@ -9711,6 +9750,7 @@
 
                     // Display tooltip on mouseover
                     tooltip.transition()
+                        .duration(200) // Add transition duration for mouseout
                         .style("opacity", .9);
 
                     const parts = d.gene.split('|');
@@ -9727,6 +9767,7 @@
                         .style("stroke", "none");
 
                     tooltip.transition()
+                        .duration(200) // Add transition duration for mouseout
                         .style("opacity", 0)
                         .style("visibility", "none")
                         .style("pointer-events", "none"); // Disable pointer events for the tooltip
@@ -9958,6 +9999,7 @@
                                 .style("stroke-width", 2);
 
                             tooltip.transition()
+                                .duration(200) // Add transition duration for mouseout
                                 .style("opacity", .9);
 
                             tooltip.html(`<strong>Gene:</strong> ${d.gene}<br><strong>LogFC:</strong> ${parseFloat(d.logFC).toFixed(2)}<br><strong>pval-adj:</strong> ${d.pval_adj !== null ? d.pval_adj.toExponential(2) : 'NA'}`)
@@ -9970,6 +10012,7 @@
                                 .style("stroke", "none");
 
                             tooltip.transition()
+                                .duration(200) // Add transition duration for mouseout
                                 .style("opacity", 0)
                                 .style("visibility", "none")
                                 .style("pointer-events", "none"); // Disable pointer events for the tooltip
@@ -10263,6 +10306,7 @@
 
                             // Display tooltip on mouseover
                             tooltip.transition()
+                                .duration(200) // Add transition duration for mouseout
                                 .style("opacity", .9);
 
                             const parts = d.gene.split('|');
@@ -10279,6 +10323,7 @@
                                 .style("stroke", "none");
 
                             tooltip.transition()
+                                .duration(200) // Add transition duration for mouseout
                                 .style("opacity", 0)
                                 .style("visibility", "none")
                                 .style("pointer-events", "none"); // Disable pointer events for the tooltip

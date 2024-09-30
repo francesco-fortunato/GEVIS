@@ -41,87 +41,161 @@
         body {
             background-color: #121212;
             color: #FFFFFF;
-            font-family: Arial, sans-serif;
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
         }
 
         .container {
-            margin-top: 30px;
+            margin: 30px auto;
+            max-width: 1200px;
+            padding: 0 20px;
+        }
+
+        h1 {
+            color: #FFA726;
+            font-size: 36px;
+            text-align: center;
+            margin-bottom: 30px;
         }
 
         h4 {
             color: #FFFFFF;
+            font-size: 24px;
+            margin-bottom: 10px;
         }
 
         .flex1 {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            height: auto;
-            width: 100%;
-        }
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+}
 
-        .flex-container {
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-            margin-right: 20px;
-        }
+/* Adjust the width ratios */
+.dataTable-container {
+    background-color: #1E1E1E;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+    flex: 0.4; /* Decreased width */
+    overflow: hidden;
+    min-width: 250px; /* Minimum width of the table container */
+}
 
-        .dotplot-container {
-            background-color: #1E1E1E;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-            flex: 1;
-            overflow: hidden;
-        }
+.dotplot-container {
+    background-color: #1E1E1E;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+    flex: 0.6; /* Increased width */
+    overflow: hidden;
+    min-width: 500px; /* Minimum width of the plot container */
+}
+
+.flex1 {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+}
+
+/* Adjust the width ratios */
+.dataTable-container {
+    background-color: #1E1E1E;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+    flex: 0.4; /* Decreased width */
+    overflow: hidden;
+    min-width: 250px; /* Minimum width of the table container */
+}
+
+.dotplot-container {
+    background-color: #1E1E1E;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+    flex: 1.2; /* Increased width */
+    overflow: hidden;
+    min-width: 500px; /* Minimum width of the plot container */
+}
+
 
         .btn-secondary {
             background-color: #FFA726;
             border-color: #FFA726;
             color: #FFFFFF;
+            font-weight: bold;
+            padding: 10px 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
         }
 
         .btn-secondary:hover {
             background-color: #FF8C00;
             border-color: #FF8C00;
-        }
-
-        .dataTable-container {
-            background-color: #292727;
-            padding: 15px;
-            border-radius: 8px;
-            overflow: hidden;
+            transform: translateY(-2px);
         }
 
         table.dataTable {
             width: 100% !important;
             background-color: #2C2C2C;
             border-radius: 8px;
+            border-collapse: separate;
+            border-spacing: 0;
         }
 
         table.dataTable th,
         table.dataTable td {
             color: #FFFFFF;
+            padding: 12px;
+            text-align: left;
         }
 
         table.dataTable thead th {
             background-color: #FFA726;
             color: #121212;
+            font-weight: bold;
+        }
+
+        table.dataTable tbody tr:hover {
+            background-color: rgba(255, 138, 101, 0.2);
+            cursor: pointer;
         }
 
         .tooltip {
             position: absolute;
             text-align: center;
-            width: 100px;
+            width: 120px;
             height: auto;
-            padding: 5px;
-            font-size: 12px;
+            padding: 8px;
+            font-size: 14px;
             background: rgba(0, 0, 0, 0.8);
             color: #fff;
-            border-radius: 3px;
+            border-radius: 5px;
             pointer-events: none;
+            z-index: 10;
         }
+
+/* Ensure proper layout on smaller screens */
+@media (max-width: 768px) {
+    .flex1 {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .dataTable-container,
+    .dotplot-container {
+        min-width: 100%;
+    }
+
+    .btn-secondary {
+        width: 100%;
+    }
+}
     </style>
 </head>
 
@@ -129,18 +203,25 @@
     <div class="container">
         <h1>GEVIS - Survival Analysis</h1>
         <div class="flex1">
-            <div>
-                <h4 style="color: white; width: 100%;">Gene list</h4>
-                <div id="radio-container" style="background-color: #292727;"></div>
+            <div class="dataTable-container">
+                <table id="geneTable" class="display" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Gene</th>
+                            <th>pval_adj</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data will be populated here -->
+                    </tbody>
+                </table>
                 <button id="submission" type="button" class="btn btn-secondary">Submit</button>
             </div>
-            <div>
+            <div class="dotplot-container">
                 <div id="survival"></div>
             </div>
         </div>
     </div>
-
-
 
     <script>
         try {
@@ -150,6 +231,7 @@
             window.location.reload();
         }
 
+        let table;
 
         // Function to parse URL query parameters
         function getUrlParameter(name) {
@@ -162,6 +244,69 @@
         // Retrieve sessionId from query parameter
         const sessionId = getUrlParameter('sessionId');
 
+        function createGeneDataTable(data) {
+    const maxGeneLength = 10; // Set a maximum length for gene display
+
+    const tableData = data.map(item => ({
+        Gene: item.Gene.length > maxGeneLength 
+            ? `<span title="${item.Gene}">${item.Gene.substring(0, maxGeneLength)}...</span>`
+            : item.Gene, // Truncate if necessary, otherwise show the full name
+            pval_adj: Number(item.pval_adj).toExponential(4) // Format p-values in scientific notation
+        }));
+
+    // Initialize DataTable
+    table = $('#geneTable').DataTable({
+        data: tableData,
+        columns: [
+            { 
+                title: "Gene", 
+                data: "Gene", 
+                render: function(data, type, row) {
+                    return data; // Render the truncated gene with tooltip
+                }
+            },
+            { title: "pval_adj", data: "pval_adj" }
+        ],
+        destroy: true, // Allow re-initialization
+        paging: true,
+        pageLength: 5,
+        ordering: true,
+        searching: true,
+        lengthChange: false
+    });
+
+    // Handle row selection
+    $('#geneTable tbody').on('click', 'tr', function () {
+        // Deselect other rows
+        table.$('tr.selected').removeClass('selected');
+
+        // Select the clicked row
+        $(this).addClass('selected');
+    });
+}
+        ////*******************************CACHE******************************////
+
+        // Global variable to hold plot data
+        let plotDataCache = {};
+
+        // Function to check if data is cached
+        function isPlotDataCached(geneName) {
+            return plotDataCache.hasOwnProperty(geneName);
+        }
+
+        // Function to retrieve cached data
+        function getCachedPlotData(geneName) {
+            return plotDataCache[geneName];
+        }
+
+        // Store plot data in cache
+        function cachePlotData(geneName, plotData) {
+            plotDataCache[geneName] = plotData;
+        }
+
+
+        ////*******************************************************************////
+
         if (sessionId) {
             // Send a fetch request to retrieve data
             fetch(`/retrieveData?sessionId=${sessionId}`)
@@ -172,88 +317,49 @@
                     return response.json();
                 })
                 .then(data => {
+                    var btn2 = document.getElementById("submission");
+                    var survivalContainer = document.getElementById("survival");
+                    console.log(data.old_p_adj);
 
-                    showLoadingMessageSurv(data);
+                    // Create initial DataTable
+                    createGeneDataTable(data.old_p_adj);
 
+                    survivalContainer.innerHTML = "<h3 style='color: white; margin-left: 50px; width:100%'>Select a gene </h3>";
 
-                })
+                    // Form submission handler
+                    document.getElementById('submission').onclick = function (event) {
+                        event.preventDefault(); // Prevent default form submission
+
+                        // Get the selected row data
+                        const selectedRowData = table.row('.selected').data();
+
+                        if (selectedRowData) {
+                            const selectedGene = selectedRowData.Gene;
+                            survivalContainer.innerHTML = "<h3 style='color: white; margin-left: 50px'>Computing the plot... </h3>";
+
+                            // Check if plot data is cached
+                            if (isPlotDataCached(selectedGene)) {
+                                // Use cached data to generate plot
+                                const cachedData = getCachedPlotData(selectedGene);
+                                survivalplot(cachedData.data, selectedGene, cachedData.pvalue);
+                                console.log(`Plot for ${selectedGene} retrieved from cache.`);
+                            } else {
+                                // Make the call to generate the plot
+                                survival(data.filteredMetadata, data.dataC_copy_pval, selectedGene);
+                            }
+                        } else {
+                            alert('No gene selected!');
+                        }
+                    };
+                });
         } else {
             alert('Session ID not found');
         }
-
-
-        var btn2 = document.getElementById("submission");
-
-        // Function to display loading message inside the modal
-        function showLoadingMessageSurv(data) {
-            var btn2 = document.getElementById("submission");
-            var survivalContainer = document.getElementById("survival");
-            console.log(data.selectedGeneData)
-            // Create initial radio buttons
-            createRadioButtons(data.selectedGeneData);
-
-
-            survivalContainer.innerHTML = "<h3 style='color: white; margin-left: 50px; width:100%'>Select a gene </h3>";
-            // Form submission handler
-            document.getElementById('submission').onclick = function (event) {
-                event.preventDefault(); // Prevent default form submission
-
-                // Get selected radio input value
-                const selectedGene = document.querySelector('input[name="gene"]:checked');
-
-                if (selectedGene) {
-                    survivalContainer.innerHTML = "<h3 style='color: white; margin-left: 50px'>Computing the plot... </h3>";
-                    // Call your function to create the dot plot here
-                    //btn2.disabled = true;
-
-                    survival(data.filteredMetadata, data.dataC_copy_pval, selectedGene.value)
-
-                    // You can handle the selected gene value as needed
-                } else {
-                    alert('No gene selected!');
-                }
-
-            };
-
-        }
-
-
-        function createRadioButtons(data) {
-            const container = document.getElementById('radio-container');
-            container.innerHTML = ''; // Clear previous content
-
-            Object.keys(data).forEach(key => {
-                const value = data[key];
-                const geneName = value.split('/')[0]; // Extract part before '|'
-                console.log(geneName)
-
-                const radioWrapper = document.createElement('div');
-                radioWrapper.className = 'radio-wrapper';
-
-                const radioInput = document.createElement('input');
-                radioInput.type = 'radio';
-                radioInput.name = 'gene';
-                radioInput.id = `radio-${geneName}`;
-                radioInput.value = value;
-                radioInput.checked = true;
-
-
-                const radioLabel = document.createElement('label');
-                radioLabel.htmlFor = `radio-${geneName}`;
-                radioLabel.innerText = geneName;
-
-                radioWrapper.appendChild(radioInput);
-                radioWrapper.appendChild(radioLabel);
-                container.appendChild(radioWrapper);
-            });
-        }
-
 
         function survival(clinical, cases, genename) {
 
             console.log("tutto il dataset", clinical)
             // console.log("i casi",cases)
-
 
             var geneDataC = cases.filter(d => d.gene === genename)
 
@@ -272,22 +378,13 @@
 
             console.log(dataStructure.length)
 
-
-
             // Extract GSM identifiers from geneDataC
             let relevantGSMs = geneDataC.flatMap(item => Object.keys(item));
 
-            //console.log(relevantGSMs)
             // Filter the data structure to include only relevant GSMs
             let filteredDataStructure = dataStructure.filter(item => relevantGSMs.includes(item.GSM));
 
             console.log(filteredDataStructure.length);
-
-
-            //console.log(dataStructure);
-
-
-
 
             var req = ocpu.call("surv", {
                 metadata: filteredDataStructure,
@@ -301,13 +398,14 @@
                     .then(response => response.json())
                     .then(data => {
                         console.log(filteredDataURL)
-                        //console.log(data.pval[0].pval)
+
                         survivalplot(data.obj, genename, data.pval[0].pval);
 
-                        btn2.disabled = false;
+                        // Cache the plot data
+                        cachePlotData(genename, { data: data.obj, pvalue: data.pval[0].pval });
+
+                        document.getElementById("submission").disabled = false;
                     })
-
-
 
             })
 
@@ -468,7 +566,7 @@
                 .text("Survival plot for " + name.split('|')[0])
                 .style("fill", "white");
 
-                            // Define the lines for the survival plot
+            // Define the lines for the survival plot
             const highLine = d3.line()
                 .x(d => x(d.time))
                 .y(d => y(d.survivalProb));
@@ -522,7 +620,7 @@
                 .attr("stroke", "gray")
                 .attr("fill", "white");
 
-                                            // Tooltip for showing data
+            // Tooltip for showing data
             const tooltip = d3.select("#survival")
                 .append("div")
                 .attr("class", "tooltip")
@@ -560,11 +658,11 @@
                         .attr("cx", mouseX)
                         .attr("cy", mouseY)
                         .transition().duration(50); // Smooth transition
-                    
+
                     // Convert mouse coordinates to time and survival probability
                     const time = x.invert(mouseX);
                     const survivalProb = y.invert(mouseY);
-                    
+
                     // Show tooltip
                     tooltip.transition().duration(200).style("opacity", 0.9);
                     tooltip.html(`Time: ${time.toFixed(2)}<br>Survival: ${survivalProb.toFixed(2)}`)
@@ -576,70 +674,6 @@
                     tooltip.transition().duration(500).style("opacity", 0);
 
                 });
-
-
-            // // Apply event listeners to paths for line hover effects
-            // svg.selectAll("path")
-            //     .on("mouseover", function () {
-            //         d3.select(this).style("stroke-width", 4);
-            //     })
-            //     .on("mouseout", function () {
-            //         d3.select(this).style("stroke-width", 2);
-            //     });
-
-
-            // Get the nearest point
-            // const mouseCapture = svg.append("rect")
-            //     .attr("width", width)
-            //     .attr("height", height)
-            //     .attr("fill", "none")
-            //     .attr("pointer-events", "all")
-            //     .on("mousemove", function () {
-            //         const [mouseX, mouseY] = d3.mouse(this);
-
-            //         // Find the closest data point for high and low expression lines
-            //         const closestHigh = getClosestDataPoint(highExprPlotData, x.invert(mouseX));
-            //         const closestLow = getClosestDataPoint(lowExprPlotData, x.invert(mouseX));
-
-            //         // Determine which line is closer to the mouse
-            //         const isHighExprCloser = Math.abs(y(closestHigh.survivalProb) - mouseY) < Math.abs(y(closestLow.survivalProb) - mouseY);
-            //         const closestPoint = isHighExprCloser ? closestHigh : closestLow;
-
-            //         crosshairGroup.style("display", null);
-
-            //         crosshairGroup.select(".vertical")
-            //             .attr("x1", x(closestPoint.time))
-            //             .attr("x2", x(closestPoint.time))
-            //             .transition().duration(50);
-
-            //         crosshairGroup.select(".horizontal")
-            //             .attr("y1", y(closestPoint.survivalProb))
-            //             .attr("y2", y(closestPoint.survivalProb))
-            //             .transition().duration(50);
-
-            //         crosshairGroup.select(".crosshair-circle")
-            //             .attr("cx", x(closestPoint.time))
-            //             .attr("cy", y(closestPoint.survivalProb))
-            //             .transition().duration(50);
-
-            //         // Show tooltip
-            //         tooltip.transition().duration(200).style("opacity", 0.9);
-            //         tooltip.html(`Time: ${closestPoint.time}<br>Survival: ${closestPoint.survivalProb.toFixed(2)}`)
-            //             .style("left", (d3.event.pageX + 10) + "px")
-            //             .style("top", (d3.event.pageY - 28) + "px");
-            //     })
-            //     .on("mouseleave", function () {
-            //         crosshairGroup.style("display", "none");
-            //         tooltip.transition().duration(500).style("opacity", 0);
-            //     });
-
-
-            // // Function to find the closest data point
-            // function getClosestDataPoint(data, mouseX) {
-            //     return data.reduce((prev, curr) => {
-            //         return (Math.abs(curr.time - mouseX) < Math.abs(prev.time - mouseX) ? curr : prev);
-            //     });
-            // }
 
         }
 
