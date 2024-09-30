@@ -11232,8 +11232,6 @@
                     .domain([chosen_meta1, chosen_meta2])
                     .range(["#0d0887", "#fddb6d"]);
             }
-            // Initialize y scale object
-            var y = {};
 
             // Extract metadata categories from the values of the first column
             var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
@@ -11284,13 +11282,22 @@
             //         .range([...Array(uniqueValues.length).keys()].map(i => height - i * (height / (uniqueValues.length - 1))));
             // });
 
-            for (var i in geneselected) {
-                var name = geneselected[i];
-                y[name] = d3.scaleLinear()
-                    .domain([0, 20])
-                    .range([height, 0]);
-            }
-            console.log("Y scales:", y);
+// Step 1: Find the global maximum expression value across all selected genes
+var globalMax = d3.max(geneselected, function(geneName) {
+    var geneData = structureCombinedData.find(d => d.gene === geneName);
+    var expressionValues = geneData.expressions.map(d => d.expression);
+    return d3.max(expressionValues); // Get the max expression value for this gene
+});
+
+// Step 2: Define the Y-scale for all genes using the same domain (0 to globalMax)
+for (var i in geneselected) {
+    var name = geneselected[i];
+    
+    // Define the Y-scale for the current gene with a domain of [0, globalMax]
+    y[name] = d3.scaleLinear()
+        .domain([0, globalMax]) // Set the domain to 0 and the global max value
+        .range([height, 0]); // Map the domain to the visual height
+}            console.log("Y scales:", y);
 
             // Initialize transposedData array
             var transposedData = [];
