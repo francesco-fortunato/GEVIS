@@ -1111,7 +1111,6 @@
 
         showOverlay()
 
-
         // Get the modal element
         var modal = document.getElementById("myModal");
 
@@ -1170,16 +1169,6 @@
                 });
         });
 
-
-        // When the user clicks the button, open the modal and create the dot plot inside it
-        // btn.onclick = function () {
-        //     modal.style.display = "block";
-        //     // Display loading message inside the modal
-        //     showLoadingMessage();
-        //     // Call function to create dot plot inside modal
-        //     createDotPlotInsideModal();
-        // }
-
         // When the user clicks on <span> (x), close the modal
         span.onclick = function () {
             modal.style.display = "none";
@@ -1202,7 +1191,6 @@
             }
         }
 
-
         ///////////////////////////////////////////////////////////////////////////////////////////
 
         // Get the modal element
@@ -1221,38 +1209,12 @@
         function showLoadingMessageSurv() {
             var survivalContainer = document.getElementById("survival");
             console.log(selectedGeneData)
-            // Create initial radio buttons
-            //createRadioButtons(selectedGeneData);
-
-
-            // survivalContainer.innerHTML = "<h3 style='color: white; margin-left: 50px; width:100%'>Select a gene </h3>";
-            // // Form submission handler
-            // document.getElementById('submission').onclick = function(event) {
-            //         event.preventDefault(); // Prevent default form submission
-
-            //         // Get selected radio input value
-            //     const selectedGene = document.querySelector('input[name="gene"]:checked');
-
-            //     if (selectedGene) {
-            //         survivalContainer.innerHTML = "<h3 style='color: white; margin-left: 50px'>Computing the plot... </h3>";
-            //         // Call your function to create the dot plot here
-            //         btn2.disabled = true;
-            //         survival(metadata,dataC_copy_pval,selectedGene.value)
-
-            //         // You can handle the selected gene value as needed
-            //     } else {
-            //         alert('No gene selected!');
-            //     }
-
-            // };
-
         }
 
         // Function to create the dot plot inside the modal
         function createSurvivalPlotInsideModal() {
             // Display loading message inside the modal
             showLoadingMessageSurv();
-
         }
 
 
@@ -1401,17 +1363,7 @@
             }
         }
 
-
-
-
-
-
-
-
         ///////////////////////////////////////////////////////////////////////////////////////////
-
-
-
 
         function calculateLogFC(dataC, dataN) {
             const logFCData = [];
@@ -1446,7 +1398,6 @@
             return logFCData
 
         }
-
 
         function fetchJSON(url) {
             return fetch(url)
@@ -12100,8 +12051,6 @@
                     }
                 });
 
-
-
             // Set legend label color and style
             legend.selectAll(".label")
                 .style("fill", "white") // Set label color to white
@@ -12223,7 +12172,6 @@
                 // Retrieve all elements with the class 'pulse'
                 const elements = document.querySelectorAll(".pulse-red")
 
-
                 console.log(elements)
 
                 // Retrieve the Animation object of the target element
@@ -12274,15 +12222,18 @@
                     d3.select(this).call(d3.axisLeft().scale(y[d]));
                 });
 
+            // Add axis labels and truncate if necessary
             axis.append("text")
+                .attr("class", "dragging") // Add the axis-label class
                 .style("text-anchor", "middle")
                 .attr("y", -9)
                 .text(function (d) {
-                    return d;
-                    // Set the label text for "Type" axis
-                    //return d === "type" ? "Type" : d;
+                    var maxLength = 5; // Max length before truncating
+                    return d.length > maxLength ? d.slice(0, maxLength) + '...' : d;
                 })
-                .style("fill", "white");
+                .style("fill", "white")
+                .append("title")
+                .text(function (d) { return d; }); // Add full text as a tooltip
 
             axis.selectAll(".domain")
                 .attr("stroke", "white");
@@ -12328,15 +12279,18 @@
                 })
                 .call(drag); // Apply drag behavior to each axis group;
 
+            // Add axis labels and truncate if necessary
             axisGroups.append("text")
                 .attr("class", "dragging") // Add the axis-label class
                 .style("text-anchor", "middle")
                 .attr("y", -9)
                 .text(function (d) {
-                    // Set the label text for "Type" axis
-                    return d;
+                    var maxLength = 5; // Max length before truncating
+                    return d.length > maxLength ? d.slice(0, maxLength) + '...' : d;
                 })
-                .style("fill", "white");
+                .style("fill", "white")
+                .append("title")
+                .text(function (d) { return d; }); // Add full text as a tooltip
 
             axisGroups.selectAll(".domain")
                 .attr("stroke", "white");
@@ -12363,7 +12317,6 @@
                         self.text(truncatedText);
                     }
                 });
-
 
 
             // Drag start function
