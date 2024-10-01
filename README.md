@@ -19,6 +19,9 @@ GEVIS is a comprehensive dashboard for conducting differential gene expression a
 - **Multiple Example Datasets:** 
   - Choose from multiple preloaded example datasets for quick analysis, enabling comparative studies across different experiments and conditions.
 
+- **Quantile normalization:** 
+  - Perform quantile normalization.
+
 - **Statistical Testing Options:** 
   - Perform differential gene expression analysis using three statistical methods: t-test, Limma, and DESeq. These options offer flexibility depending on the nature of the dataset and the analysis goals.
   - Results include p-values and adjusted p-values (False Discovery Rate - FDR) for identifying statistically significant genes.
