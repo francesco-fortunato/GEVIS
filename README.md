@@ -4,7 +4,7 @@
 
 GEVIS is a comprehensive dashboard for conducting differential gene expression analysis, designed to facilitate interactive visualization and in-depth exploration of gene expression data. This tool supports multiple analysis methods and visualization techniques, providing researchers with a versatile platform for understanding gene expression patterns and identifying key biomarkers across biological conditions.
 
-<img src="pictures/GEVIS Dashboard.png" alt="Dashboard Image" style="max-width: 100%; height: auto;">
+<img src="pictures/GEVIS Dashboard v1.0.png" alt="Dashboard Image" style="max-width: 100%; height: auto;">
 
 ## Features
 
