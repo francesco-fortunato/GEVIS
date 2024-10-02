@@ -8312,6 +8312,10 @@
                 updateBoxPlot(last_box, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
 
             }
+
+            // Define maximum length for legend labels before truncating
+            var maxLabelLength = 18; // You can adjust this value as needed
+
             var legendItems = [
                 { label: chosen_meta2, color: d3.schemeSet1[2] },
                 { label: chosen_meta1, color: d3.schemeSet1[0] }
@@ -8329,18 +8333,51 @@
                     })
                 );
 
-            // Calculate total height of legend
-            var legendHeight = legendItems.length * 17.3; // Assuming each legend item has a height of 20 units
+            // Append legend circles and text
+            legendItems.forEach(function (d, i) {
+                // Append circles
+                legend.append("circle")
+                    .attr("class", "legend-item")
+                    .attr("cx", 5)
+                    .attr("cy", i * 20 + 5)
+                    .attr("r", 4)
+                    .style("fill", d.color);
 
-            // Calculate width based on the longest label
-            var longestLabelWidth = d3.max(legendItems, function (d) { return d.label.length; }) * 5.4; // Assuming each character width is 8 units
+                // Append text
+                legend.append("text")
+                    .attr("class", "legend-item")
+                    .attr("x", 15)
+                    .attr("y", i * 20 + 10)
+                    .text(function () {
+                        // Truncate the label if it exceeds the maximum length
+                        var text = d.label;
+                        if (text.length > maxLabelLength) {
+                            return text.slice(0, maxLabelLength) + '...'; // Truncate and add ellipsis
+                        }
+                        return text;
+                    })
+                    .style("font-size", "12px")
+                    .style("fill", "white")
+                    .append("title") // Add tooltip with the full text
+                    .text(function () { return d.label; }); // Full text for tooltip
+            });
+
+            // Calculate total height and width for the legend rectangle
+            var legendHeight = legendItems.length * 20; // Height based on number of items and spacing
+
+            // Get the maximum width of the text elements
+            var longestLabelWidth = 0;
+            legend.selectAll("text.legend-item").each(function () {
+                var width = this.getComputedTextLength(); // Get the width of the rendered text
+                longestLabelWidth = Math.max(longestLabelWidth, width); // Update longest width
+            });
 
             // Append white transparent rectangle around the legend
             legend.append("rect")
                 .attr("x", -5)
                 .attr("y", -5)
                 .attr("width", longestLabelWidth + 20) // Add padding to the longest label width
-                .attr("height", legendHeight + 20) // Add padding to the legend height
+                .attr("height", legendHeight + 10) // Add padding to the legend height
                 .style("fill", "none")
                 .style("stroke", "white")  // Add stroke attribute
                 .style("stroke-width", 1);  // Set stroke width
@@ -8350,8 +8387,6 @@
                 d3.select(this).style("cursor", "move");
             });
 
-            // Define maximum length for legend labels before truncating
-            var maxLabelLength = 18; // You can adjust this value as needed
 
             // Append legend circles and text
             legend.selectAll("circle.legend-item")
@@ -8363,24 +8398,24 @@
                 .attr("r", 4) // Adjust the radius as needed
                 .style("fill", function (d) { return d.color; });
 
-            legend.selectAll("text.legend-item")
-                .data(legendItems)
-                .enter().append("text")
-                .attr("class", "legend-item")
-                .attr("x", 15)
-                .attr("y", function (d, i) { return i * 20 + 10; })
-                .text(function (d) {
-                    // Truncate the label if it exceeds the maximum length
-                    var text = d.label;
-                    if (text.length > maxLabelLength) {
-                        return text.slice(0, maxLabelLength) + '...'; // Truncate and add ellipsis
-                    }
-                    return text;
-                })
-                .style("font-size", "12px")
-                .style("fill", "white")
-                .append("title") // Add tooltip with the full text
-                .text(function (d) { return d.label; }); // Full text for tooltip
+            // legend.selectAll("text.legend-item")
+            //     .data(legendItems)
+            //     .enter().append("text")
+            //     .attr("class", "legend-item")
+            //     .attr("x", 15)
+            //     .attr("y", function (d, i) { return i * 20 + 10; })
+            //     .text(function (d) {
+            //         // Truncate the label if it exceeds the maximum length
+            //         var text = d.label;
+            //         if (text.length > maxLabelLength) {
+            //             return text.slice(0, maxLabelLength) + '...'; // Truncate and add ellipsis
+            //         }
+            //         return text;
+            //     })
+            //     .style("font-size", "12px")
+            //     .style("fill", "white")
+            //     .append("title") // Add tooltip with the full text
+            //     .text(function (d) { return d.label; }); // Full text for tooltip
 
             // Store previous axis selections globally
             var prevXAxisSelect = d3.select("#x-axis-select").property("value");
