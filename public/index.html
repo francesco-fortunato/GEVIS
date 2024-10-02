@@ -731,8 +731,8 @@
         <span style="margin-left: 10px;"></span> <!-- Adjust the margin as needed -->
         <button class="btn btn-secondary" id="importDatasetButton">Import Dataset</button>
         <button class="btn btn-secondary" id="openModalBtn1" style="margin-left: 10px;">Survival Plot</button>
-
-
+        <span id="currentMethod" style="margin-left: 55%; color: white; line-height: 1.2;">Method: N/A</span>
+        <span id="geneRegulationInfo" style="margin-left: 35px; color: white; line-height: 1.2;"></span>
     </nav>
     <div id="loadingOverlay" style="display: flex; justify-content: center; align-items: center;">
         <div style="display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;">
@@ -1594,7 +1594,6 @@
         function hideLoadCsvOverlay() {
             document.getElementById("loadDatasetOverlay").style.display = "none";
         }
-
 
         // File paths
         const filePath1 = 'examples/matrix_lung.csv';
@@ -3790,6 +3789,9 @@
             document.getElementById("main_div").style.display = "flex"
 
             if (chosen_statistic == 'deseq2') {
+
+                updateStatisticalMethod('DESeq2');
+
                 console.log(dataC_original)
                 console.log(dataN_original)
 
@@ -4031,7 +4033,8 @@
 
                                 updateBoxPlot(mostUpregulatedGeneName, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
 
-                                updateCounter()
+                                updateCounter();
+                                updateUpandDown();
 
                                 scatter.selectAll("circle")
                                     .filter(circleData => circleData.Gene === mostUpregulatedGeneName || circleData.Gene === mostDownregulatedGeneName)
@@ -4499,6 +4502,7 @@
                                 updateLogFCHistogram(parsedLogFC_origin)
 
                                 if (chosen_statistic == 't-test') {
+                                    updateStatisticalMethod('T-test');
                                     var req = ocpu.call("pval", {
                                         data: data_copy,
                                         N: normal_number,
@@ -4616,7 +4620,8 @@
 
                                                     updateBoxPlot(mostUpregulatedGeneName, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
 
-                                                    updateCounter()
+                                                    updateCounter();
+                                                    updateUpandDown();
 
                                                     scatter.selectAll("circle")
                                                         .filter(circleData => circleData.Gene === mostUpregulatedGeneName || circleData.Gene === mostDownregulatedGeneName)
@@ -4932,7 +4937,7 @@
 
                                     })
                                 } else if (chosen_statistic == 'limma') {
-
+                                    updateStatisticalMethod('limma');
                                     console.log(dataC_copy)
                                     console.log(dataN_copy)
 
@@ -5073,7 +5078,8 @@
 
                                                     updateBoxPlot(mostUpregulatedGeneName, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
 
-                                                    updateCounter()
+                                                    updateCounter();
+                                                    updateUpandDown();
 
                                                     scatter.selectAll("circle")
                                                         .filter(circleData => circleData.Gene === mostUpregulatedGeneName || circleData.Gene === mostDownregulatedGeneName)
@@ -6433,7 +6439,8 @@
             }
 
             console.log("ho rimosso", ind2.length, " GENI da data e ne rimangono ", data_copy.length)
-            updateCounter()
+            updateCounter();
+            updateUpandDown();
             // console.log(parsedLogFC)
             // console.log(data_copy)
 
@@ -6568,7 +6575,8 @@
 
 
                             // dynamicParallel(selectedGeneData, data_copy_pval, dataC_copy_pval, dataN_copy_pval, first_dims)
-                            updateCounter()
+                            updateCounter();
+                            updateUpandDown();
                             var pc1Values = [];
                             var pc2Values = [];
                             var groupValues = [];
@@ -6880,7 +6888,8 @@
                             //dynamicParallel(selectedGeneData, data_copy_pval, dataC_copy_pval, dataN_copy_pval, first_dims)
 
 
-                            updateCounter()
+                            updateCounter();
+                            updateUpandDown();
                             var pc1Values = [];
                             var pc2Values = [];
                             var groupValues = [];
@@ -7086,7 +7095,8 @@
                 parsedLogFC = parsedLogFC_origin.filter((entry, index) => !ind.includes(index));
             }
 
-            updateCounter()
+            updateCounter();
+            updateUpandDown();
             updateLogFCHistogram(parsedLogFC_origin);
 
         });
@@ -7096,7 +7106,8 @@
             dataC_copy_pval = dataC_copy
             dataN_copy_pval = dataN_copy
             data_copy_pval = data_copy
-            updateCounter()
+            updateCounter();
+            updateUpandDown();
 
             if (chosen_statistic == 't-test') {
 
@@ -7181,7 +7192,8 @@
 
                                 console.log(dataN_copy.length)
                             }
-                            updateCounter()
+                            updateCounter();
+                            updateUpandDown();
 
                             //   var pc1Values = [];
                             // var pc2Values = [];
@@ -7431,7 +7443,8 @@
 
                                 console.log(dataN_copy.length)
                             }
-                            updateCounter()
+                            updateCounter();
+                            updateUpandDown();
 
                             //   var pc1Values = [];
                             // var pc2Values = [];
@@ -7726,7 +7739,8 @@
 
                     console.log(dataN_copy.length)
                 }
-                updateCounter()
+                updateCounter();
+                updateUpandDown();
 
                 //   var pc1Values = [];
                 // var pc2Values = [];
@@ -7942,7 +7956,8 @@
                 // Remove entries corresponding to ind from logFC
                 parsedLogFC_pval = parsedLogFC.filter((entry, index) => !ind.includes(index));
 
-                updateCounter()
+                updateCounter();
+                updateUpandDown();
 
                 updateBoxPlot(last_box, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
 
@@ -13798,6 +13813,49 @@
             }
         });
 
+        function updateStatisticalMethod(method) {
+            document.getElementById('currentMethod').innerHTML = `Method:<br>${method}`;
+        }
+
+        function updateUpandDown() {
+            const regulationElement = document.getElementById("geneRegulationInfo");
+            // Initialize counters
+            let upregulatedCount = 0;
+            let downregulatedCount = 0;
+
+            // Create a map for quick lookup of logFC based on gene names
+            const logFCMap = parsedLogFC_origin1.reduce((map, gene) => {
+                map[gene.Gene] = gene.logFC;
+                return map;
+            }, {});
+
+            // Sort old_p_adj by pval_adj (lowest first)
+            const sortedOldPAdj = old_p_adj.sort((a, b) => a.pval_adj - b.pval_adj);
+
+            // Prepare data for DataTables
+            const geneData = sortedOldPAdj.map(gene => {
+                const logFC = logFCMap[gene.Gene] !== undefined ? logFCMap[gene.Gene] : ""; // Handle cases where logFC is missing
+                return {
+                    Gene: gene.Gene,
+                    AdjPVal: gene.pval_adj,
+                    LogFC: logFC
+                };
+            });
+
+            // Count upregulated and downregulated genes
+            geneData.forEach(gene => {
+                if (gene.AdjPVal < threshold) {
+                    if (gene.LogFC >= 0) {
+                        upregulatedCount++;
+                    } else if (gene.LogFC <= 0) {
+                        downregulatedCount++;
+                    }
+                }
+            });
+
+            // Update the element with line breaks for separate rows
+            regulationElement.innerHTML = `Upregulated: ${upregulatedCount}<br>Downregulated: ${downregulatedCount}`;
+        }
 
 
         function updateCounter() {
@@ -13820,6 +13878,7 @@
                 );
             }
             else {
+
                 counterDiv.html(
                     "<span style='display: inline-block; width: 235px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Total number of genes:</span>" +
                     "<span style='display: inline-block; width: 70px; text-align: center; font-weight: bold;'>" + data_original.length + "</span><br>" +
