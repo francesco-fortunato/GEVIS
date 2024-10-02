@@ -642,6 +642,12 @@
                 </label>
                 <label style="display: block; margin-bottom: 15px; font-size: 16px;">
                     <input type="radio" name="exampleOption" value="example3" style="margin-right: 10px;">
+                    <strong>Example 3:</strong> MicroRNA expression profiles in 63 patients with intrahepatic
+                    cholangiocarcinoma (ICC) and 9 normal intrahepatic bile ducts. The study identified a miRNA
+                    signature for predicting prognosis in ICC. Based on GEO Series GSE53870.
+                </label>
+                <label style="display: block; margin-bottom: 15px; font-size: 16px;">
+                    <input type="radio" name="exampleOption" value="example4" style="margin-right: 10px;">
                     <strong>Example 3:</strong> TBD.
                 </label>
             </div>
@@ -1294,13 +1300,45 @@
             const selectedEvent = document.getElementById('metadataDropdown1').value;
             const selectedTime = document.getElementById('metadataDropdown2').value;
 
+            console.log("Metadata", metadata)
+
             // Filter the metadata based on the selections
-            const filteredMetadata = metadata.filter(item =>
-                item.Sample_geo_accession === selectedEvent ||
-                item.Sample_geo_accession === selectedTime
-            );
+            const filteredMetadata = metadata.filter(item => {
+                // Get the first key dynamically
+                const firstKey = Object.keys(item)[0];
+
+                // Check if the first key's value matches the selected event or time
+                return item[firstKey] === selectedEvent || item[firstKey] === selectedTime;
+            });
+
 
             console.log('Filtered Metadata:', filteredMetadata);
+
+            // Function to clean filteredMetadata by removing keys with empty values
+            const cleanFilteredMetadata = (filteredMetadata) => {
+                return filteredMetadata.map(item => {
+                    // Create a new object to store cleaned entries
+                    const cleanedItem = {};
+
+                    for (const [key, value] of Object.entries(item)) {
+                        // Check if the value is a valid number (float or integer) or not an empty string
+                        const numValue = parseFloat(value); // Convert to float
+
+                        if (value !== "" && !isNaN(numValue)) {
+                            cleanedItem[key] = value;
+                        }
+                    }
+
+                    return cleanedItem;
+                });
+            };
+
+
+            // Clean the filteredMetadata
+            const cleanedMetadata = cleanFilteredMetadata(filteredMetadata);
+
+            // Log the result
+            console.log(cleanedMetadata);
 
             // Extract gene names from dataC_copy_pval
             const geneNamesInDataC = dataC_copy_pval.map(item => item.gene);
@@ -1308,11 +1346,10 @@
             // Filter old_p_adj to only include genes present in dataC_copy_pval
             const filteredOldPAdj = old_p_adj.filter(item => geneNamesInDataC.includes(item.Gene));
 
-            console.log('Filtered Metadata:', filteredMetadata);
             console.log('Filtered Old P Adj:', filteredOldPAdj);
 
             // Now you can send only the filtered data
-            const data = { filteredMetadata, dataC_copy_pval, old_p_adj: filteredOldPAdj };
+            const data = { filteredMetadata: cleanedMetadata, dataC_copy_pval, old_p_adj: filteredOldPAdj };
 
             // Send data to server using fetch
             fetch('/survival', {
@@ -1733,9 +1770,13 @@
                     filePath1 = 'examples/matrix_myeloma.csv';
                     filePath2 = 'examples/metadata_myeloma.csv';
                 } else if (exampleValue === 'example3') {
+                    filePath1 = 'examples/matrix_CCA.csv';
+                    filePath2 = 'examples/metadata_CCA.csv';
+                } else if (exampleValue === 'example4') {
                     filePath1 = 'examples/airway_scaledcounts.csv';
                     filePath2 = 'examples/airway_metadata.csv';
                 }
+
 
                 // Load the first file
                 fetch(filePath1)

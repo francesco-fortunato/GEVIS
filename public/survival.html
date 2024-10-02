@@ -276,6 +276,7 @@
                 Gene: item.Gene.length > maxGeneLength
                     ? `<span title="${item.Gene}">${item.Gene.substring(0, maxGeneLength)}...</span>`
                     : item.Gene, // Truncate if necessary, otherwise show the full name
+                rawGene: item.Gene, // Store the full gene name for use in OpenCPU requests
                 pval_adj: Number(item.pval_adj).toExponential(4) // Format p-values in scientific notation
             }));
 
@@ -290,7 +291,8 @@
                             return data; // Render the truncated gene with tooltip
                         }
                     },
-                    { title: "pval_adj", data: "pval_adj" }
+                    { title: "pval_adj", data: "pval_adj" },
+                    { title: "rawGene", data: "rawGene", visible: false } // Hidden column for raw gene
                 ],
                 destroy: true, // Allow re-initialization
                 paging: true,
@@ -359,7 +361,7 @@
                         const selectedRowData = table.row('.selected').data();
 
                         if (selectedRowData) {
-                            const selectedGene = selectedRowData.Gene;
+                            const selectedGene = selectedRowData.rawGene;
                             survivalContainer.innerHTML = "<h3 style='color: white; margin-left: 50px'>Computing the plot... </h3>";
 
                             // Check if plot data is cached
@@ -390,29 +392,32 @@
 
             console.log(clinical)
 
-            let allGSM = Object.keys(clinical[1]).slice(1);
-            let allEvent = Object.values(clinical[0]).slice(1);
-            let allTime_to_followUp = Object.values(clinical[1]).slice(1);
+            let allGSM = Object.keys(clinical[1]);
+            let allEvent = Object.values(clinical[0]);
+            let allTime_to_followUp = Object.values(clinical[1]);
 
-            // Create the data structure
-            let dataStructure = allGSM.map((gsm, index) => ({
-                GSM: gsm,
-                Event: allEvent[index],
-                Time_to_followUp: allTime_to_followUp[index]
-            }));
-
-            console.log(dataStructure.length)
-
-            // Extract GSM identifiers from geneDataC
             let relevantGSMs = geneDataC.flatMap(item => Object.keys(item));
 
-            // Filter the data structure to include only relevant GSMs
-            let filteredDataStructure = dataStructure.filter(item => relevantGSMs.includes(item.GSM));
+            // Create the data structure with conditional addition
+            let dataStructure = allGSM.map((gsm, index) => {
+                // Check if the current GSM is in the relevantGSMs array
+                if (relevantGSMs.includes(gsm)) {
+                    return {
+                        GSM: gsm,
+                        Event: allEvent[index],
+                        Time_to_followUp: allTime_to_followUp[index]
+                    };
+                }
+            }).filter(Boolean); // Use filter to remove undefined values
 
-            console.log(filteredDataStructure.length);
+            console.log(dataStructure.length)
+            console.log(geneDataC)
+            // Extract GSM identifiers from geneDataC
+
+            console.log(relevantGSMs)
 
             var req = ocpu.call("surv", {
-                metadata: filteredDataStructure,
+                metadata: dataStructure,
                 dataC: geneDataC,
                 gene: genename
             }, function (session) {
