@@ -11318,9 +11318,24 @@
                 xAxis.selectAll("text")
                     .style("fill", "white");
 
+                // Calculate min and max from sumstat
+                const minSumStat = d3.min(sumstat, d => d.value.min);
+                const maxSumStat = d3.max(sumstat, d => d.value.max);
+
+                // Calculate min and max from expressionValuesC and expressionValuesN
+                const minExpressionC = d3.min(expressionValuesC);
+                const maxExpressionC = d3.max(expressionValuesC);
+                const minExpressionN = d3.min(expressionValuesN);
+                const maxExpressionN = d3.max(expressionValuesN);
+
+                // Determine the overall min and max for the y-axis
+                const overallMin = Math.min(minSumStat, minExpressionC, minExpressionN);
+                const overallMax = Math.max(maxSumStat, maxExpressionC, maxExpressionN);
+
+                // Set the y-axis scale
                 var y = d3.scaleLinear()
-                    .domain([boxPlotStatisticsC.min - 4, boxPlotStatisticsC.max + 4])
-                    .range([height, 0])
+                    .domain([overallMin - 4, overallMax + 4]) // Adding padding of 4
+                    .range([height, 0]);
 
                 var yAxisGroup = svg.append("g")
                     .attr("class", "y-axis") // Assign a class to the group element
@@ -11569,9 +11584,24 @@
                         .paddingInner(1)
                         .paddingOuter(.5)
 
+                    // Calculate min and max from sumstat
+                    const minSumStat = d3.min(sumstat, d => d.value.min);
+                    const maxSumStat = d3.max(sumstat, d => d.value.max);
+
+                    // Calculate min and max from expressionValuesC and expressionValuesN
+                    const minExpressionC = d3.min(expressionValuesC);
+                    const maxExpressionC = d3.max(expressionValuesC);
+                    const minExpressionN = d3.min(expressionValuesN);
+                    const maxExpressionN = d3.max(expressionValuesN);
+
+                    // Determine the overall min and max for the y-axis
+                    const overallMin = Math.min(minSumStat, minExpressionC, minExpressionN);
+                    const overallMax = Math.max(maxSumStat, maxExpressionC, maxExpressionN);
+
+                    // Set the y-axis scale
                     var y = d3.scaleLinear()
-                        .domain([boxPlotStatisticsC.min - 4, boxPlotStatisticsC.max + 4])
-                        .range([height, 0])
+                        .domain([overallMin - 4, overallMax + 4]) // Adding padding of 4
+                        .range([height, 0]);
 
                     // Update y-axis
                     svg.select(".y-axis")
