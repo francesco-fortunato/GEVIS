@@ -781,20 +781,20 @@
         <div class="flex-container" style="margin-top : 6px; margin-left : 6px"><!--div(2) che mette in riga iqr e FC-->
             <div id="style_scatter">
 
-                <div id="IQR" style="width: 100%"></div><!--div(4) IQR-->
+                <div id="IQR" style="width: 100%; margin-top: 2%;"></div><!--div(4) IQR-->
                 <div> <!--div(3) bottoni IQR-->
                     <input type="range" id="thresholdSlider" class="range2" min="0.1" max="0.99" step="0.01" value="0.2"
                         style="width: 200px;">
-                    <span id="thresholdValue" style="color: white;">20%</span>
+                    <span id="thresholdValue" style="color: white; vertical-align: middle; display: inline-block; margin-top: -24px;">20%</span>
                 </div><!-- div(3)-->
-                <div id="logFCHistogram"></div> <!-- div(5) FC-->
+                <div id="logFCHistogram" style="margin-top:1%;"></div> <!-- div(5) FC-->
 
                 <div><!-- div(6) bottoni FC-->
 
                     <input type="range" id="log_thresholdSlider" class="range1" min="1.1" max="10" step="0.01"
                         value="1.1" style="width: 200px;">
-                    <span id="log_thresholdSliderValue" style="color: white;">1.1</span>
-                    <div id="boxPlot"></div>
+                    <span id="log_thresholdSliderValue" style="color: white; vertical-align: middle; display: inline-block; margin-top: -24px;">1.1</span>
+                    <div id="boxPlot" style="margin-top:1%;"></div>
                     <!-- Initialize a select button -->
                     <select id="selectButton" class="btn btn-secondary dropdown-toggle">
                         <option value="SPP1" selected>MostUp</option>
