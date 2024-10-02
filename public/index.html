@@ -12002,19 +12002,31 @@
                         .domain(values) // Use unique values for the current category
                         .range([...Array(values.length).keys()].map(i => i * (height / (values.length - 1))));
                 } else {
+                    console.log("No colorscalevalues");
                     var values = Object.values(metadata[i]); // Extract values for the current category
                     values.shift(); // Remove the first value (Sample_source_name_ch1)
-                    var uniqueValues = [...new Set(values)]; // Filter out duplicate
-                    uniqueValues.sort()
-                    uniqueValues.reverse()
-                    console.log("Values for", category, ":", values);
-                    // Calculate the step size for placing values on the y-axis
-                    var stepSize = height / (uniqueValues.length + 1); // Adjust +1 to leave some space at the top
+                    var uniqueValues = [...new Set(values)]; // Filter out duplicates
+                    uniqueValues.sort((a, b) => a - b); // Sort numerically
+                    console.log("Values for", category, ":", uniqueValues);
 
-                    // Create ordinal scale using D3.js
-                    y[category] = d3.scaleOrdinal()
-                        .domain(uniqueValues) // Use unique values for the current category
-                        .range([...Array(uniqueValues.length).keys()].map(i => (i + 1) * stepSize)); // Adjust the range
+                    // Check if all unique values are numeric
+                    const allNumeric = uniqueValues.every(value => !isNaN(value) && value !== null && value !== '');
+
+                    if (allNumeric) {
+                        // If all values are numeric, use a linear scale
+                        const min = d3.min(uniqueValues);
+                        const max = d3.max(uniqueValues);
+                        y[category] = d3.scaleLinear()
+                            .domain([min, max]) // Set domain from min to max
+                            .range([height, 0]); // Adjust the range as needed
+                    } else {
+                        // If there are non-numeric values, create an ordinal scale
+                        console.log("Non-numeric values found. Using ordinal scale.");
+                        var stepSize = height / (uniqueValues.length + 1); // Adjust +1 to leave some space at the top
+                        y[category] = d3.scaleOrdinal()
+                            .domain(uniqueValues) // Use unique values for the current category
+                            .range([...Array(uniqueValues.length).keys()].map(i => (i + 1) * stepSize)); // Adjust the range
+                    }
                 }
             });
 

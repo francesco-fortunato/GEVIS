@@ -180,7 +180,6 @@
                     <div id="dotplot">
                         <div class="loading-spinner" id="loadingMessage"></div>
                     </div>
-                    <div id="slider_dot_plot"></div>
                     <div id="select_dot"></div>
                 </div>
 
@@ -188,7 +187,6 @@
                     <div id="dotplot1">
                         <div class="loading-spinner" id="loadingMessage1"></div>
                     </div>
-                    <div id="slider_dot_plot1"></div>
                     <div id="select_dot1"></div>
                 </div>
             </div>
@@ -299,6 +297,23 @@
                 console.log(session); // Log the session object
                 var filteredDataURL = session.loc + "/R/.val/json"; // Extract JSON data URL
                 d3.json(filteredDataURL, function (data) {
+                    // Convert Adjusted.P.value to float for each item in annotation_top
+                    data.annotation_top = data.annotation_top.map(function(item) {
+                        item['Adjusted.P.value'] = parseFloat(item['Adjusted.P.value']);
+                        return item;
+                    });
+                    data.annotation_top1 = data.annotation_top1.map(function(item) {
+                        item['Adjusted.P.value'] = parseFloat(item['Adjusted.P.value']);
+                        return item;
+                    });
+                    data.annotation_top2 = data.annotation_top2.map(function(item) {
+                        item['Adjusted.P.value'] = parseFloat(item['Adjusted.P.value']);
+                        return item;
+                    });
+                    data.annotation_top3 = data.annotation_top3.map(function(item) {
+                        item['Adjusted.P.value'] = parseFloat(item['Adjusted.P.value']);
+                        return item;
+                    });
                     createDotPlot(data); // Process data and create dot plot
                 });
             }).fail(function () {
@@ -314,6 +329,23 @@
                 console.log(session); // Log the session object
                 var filteredDataURL = session.loc + "/R/.val/json"; // Extract JSON data URL
                 d3.json(filteredDataURL, function (data1) {
+                    data1.annotation_top = data1.annotation_top.map(function(item) {
+                        item['Adjusted.P.value'] = parseFloat(item['Adjusted.P.value']);
+                        return item;
+                    });
+                    data1.annotation_top1 = data1.annotation_top1.map(function(item) {
+                        item['Adjusted.P.value'] = parseFloat(item['Adjusted.P.value']);
+                        return item;
+                    });
+                    data1.annotation_top2 = data1.annotation_top2.map(function(item) {
+                        item['Adjusted.P.value'] = parseFloat(item['Adjusted.P.value']);
+                        return item;
+                    });
+                    data1.annotation_top3 = data1.annotation_top3.map(function(item) {
+                        item['Adjusted.P.value'] = parseFloat(item['Adjusted.P.value']);
+                        return item;
+                    });
+
                     createDotPlot1(data1); // Process data and create dot plot
                 });
             }).fail(function () {
@@ -337,7 +369,7 @@
             // Define a linear color scale from red to blue based on the calculated domain
             var colorScale = d3.scaleLinear()
                 .domain([minValue, maxValue])
-                .range(["red", "blue"]);
+                .range([d3.interpolateViridis(0), d3.interpolateViridis(1)]); // Use Viridis from 0 to 1
 
             var options = ["DisGenNet", "Bio. Process", "Molecular function", "KEGG"]
 
@@ -409,8 +441,6 @@
                 .style("fill", "white") // Set text color to white
                 .text("Gene Count");
 
-
-
             // Style axes and gridlines
             svg.selectAll(".axis line")
                 .style("stroke", "white");
@@ -430,30 +460,12 @@
             xAxis.selectAll("text")
                 .style("fill", "white");
 
-            // Sort the data array based on gene count in descending order
-
             console.log(data)
-            // Define a scaling factor that the user can adjust
-            var scalingFactor = 20; // Default scaling factor
 
-            // Add an input element for the user to adjust the scaling factor
-            var scalingFactorInput = d3.select("#slider_dot_plot")
-                .html("")
-                .append("input")
-                .attr("type", "range")
-                .attr("min", 0) // Minimum scaling factor
-                .attr("max", 100) // Maximum scaling factor
-                .attr("value", scalingFactor) // Default scaling factor
-                .on("input", function () {
-                    scalingFactor = +this.value;
-                    updateDots(); // Update the dots with the new scaling factor
-                });
-
-            // Function to update the dots with the new scaling factor
-            function updateDots() {
-                svg.selectAll(".dot")
-                    .attr("r", function (d) { return d.Gene_ratio * scalingFactor; }); // Adjust radius based on scaling factor
-            }
+            // Create a size scale for circle radius based on Gene_ratio
+            var sizeScale = d3.scaleSqrt()
+                .domain([d3.min(data_disgen, d => d.Gene_ratio), d3.max(data_disgen, d => d.Gene_ratio)])
+                .range([8, 15]); // Adjust these values to control the min/max circle sizes
 
             // Add dots with tooltips
             var dot = svg.selectAll(".dot")
@@ -462,7 +474,7 @@
                 .attr("class", "dot")
                 .attr("cx", function (d) { return x(d.Gene_count); })
                 .attr("cy", function (d) { return y(d.Term) + y.bandwidth() / 2; })
-                .attr("r", function (d) { return d.Gene_ratio * scalingFactor; }) // Adjust radius as per Gene_ratio and scaling factor
+                .attr("r", function (d) { return sizeScale(d.Gene_ratio); }) // Use sizeScale for circle radius
                 .style("fill", function (d) {
                     // Access the Adjusted.P.value property using bracket notation
                     adjustedPValue = d['Adjusted.P.value'];
@@ -474,7 +486,8 @@
                     // Show tooltip on mouseover
                     tooltip.transition()
                         .duration(200)
-                        .style("opacity", .9);
+                        .style("opacity", .9)
+                        .style("pointer-events", "none"); // Disable pointer events for the tooltip
                     tooltip.html("Gene Ratio: " + d.Gene_ratio)
                         .style("left", (d3.event.pageX) + "px")
                         .style("top", (d3.event.pageY - 28) + "px")
@@ -488,7 +501,8 @@
                     // Hide tooltip on mouseout
                     tooltip.transition()
                         .duration(500)
-                        .style("opacity", 0);
+                        .style("opacity", 0)
+                        .style("pointer-events", "none"); // Disable pointer events for the tooltip
 
                     // Remove black stroke on mouseout
                     d3.select(this).style("stroke", "none");
@@ -498,8 +512,6 @@
             var tooltip = d3.select("body").append("div")
                 .attr("class", "tooltip")
                 .style("opacity", 0);
-
-
 
 
             // Define the legend dimensions and margins
@@ -526,11 +538,22 @@
             // Add color stops to the linear gradient
             linearGradient.append("stop")
                 .attr("offset", "0%")
-                .attr("stop-color", "blue");
+                .attr("stop-color", d3.interpolateViridis(1));
 
             linearGradient.append("stop")
                 .attr("offset", "100%")
-                .attr("stop-color", "red");
+                .attr("stop-color", d3.interpolateViridis(0));
+
+            // Add title for the rectangle legend
+            legend.append("text")
+                .attr("class", "rect-legend-title")
+                .attr("x", 0) // Position to the right of the rectangle
+                .attr("y", -10) // Position above the rectangle
+                .style("fill", "white") // Change color as needed
+                .style("font-size", "12px") // Adjust font size
+                .text("p.adjust"); // Set title text
+
+
 
             // Draw the rectangle and fill with the linear gradient
             legend.append("rect")
@@ -538,11 +561,7 @@
                 .attr("height", legendHeight)
                 .style("fill", "url(#linear-gradient1)");
 
-            console.log(minValue, maxValue)
-            // Define the scale for the legend axis
-            var legendScale = d3.scaleLinear()
-                .domain([minValue, maxValue])
-                .range([legendHeight, 0]);
+            console.log(minValue, maxValue);
 
             // Define the scale for the legend axis
             var legendScale = d3.scaleLinear()
@@ -557,22 +576,77 @@
                 .tickValues(tickValues)
                 .tickFormat(d3.format(".2e")); // Preserve scientific notation with two decimal places
 
-
             var axis = legend.append("g")
                 .attr("class", "legend-axis")
                 .attr("transform", "translate(" + (legendWidth + 2) + ",0)") // Adjust position as needed
                 .call(legendAxis);
 
-
-
             // Apply style to axis ticks to make them white
-            axis.selectAll("text").style("fill", "white").style("font-size", "13px")
+            axis.selectAll("text").style("fill", "white").style("font-size", "13px");
             axis.selectAll("line").style("stroke", "white");
 
             // Remove the domain path
             axis.select(".domain").remove();
 
+            // Space between the rectangle and circle legend
+            var circleLegendOffset = legendHeight + 20;
 
+            // Define the min and max values for Gene_ratio
+            var minGeneRatio = d3.min(data_disgen, d => d.Gene_ratio);
+            var maxGeneRatio = d3.max(data_disgen, d => d.Gene_ratio);
+
+            // Define three values for the legend (min, midpoint, max)
+            var legendData = [minGeneRatio, (minGeneRatio + maxGeneRatio) / 2, maxGeneRatio];
+
+            // Define the cy positions for the circles
+            var circleYPositions = [190+15, 212+15, 242+15];
+            // Define the title position
+            var titleYPosition = 175+15; // Adjust as necessary for your layout
+
+            // Add title "Gene Ratio" to the legend
+            legend.append("text")
+                .attr("class", "circle-legend-title")
+                .attr("x", 0) // Position for title
+                .attr("y", titleYPosition) // Position for the title
+                .style("fill", "white")
+                .style("font-size", "12px") // Set a larger font size for the title
+                .text("Gene Ratio"); // Title text
+
+            // Add circles for the circle legend under the gradient legend
+            legend.selectAll("circle")
+                .data(legendData)
+                .enter()
+                .append("circle")
+                .attr("cx", 10)
+                .attr("cy", function (d, i) { return circleYPositions[i]; }) // Use the predefined y positions
+                .attr("r", function (d) { return sizeScale(d); }) // Use the size scale for circle radius
+                .style("fill", "none")
+                .style("stroke", "white");
+
+            // Directly add labels next to the circles
+            legend.append("text")
+                .attr("class", "legend-label")
+                .attr("x", 30) // Position text next to circles
+                .attr("y", 195+15) // Position for first circle
+                .style("fill", "white")
+                .style("font-size", "12px") // Set smaller font size
+                .text(minGeneRatio.toFixed(2)); // Min Gene Ratio
+
+            legend.append("text")
+                .attr("class", "legend-label")
+                .attr("x", 30) // Position text next to circles
+                .attr("y", 235) // Position for second circle
+                .style("fill", "white")
+                .style("font-size", "12px") // Set smaller font size
+                .text(((minGeneRatio + maxGeneRatio) / 2).toFixed(2)); // Midpoint Gene Ratio
+
+            legend.append("text")
+                .attr("class", "legend-label")
+                .attr("x", 30) // Position text next to circles
+                .attr("y", 247+15) // Position for third circle
+                .style("fill", "white")
+                .style("font-size", "12px") // Set smaller font size
+                .text(maxGeneRatio.toFixed(2)); // Max Gene Ratio
 
             function update(selectedGroup, data) {
                 var minValue;
@@ -602,27 +676,9 @@
                 }
                 title.text("UP Genes " + selectedGroup);
 
-
-
-                // Define a scaling factor that the user can adjust
-                var scalingFactor = 20; // Default scaling factor
-
-                // Add an input element for the user to adjust the scaling factor
-                var scalingFactorInput = d3.select("#slider_dot_plot")
-                    .html("")
-                    .append("input")
-                    .attr("type", "range")
-                    .attr("min", 0) // Minimum scaling factor
-                    .attr("max", 100) // Maximum scaling factor
-                    .attr("value", scalingFactor) // Default scaling factor
-                    .on("input", function () {
-                        scalingFactor = +this.value;
-                        updateDots(); // Update the dots with the new scaling factor
-                    });
-
                 var colorScale = d3.scaleLinear()
                     .domain([minValue, maxValue])
-                    .range(["red", "blue"]);
+                    .range([d3.interpolateViridis(0), d3.interpolateViridis(1)]);
 
                 // Update x scale
                 var x = d3.scaleLinear()
@@ -668,6 +724,10 @@
                 xAxis.selectAll("text")
                     .style("fill", "white");
 
+                // Create a size scale for circle radius based on Gene_ratio
+                var sizeScale = d3.scaleSqrt()
+                    .domain([d3.min(data, d => d.Gene_ratio), d3.max(data, d => d.Gene_ratio)])
+                    .range([8, 15]); // Adjust these values to control the min/max circle sizes
 
                 // Update dots
                 var dots = svg.selectAll("circle")
@@ -678,33 +738,23 @@
 
                 // Append new circles for any new data points
                 dots.enter().append("circle")
+                    .attr("cx", d => x(d.Gene_count))
+                    .attr("cy", d => y(d.Term) + y.bandwidth() / 2)
+                    .attr("r", d => sizeScale(d.Gene_ratio)) // Use sizeScale for radius
+                    .style("fill", d => {
+                        adjustedPValue = d['Adjusted.P.value'];
+                        return colorScale(adjustedPValue);
+                    })
+                    .merge(dots) // Merge the enter selection with the update selection
                     .transition()
                     .duration(1000)
-                    .attr("cx", function (d) { return x(d.Gene_count); })
-                    .attr("cy", function (d) { return y(d.Term) + y.bandwidth() / 2; })
-                    .attr("r", function (d) { return d.Gene_ratio * scalingFactor; }) // Adjust radius as per Gene_ratio and scaling factor
-                    .style("fill", function (d) {
-                        // Access the Adjusted.P.value property using bracket notation
+                    .attr("cx", d => x(d.Gene_count))
+                    .attr("cy", d => y(d.Term) + y.bandwidth() / 2)
+                    .attr("r", d => sizeScale(d.Gene_ratio)) // Use sizeScale for radius
+                    .style("fill", d => {
                         adjustedPValue = d['Adjusted.P.value'];
-
-                        // Interpolate color using the color scale
                         return colorScale(adjustedPValue);
                     });
-
-                // Transition existing circles to new positions
-                dots.transition()
-                    .duration(1000)
-                    .attr("cx", function (d) { return x(d.Gene_count); })
-                    .attr("cy", function (d) { return y(d.Term) + y.bandwidth() / 2; })
-                    .attr("r", function (d) { return d.Gene_ratio * scalingFactor; }) // Adjust radius as per Gene_ratio and updated scaling factor
-                    .style("fill", function (d) {
-                        // Access the Adjusted.P.value property using bracket notation
-                        adjustedPValue = d['Adjusted.P.value'];
-
-                        // Interpolate color using the color scale
-                        return colorScale(adjustedPValue);
-                    });
-
 
                 // Update legend
                 legendScale.domain([d3.min(data, function (d) { return d['Adjusted.P.value']; }), d3.max(data, function (d) { return d['Adjusted.P.value']; })]);
@@ -718,11 +768,58 @@
 
                 // Remove the domain path
                 axis.select(".domain").remove();
-                // Function to update the dots with the new scaling factor
-                function updateDots() {
-                    svg.selectAll("circle")
-                        .attr("r", function (d) { return d.Gene_ratio * scalingFactor; }); // Adjust radius based on scaling factor
-                }
+
+                // Update circle legend
+                var circleLegendOffset = legendHeight + 20;
+
+                // Define the min and max values for Gene_ratio
+                var minGeneRatio = d3.min(data, d => d.Gene_ratio);
+                var maxGeneRatio = d3.max(data, d => d.Gene_ratio);
+
+                // Define three values for the legend (min, midpoint, max)
+                var legendData = [minGeneRatio, (minGeneRatio + maxGeneRatio) / 2, maxGeneRatio];
+
+                // Define the cy positions for the circles
+                var circleYPositions = [190+15, 212+15, 242+15];
+
+                // Add circles for the circle legend under the gradient legend
+                legend.selectAll("circle.legend-circle")
+                    .data(legendData)
+                    .enter()
+                    .append("circle")
+                    .attr("class", "legend-circle")
+                    .attr("cx", 10)
+                    .attr("cy", function (d, i) { return circleYPositions[i]; }) // Use the predefined y positions
+                    .attr("r", function (d) { return sizeScale(d); }) // Use the size scale for circle radius
+                    .style("fill", "none")
+                    .style("stroke", "white");
+
+                // Update labels in the circle legend
+                var legendLabels = legend.selectAll("text.legend-label")
+                    .data(legendData);
+
+                // Remove existing labels
+                legendLabels.exit().remove();
+
+                // Update existing labels
+                legendLabels
+                    .attr("x", 30) // Position text next to circles
+                    .style("fill", "white")
+                    .style("font-size", "12px") // Set smaller font size
+                    .text(d => d.toFixed(2)); // Update text with new values
+
+                // Append new labels if needed
+                var newLabels = legendLabels.enter().append("text")
+                    .attr("class", "legend-label")
+                    .attr("x", 30) // Position text next to circles
+                    .style("fill", "white")
+                    .style("font-size", "12px"); // Set smaller font size
+
+                // Set the y positions for new labels
+                newLabels
+                    .attr("y", (d, i) => circleYPositions[i]) // Use predefined y positions
+                    .text(d => d.toFixed(2)); // Set text for new labels
+
             }
 
             // Define the event handler for the change event
@@ -743,14 +840,14 @@
             // Define a linear color scale from red to blue based on the calculated domain
             var colorScale = d3.scaleLinear()
                 .domain([minValue, maxValue])
-                .range(["red", "blue"]);
+                .range([d3.interpolateViridis(0), d3.interpolateViridis(1)]); // Use Viridis from 0 to 1
 
             var options = ["DisGenNet", "Bio. Process", "Molecular function", "KEGG"]
 
             // Create the select element
             var selectDot = d3.select("#select_dot1").append('select');
 
-            // Bind the data1 to options and enter the new options
+            // Bind the data to options and enter the new options
             selectDot.selectAll('myOptions') // Next 4 lines add 6 options = 6 colors
                 .data(options)
                 .enter()
@@ -815,8 +912,6 @@
                 .style("fill", "white") // Set text color to white
                 .text("Gene Count");
 
-
-
             // Style axes and gridlines
             svg.selectAll(".axis line")
                 .style("stroke", "white");
@@ -836,30 +931,12 @@
             xAxis.selectAll("text")
                 .style("fill", "white");
 
-            // Sort the data array based on gene count in descending order
-
             console.log(data1)
-            // Define a scaling factor that the user can adjust
-            var scalingFactor = 20; // Default scaling factor
 
-            // Add an input element for the user to adjust the scaling factor
-            var scalingFactorInput = d3.select("#slider_dot_plot1")
-                .html("")
-                .append("input")
-                .attr("type", "range")
-                .attr("min", 0) // Minimum scaling factor
-                .attr("max", 100) // Maximum scaling factor
-                .attr("value", scalingFactor) // Default scaling factor
-                .on("input", function () {
-                    scalingFactor = +this.value;
-                    updateDots(); // Update the dots with the new scaling factor
-                });
-
-            // Function to update the dots with the new scaling factor
-            function updateDots() {
-                svg.selectAll(".dot")
-                    .attr("r", function (d) { return d.Gene_ratio * scalingFactor; }); // Adjust radius based on scaling factor
-            }
+            // Create a size scale for circle radius based on Gene_ratio
+            var sizeScale = d3.scaleSqrt()
+                .domain([d3.min(data_disgen, d => d.Gene_ratio), d3.max(data_disgen, d => d.Gene_ratio)])
+                .range([8, 15]); // Adjust these values to control the min/max circle sizes
 
             // Add dots with tooltips
             var dot = svg.selectAll(".dot")
@@ -868,7 +945,7 @@
                 .attr("class", "dot")
                 .attr("cx", function (d) { return x(d.Gene_count); })
                 .attr("cy", function (d) { return y(d.Term) + y.bandwidth() / 2; })
-                .attr("r", function (d) { return d.Gene_ratio * scalingFactor; }) // Adjust radius as per Gene_ratio and scaling factor
+                .attr("r", function (d) { return sizeScale(d.Gene_ratio); }) // Use sizeScale for circle radius
                 .style("fill", function (d) {
                     // Access the Adjusted.P.value property using bracket notation
                     adjustedPValue = d['Adjusted.P.value'];
@@ -880,7 +957,9 @@
                     // Show tooltip on mouseover
                     tooltip.transition()
                         .duration(200)
-                        .style("opacity", .9);
+                        .style("opacity", .9)
+                        .style("pointer-events", "none"); // Disable pointer events for the tooltip
+
                     tooltip.html("Gene Ratio: " + d.Gene_ratio)
                         .style("left", (d3.event.pageX) + "px")
                         .style("top", (d3.event.pageY - 28) + "px")
@@ -894,7 +973,8 @@
                     // Hide tooltip on mouseout
                     tooltip.transition()
                         .duration(500)
-                        .style("opacity", 0);
+                        .style("opacity", 0)
+                        .style("pointer-events", "none"); // Disable pointer events for the tooltip
 
                     // Remove black stroke on mouseout
                     d3.select(this).style("stroke", "none");
@@ -904,8 +984,6 @@
             var tooltip = d3.select("body").append("div")
                 .attr("class", "tooltip")
                 .style("opacity", 0);
-
-
 
 
             // Define the legend dimensions and margins
@@ -932,11 +1010,22 @@
             // Add color stops to the linear gradient
             linearGradient.append("stop")
                 .attr("offset", "0%")
-                .attr("stop-color", "blue");
+                .attr("stop-color", d3.interpolateViridis(1));
 
             linearGradient.append("stop")
                 .attr("offset", "100%")
-                .attr("stop-color", "red");
+                .attr("stop-color", d3.interpolateViridis(0));
+
+            // Add title for the rectangle legend
+            legend.append("text")
+                .attr("class", "rect-legend-title")
+                .attr("x", 0) // Position to the right of the rectangle
+                .attr("y", -10) // Position above the rectangle
+                .style("fill", "white") // Change color as needed
+                .style("font-size", "12px") // Adjust font size
+                .text("p.adjust"); // Set title text
+
+
 
             // Draw the rectangle and fill with the linear gradient
             legend.append("rect")
@@ -944,11 +1033,7 @@
                 .attr("height", legendHeight)
                 .style("fill", "url(#linear-gradient1)");
 
-            console.log(minValue, maxValue)
-            // Define the scale for the legend axis
-            var legendScale = d3.scaleLinear()
-                .domain([minValue, maxValue])
-                .range([legendHeight, 0]);
+            console.log(minValue, maxValue);
 
             // Define the scale for the legend axis
             var legendScale = d3.scaleLinear()
@@ -963,28 +1048,82 @@
                 .tickValues(tickValues)
                 .tickFormat(d3.format(".2e")); // Preserve scientific notation with two decimal places
 
-
             var axis = legend.append("g")
                 .attr("class", "legend-axis")
                 .attr("transform", "translate(" + (legendWidth + 2) + ",0)") // Adjust position as needed
                 .call(legendAxis);
 
-
-
             // Apply style to axis ticks to make them white
-            axis.selectAll("text").style("fill", "white").style("font-size", "13px")
+            axis.selectAll("text").style("fill", "white").style("font-size", "13px");
             axis.selectAll("line").style("stroke", "white");
 
             // Remove the domain path
             axis.select(".domain").remove();
 
+            // Space between the rectangle and circle legend
+            var circleLegendOffset = legendHeight + 20;
 
+            // Define the min and max values for Gene_ratio
+            var minGeneRatio = d3.min(data_disgen, d => d.Gene_ratio);
+            var maxGeneRatio = d3.max(data_disgen, d => d.Gene_ratio);
+
+            // Define three values for the legend (min, midpoint, max)
+            var legendData = [minGeneRatio, (minGeneRatio + maxGeneRatio) / 2, maxGeneRatio];
+
+            // Define the cy positions for the circles
+            var circleYPositions = [190+15, 212+15, 242+15];
+            // Define the title position
+            var titleYPosition = 175+15; // Adjust as necessary for your layout
+
+            // Add title "Gene Ratio" to the legend
+            legend.append("text")
+                .attr("class", "circle-legend-title")
+                .attr("x", 0) // Position for title
+                .attr("y", titleYPosition) // Position for the title
+                .style("fill", "white")
+                .style("font-size", "12px") // Set a larger font size for the title
+                .text("Gene Ratio"); // Title text
+
+            // Add circles for the circle legend under the gradient legend
+            legend.selectAll("circle")
+                .data(legendData)
+                .enter()
+                .append("circle")
+                .attr("cx", 10)
+                .attr("cy", function (d, i) { return circleYPositions[i]; }) // Use the predefined y positions
+                .attr("r", function (d) { return sizeScale(d); }) // Use the size scale for circle radius
+                .style("fill", "none")
+                .style("stroke", "white");
+
+            // Directly add labels next to the circles
+            legend.append("text")
+                .attr("class", "legend-label")
+                .attr("x", 30) // Position text next to circles
+                .attr("y", 195+15) // Position for first circle
+                .style("fill", "white")
+                .style("font-size", "12px") // Set smaller font size
+                .text(minGeneRatio.toFixed(2)); // Min Gene Ratio
+
+            legend.append("text")
+                .attr("class", "legend-label")
+                .attr("x", 30) // Position text next to circles
+                .attr("y", 235) // Position for second circle
+                .style("fill", "white")
+                .style("font-size", "12px") // Set smaller font size
+                .text(((minGeneRatio + maxGeneRatio) / 2).toFixed(2)); // Midpoint Gene Ratio
+
+            legend.append("text")
+                .attr("class", "legend-label")
+                .attr("x", 30) // Position text next to circles
+                .attr("y", 247+15) // Position for third circle
+                .style("fill", "white")
+                .style("font-size", "12px") // Set smaller font size
+                .text(maxGeneRatio.toFixed(2)); // Max Gene Ratio
 
             function update(selectedGroup, data1) {
                 var minValue;
                 var maxValue;
-
-                // Adjust data1 based on selected group
+                // Adjust data based on selected group
                 if (selectedGroup == 'DisGenNet') {
                     data1 = data1.annotation_top;
                     data1.sort((a, b) => b.Gene_count - a.Gene_count);
@@ -997,7 +1136,6 @@
                     maxValue = d3.max(data1, function (d) { return d['Adjusted.P.value']; });
                 } else if (selectedGroup == 'Molecular function') {
                     data1 = data1.annotation_top2;
-                    console.log("MOLECULAR FUNCTION", data1)
                     data1.sort((a, b) => b.Gene_count - a.Gene_count);
                     minValue = d3.min(data1, function (d) { return d['Adjusted.P.value']; });
                     maxValue = d3.max(data1, function (d) { return d['Adjusted.P.value']; });
@@ -1010,25 +1148,9 @@
                 }
                 title.text("DOWN Genes " + selectedGroup);
 
-                // Define a scaling factor that the user can adjust
-                var scalingFactor = 20; // Default scaling factor
-
-                // Add an input element for the user to adjust the scaling factor
-                var scalingFactorInput = d3.select("#slider_dot_plot1")
-                    .html("")
-                    .append("input")
-                    .attr("type", "range")
-                    .attr("min", 0) // Minimum scaling factor
-                    .attr("max", 100) // Maximum scaling factor
-                    .attr("value", scalingFactor) // Default scaling factor
-                    .on("input", function () {
-                        scalingFactor = +this.value;
-                        updateDots(); // Update the dots with the new scaling factor
-                    });
-
                 var colorScale = d3.scaleLinear()
                     .domain([minValue, maxValue])
-                    .range(["red", "blue"]);
+                    .range([d3.interpolateViridis(0), d3.interpolateViridis(1)]);
 
                 // Update x scale
                 var x = d3.scaleLinear()
@@ -1074,6 +1196,10 @@
                 xAxis.selectAll("text")
                     .style("fill", "white");
 
+                // Create a size scale for circle radius based on Gene_ratio
+                var sizeScale = d3.scaleSqrt()
+                    .domain([d3.min(data1, d => d.Gene_ratio), d3.max(data1, d => d.Gene_ratio)])
+                    .range([8, 15]); // Adjust these values to control the min/max circle sizes
 
                 // Update dots
                 var dots = svg.selectAll("circle")
@@ -1084,30 +1210,21 @@
 
                 // Append new circles for any new data points
                 dots.enter().append("circle")
+                    .attr("cx", d => x(d.Gene_count))
+                    .attr("cy", d => y(d.Term) + y.bandwidth() / 2)
+                    .attr("r", d => sizeScale(d.Gene_ratio)) // Use sizeScale for radius
+                    .style("fill", d => {
+                        adjustedPValue = d['Adjusted.P.value'];
+                        return colorScale(adjustedPValue);
+                    })
+                    .merge(dots) // Merge the enter selection with the update selection
                     .transition()
                     .duration(1000)
-                    .attr("cx", function (d) { return x(d.Gene_count); })
-                    .attr("cy", function (d) { return y(d.Term) + y.bandwidth() / 2; })
-                    .attr("r", function (d) { return d.Gene_ratio * scalingFactor; }) // Adjust radius as per Gene_ratio and scaling factor
-                    .style("fill", function (d) {
-                        // Access the Adjusted.P.value property using bracket notation
+                    .attr("cx", d => x(d.Gene_count))
+                    .attr("cy", d => y(d.Term) + y.bandwidth() / 2)
+                    .attr("r", d => sizeScale(d.Gene_ratio)) // Use sizeScale for radius
+                    .style("fill", d => {
                         adjustedPValue = d['Adjusted.P.value'];
-
-                        // Interpolate color using the color scale
-                        return colorScale(adjustedPValue);
-                    });
-
-                // Transition existing circles to new positions
-                dots.transition()
-                    .duration(1000)
-                    .attr("cx", function (d) { return x(d.Gene_count); })
-                    .attr("cy", function (d) { return y(d.Term) + y.bandwidth() / 2; })
-                    .attr("r", function (d) { return d.Gene_ratio * scalingFactor; }) // Adjust radius as per Gene_ratio and updated scaling factor
-                    .style("fill", function (d) {
-                        // Access the Adjusted.P.value property using bracket notation
-                        adjustedPValue = d['Adjusted.P.value'];
-
-                        // Interpolate color using the color scale
                         return colorScale(adjustedPValue);
                     });
 
@@ -1124,10 +1241,57 @@
                 // Remove the domain path
                 axis.select(".domain").remove();
 
-                function updateDots() {
-                    svg.selectAll("circle")
-                        .attr("r", function (d) { return d.Gene_ratio * scalingFactor; }); // Adjust radius based on scaling factor
-                }
+                // Update circle legend
+                var circleLegendOffset = legendHeight + 20;
+
+                // Define the min and max values for Gene_ratio
+                var minGeneRatio = d3.min(data1, d => d.Gene_ratio);
+                var maxGeneRatio = d3.max(data1, d => d.Gene_ratio);
+
+                // Define three values for the legend (min, midpoint, max)
+                var legendData = [minGeneRatio, (minGeneRatio + maxGeneRatio) / 2, maxGeneRatio];
+
+                // Define the cy positions for the circles
+                var circleYPositions = [190+15, 212+15, 242+15];
+
+                // Add circles for the circle legend under the gradient legend
+                legend.selectAll("circle.legend-circle")
+                    .data(legendData)
+                    .enter()
+                    .append("circle")
+                    .attr("class", "legend-circle")
+                    .attr("cx", 10)
+                    .attr("cy", function (d, i) { return circleYPositions[i]; }) // Use the predefined y positions
+                    .attr("r", function (d) { return sizeScale(d); }) // Use the size scale for circle radius
+                    .style("fill", "none")
+                    .style("stroke", "white");
+
+                // Update labels in the circle legend
+                var legendLabels = legend.selectAll("text.legend-label")
+                    .data(legendData);
+
+                // Remove existing labels
+                legendLabels.exit().remove();
+
+                // Update existing labels
+                legendLabels
+                    .attr("x", 30) // Position text next to circles
+                    .style("fill", "white")
+                    .style("font-size", "12px") // Set smaller font size
+                    .text(d => d.toFixed(2)); // Update text with new values
+
+                // Append new labels if needed
+                var newLabels = legendLabels.enter().append("text")
+                    .attr("class", "legend-label")
+                    .attr("x", 30) // Position text next to circles
+                    .style("fill", "white")
+                    .style("font-size", "12px"); // Set smaller font size
+
+                // Set the y positions for new labels
+                newLabels
+                    .attr("y", (d, i) => circleYPositions[i]) // Use predefined y positions
+                    .text(d => d.toFixed(2)); // Set text for new labels
+
             }
 
             // Define the event handler for the change event
@@ -1135,6 +1299,7 @@
                 var selectedOption = d3.select(this).property("value");
                 update(selectedOption, data1);
             });
+
         }
 
 
