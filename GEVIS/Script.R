@@ -1,364 +1,481 @@
-rm(list = ls())
-options(stringsAsFactors = F)
+hello <- function(data) {
+  # Save the column of genes before removing the last column
+  genes <- data[, ncol(data)]
 
-if (!require("BiocManager", quietly = TRUE))
-  install.packages("BiocManager")
-
-BiocManager::install("GEOquery")
+  # Assuming data, dataN, and dataC are your matrices
+  data <- data[, -ncol(data)]
 
 
-library(stringr)
-library(pheatmap) #heatmap
+  N <- 49
+  M <- 58
+  # Now, the last column has been removed from each matrix
 
-dirRes = "Results/"
-if(!dir.exists(dirRes)){
-  dir.create(dirRes)
-}else {
-  print(paste("the directory ", dirRes,"already exist"))
+  all_equal <- function(x) {
+    return(length(unique(x)) == 1)
+  }
+
+  # Compute p-values with checks for constant data
+  pval <- apply(data, 1, function(x) {
+    if (all_equal(x[1:N]) || all_equal(x[(N+1):(M+N)])) {
+      return(1)
+    } else {
+      return(t.test(x[1:N], x[(N+1):(M+N)], paired = FALSE)$p.value)
+    }
+  })
+
+  # Adjustment p-value
+  pval_adj <- p.adjust(pval, method="fdr")
+
+  # Add the column of genes back to the result
+  result <- data.frame(Gene = genes, pval_adj = pval_adj)
+
+  return(result)
 }
 
-dataset = "RA" # a folder for my case of study
-dirDataset = paste0(dirRes,dataset,"/")
-if(!dir.exists(dirDataset)){
-  dir.create(dirDataset)
-}else {
-  print(paste("the directory ", dirDataset,"already exist"))
-}
-# now i have to import my data matrix
-# path = "Results/GEO_HCC/" #se vogliamo sostituire con il dataset di TCGA il pat diventa vuoto
-filename_in = paste0(dirDataset,"matrix.txt") # la matrice per TCGA è matrix_RNAseq_BRCA.txt
 
-######################
-#file in output
+pval <- function(data, N, M) {
+  # Save the column of genes before removing the last column
+  genes <- data[, ncol(data)]
 
-filename_DEG = paste0(dirDataset,"DEG.txt") # the most important file of differentials expressed genes
-filename_list_normal= paste0(dirDataset, "normal.txt")
-filename_list_case= paste0(dirDataset, "case.txt")
-filename_DEG= paste0(dirDataset, "DEG.txt")
-filename_var= paste0(dirDataset, "var.txt")
-filename_matrix_DEG= paste0(dirDataset, "matrix_DEG.txt")
-filename_heatmap= paste0(dirDataset, "heatmap.png")
+  # Assuming data, dataN, and dataC are your matrices
+  data <- data[, -ncol(data)]
 
-######################
-prc_IQR = 0.1
-thr_fc = 1.2
-thr_pval = 0.05
-paired = FALSE
-#######################
-# STEP 1 : importing the data from Geoquery
-#######################
+  # Define a helper function to check if all elements are equal
+  all_equal <- function(x) {
+    return(length(unique(x)) == 1)
+  }
 
-readr::local_edition(1)
-library("GEOquery")
+  # Define a helper function to check for low variance
+  low_variance <- function(x, threshold = 1e-10) {
+    return(var(x) < threshold)
+  }
 
-setwd("~/")
-##### Set Results folder ####
-dirRes <- "Results/"
-if (!dir.exists(dirRes)){
-  dir.create(dirRes)
-}else{
-  print(paste("The directory ",dirRes," already exists"))
-}
-dataset <- "RA"
-dirDataset <- paste0(dirRes,dataset,"/")
-if (!dir.exists(dirDataset)){
-  dir.create(dirDataset)
-}else{
-  print(paste("The directory ",dirDataset," already exists"))
+  # Compute p-values with checks for constant data and low variance
+  pval <- apply(data, 1, function(x) {
+    if (all_equal(x[1:N]) || all_equal(x[(N+1):(M+N)]) || all_equal(x[1:(M+N)])) {
+      return(1)
+    } else {
+      return(t.test(x[1:N], x[(N+1):(M+N)], paired = FALSE)$p.value)
+    }
+  })
+
+  # Adjustment p-value
+  pval_adj <- p.adjust(pval, method="fdr")
+
+  # Convert pval_adj to character (string)
+  pval_adj_str <- as.character(pval_adj)
+
+  # Add the column of genes back to the result
+  result <- data.frame(Gene = genes, pval_adj = pval_adj_str)
+
+  return(result)
 }
 
-###########################################
-# STEP 1: Downloading data
-###########################################
-series = "GSE10072" #https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE93272
-tmp <- getGEO(GEO = series) #show(tmp)
-set <- tmp$GSE10072_series_matrix.txt.gz
-pData <- phenoData(set)
-metadata <- pData@data
-aData <- assayData(set)
-matrix <- data.frame(aData$exprs)
-matrix<- 2^matrix
-rm(pData,aData,tmp)
 
-###########################################
-# STEP 2: Preparing data
-###########################################
-annotation <- fData(set)
-geneSymbol <- annotation$`Gene Symbol`
+pca <- function(data, dataC, dataN) {
+  library(FactoMineR)
+  library(factoextra)
+  library(dplyr)
 
-matrix <- matrix[annotation$ID,]
-matrix <- aggregate(matrix,list(geneSymbol),"mean")
-ind <- which(matrix$Group.1 == "")
-if(length(ind) > 0) matrix <- matrix[-ind,]
-rownames(matrix) <- matrix$Group.1
-matrix <- matrix[,-1]
-matrix[is.na(matrix)] <- 0
-rm(set,annotation,ind,geneSymbol)
+  data1 <- as.data.frame(data)
 
-############################################
-# STEP 3: Extracting case and control samples
-###########################################
-list <- split(metadata$geo_accession,
-              metadata$`source_name_ch1`)
-# We have to take healthy control and RA
-control <- list$`Normal Lung Tissue`
-case <- list$`Adenocarcinoma of the Lung` # for retrieving instead MCI data (case <- list$MCI)
-data <- matrix[,c(control,case)]
-dataN <- matrix[,control]
-dataC <- matrix[,case]
-rm(list,matrix)
+  # Identify the position of the 'gene' column
+  gene_col_position <- which(colnames(data1) == "gene")
 
-############################################
-#STEP 4: Export data
-###########################################
-write.table(data,
-            paste0(dirDataset,"matrix.txt"), sep= "\t",
-            col.names = NA, row.names = T, quote = F)
-write.table(control,paste0(dirDataset,
-                           "normal.txt"), sep= "\t", col.names = F,
-            row.names = F, quote = F)
-write.table(case,
-            paste0(dirDataset,"case.txt"), sep= "\t",
-            col.names = F, row.names = F, quote = F)
-write.table(metadata,paste0(dirDataset,"metadata.txt"), sep= "\t", col.names = T,
-            row.names = F, quote = F)
-# Remove downloaded data
-unlink(series, recursive = TRUE)
+  # Check if 'gene' is the first column
+  if (gene_col_position == 1) {
+    # 'gene' is already in the first position, just set row names
+    rownames(data1) <- data1[, 1]
+    data1 <- data1[, -1]
+  } else {
+    # Move the 'gene' column to the first position
+    data1 <- data1[, c(gene_col_position, setdiff(seq_along(data1), gene_col_position))]
+    # Set the first column as row names
+    rownames(data1) <- data1[, 1]
+    # Remove the first column (it's now the row names)
+    data1 <- data1[, -1]
+  }
 
-#################
-#step 2: ANALYSIS
-#################
-# overall mean
-genes <- rownames(data)
+  # Convert all columns to numeric
+  data1[] <- lapply(data1, function(x) as.numeric(as.character(x)))
 
-overall_mean = apply (data,  1, mean ) #we eliminate those one with overall 0
-ind= which(overall_mean == 0)
-if (length(ind) > 0){   #check to see if ind is not empty
-  dataN = dataN[-ind,]
-  dataC = dataC[-ind,]
-  data = data[-ind,]
-  genes = genes[-ind]
+  # Check for any non-numeric values
+  if (!all(sapply(data1, is.numeric))) {
+    stop("Data contains non-numeric values.")
+  }
+
+  # Print column names and data types of data1 for debugging
+  print("Column names of data1:")
+  print(colnames(data1))
+  print("Data types of data1 columns:")
+  print(sapply(data1, class))
+
+  gsmC <- colnames(dataC)
+  gsmN <- colnames(dataN)
+
+  # Convert GSM headers to vectors and remove 'gene'
+  gsmC_vector <- setdiff(gsmC, "gene")
+  gsmN_vector <- setdiff(gsmN, "gene")
+
+  # Print GSM vectors for debugging
+  print("GSM C Vector:")
+  print(gsmC_vector)
+  print("GSM N Vector:")
+  print(gsmN_vector)
+
+  # Check if the columns in gsmC_vector and gsmN_vector exist in data1
+  missing_cols_C <- setdiff(gsmC_vector, colnames(data1))
+  missing_cols_N <- setdiff(gsmN_vector, colnames(data1))
+
+  if (length(missing_cols_C) > 0 || length(missing_cols_N) > 0) {
+    stop("Some columns from GSM vectors are missing in data1.")
+  }
+
+  # Combine data from case and normal samples
+  data1 <- t(data1[, c(gsmC_vector, gsmN_vector)])
+
+  # Check for any non-numeric values after transposing
+  if (!all(sapply(data1, is.numeric))) {
+    stop("Data contains non-numeric values after transposing.")
+  }
+
+  # Create groups vector
+  groups <- c(rep("case", length(gsmC_vector)), rep("normal", length(gsmN_vector)))
+
+  # Perform PCA
+  pca <- prcomp(data1, center = TRUE, scale. = TRUE, retx = TRUE)
+
+  # Compute scores
+  scores <- pca$x
+
+  # Convert scores to a data frame
+  scores_df <- as.data.frame(scores)
+  scores_df$Group <- groups
+
+  # Get PCA variable contributions
+  scores_var <- get_pca_var(pca)$contrib
+  colnames(scores_var) <- paste0('PC', seq(1, ncol(scores_var)))
+
+  # Sort by PC1 contribution
+  scores_var <- scores_var[order(scores_var[,"PC1"], decreasing = TRUE), ]
+  scores_var = as.data.frame(scores_var)
+
+  # Get gene names
+  gene_names <- rownames(scores_var)
+  # print(gene_names)
+
+  # Calculate the proportion of variance explained by each principal component
+  explained_variance <- summary(pca)$importance[2, ] * 100  # Multiply by 100 to get percentage
+
+
+  # Return the explained variance along with scores_df and scores_var
+  return(list(scores_df = scores_df, scores_var = scores_var, explained_variance = explained_variance))
 }
 
-#step 2.1 : logarithmic trasformation
-dataN = log2(dataN+1)
-dataC = log2(dataC+1)
-data = log2(data+1)
-
-write.table(dataN,
-            paste0(dirDataset,"dataN_Log.txt"), sep= "\t",
-            col.names = NA, row.names = T, quote = F)
 
 
-write.table(dataC,
-            paste0(dirDataset,"dataC_Log.txt"), sep= "\t",
-            col.names = NA, row.names = T, quote = F)
+enrichment <- function (data,direction){
+  library(forcats)
+  library(stringr)
+  library(enrichR)
 
-#step 2.2 : pre-processing
-variation = apply (data, 1, IQR) # for each gene we apply the function IQR.
-# IQR help us to measure the variation around the median of our genes
+  top_term <- 10
+  thr_pval <- 0.05
+  dbs <- c("DisGeNET","GO_Molecular_Function_2021", "GO_Biological_Process_2021", "KEGG_2021_Human", "TRANSFAC_and_JASPAR_PWMs")
 
-variat_data <- data.frame(Gene = genes, variation = variation)
-write.table(variat_data, file = filename_var, sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
+  list <- split(data$gene,data$direction)
 
-# Print a message with the file path
-cat("variation values saved to file: ", filename_var)
+  df <- lapply(list, function(x){
+    enrichr(x, dbs)
+  })
 
 
-#IQR filtering
-thr_prc = quantile(variation,prc_IQR) # we quantify a percentile (thr_prc with prc_iqr=0.1 is 0.1592515)
-ind = which (variation <= thr_prc)
-dataN = dataN[ -ind,]
-dataC = dataC[ -ind,]
-data= data[-ind,]
-genes = genes[-ind]
-rm(ind)
 
-#devo scegliere
+  DisGeNET <- df[[direction]]$DisGeNET
+  DisGeNET <- DisGeNET[DisGeNET$Adjusted.P.value < thr_pval, ]
+  DisGeNET <- DisGeNET[order(DisGeNET$Adjusted.P.value, decreasing = F),]
 
-#iqr distribution
-hist ( variation,
-       main = "IQR Frequency distribution", breaks = 100 ,xlab= "IQR value",ylab="Frequency", col = "seagreen")
-abline(v= thr_prc, lty = 2 , lwd = 4 , col="darkgoldenrod1")
+  DisGeNET$Gene_count <- sapply(DisGeNET$Genes, function(x){
+    tmp <- unlist(strsplit(x, split = ";"))
+    count <- length(tmp)
+  })
 
-# step 2.3 Log fc
+  DisGeNET$Gene_ratio <- unlist(lapply(DisGeNET$Overlap, function(x){
 
-#logFC > 0 is increasing its expression in case samples
-#logfc < 0 is decreasing its expression in case samples
-logFC = rowMeans(dataC) - rowMeans(dataN)
-print(log2(thr_fc))
-hist(logFC, main = " FC (logarithmic) frequency distribution",breaks = 100,xlab = " logFC",ylab = " frequency",col ="orange")
-abline(v = c(-log2(thr_fc), log2(thr_fc)),lty =2 ,lwd = 4, col = "red")
+    total <- as.numeric(strsplit(x,"/")[[1]][2])
+    count <- as.numeric(strsplit(x,"/")[[1]][1])
 
-ind = which(abs(logFC) < log2(thr_fc)) # we are eliminating all those genes that are satisfying this condition
+    Gene_ratio <- count/total
 
-if(length(ind)>0)
-{
-  dataN = dataN[-ind,]
-  dataC = dataC[-ind,]
-  data = data[-ind,]
-  genes = genes[-ind]
-  logFC = logFC [-ind]
+  } ))
+
+  if(length(top_term) != 0 & top_term <= nrow(DisGeNET)){
+    annotation_top <- DisGeNET[1:top_term,]
+  }else{
+    annotation_top <- DisGeNET
+  }
+
+
+
+  BP <- df[[direction]]$GO_Biological_Process_2021
+  BP$Term <- gsub("\\s*\\(GO:\\d+\\)$", "", BP$Term)
+  BP <- BP[BP$Adjusted.P.value < thr_pval, ]
+  BP <- BP[order(BP$Adjusted.P.value, decreasing = F),]
+
+  BP$Gene_count <- sapply(BP$Genes, function(x){
+    tmp <- unlist(strsplit(x, split = ";"))
+    count <- length(tmp)
+  })
+
+  BP$Gene_ratio <- unlist(lapply(BP$Overlap, function(x){
+
+    total <- as.numeric(strsplit(x,"/")[[1]][2])
+    count <- as.numeric(strsplit(x,"/")[[1]][1])
+
+    Gene_ratio <- count/total
+
+  } ))
+
+  if(length(top_term) != 0 & top_term <= nrow(BP)){
+    annotation_top1 <- BP[1:top_term,]
+  }else{
+    annotation_top1 <- BP
+  }
+
+  MF <- df[[direction]]$GO_Molecular_Function_2021
+  MF$Term <- gsub("\\s*\\(GO:\\d+\\)$", "", MF$Term)
+  MF <- MF[MF$Adjusted.P.value < thr_pval, ]
+  MF <- MF[order(MF$Adjusted.P.value, decreasing = F),]
+
+  MF$Gene_count <- sapply(MF$Genes, function(x){
+    tmp <- unlist(strsplit(x, split = ";"))
+    count <- length(tmp)
+  })
+
+  MF$Gene_ratio <- unlist(lapply(MF$Overlap, function(x){
+
+    total <- as.numeric(strsplit(x,"/")[[1]][2])
+    count <- as.numeric(strsplit(x,"/")[[1]][1])
+
+    Gene_ratio <- count/total
+
+  } ))
+
+  if(length(top_term) != 0 & top_term <= nrow(MF)){
+    annotation_top2 <- MF[1:top_term,]
+  }else{
+    annotation_top2 <- MF
+  }
+
+  KEGG <- df[[direction]]$KEGG_2021_Human
+  KEGG$Term <- gsub("\\s*\\(KEGG:\\d+\\)$", "", KEGG$Term)
+  KEGG <- KEGG[KEGG$Adjusted.P.value < thr_pval, ]
+  KEGG <- KEGG[order(KEGG$Adjusted.P.value, decreasing = F),]
+
+  KEGG$Gene_count <- sapply(KEGG$Genes, function(x){
+    tmp <- unlist(strsplit(x, split = ";"))
+    count <- length(tmp)
+  })
+
+  KEGG$Gene_ratio <- unlist(lapply(KEGG$Overlap, function(x){
+
+    total <- as.numeric(strsplit(x,"/")[[1]][2])
+    count <- as.numeric(strsplit(x,"/")[[1]][1])
+
+    Gene_ratio <- count/total
+
+  } ))
+
+  if(length(top_term) != 0 & top_term <= nrow(KEGG)){
+    annotation_top3 <- KEGG[1:top_term,]
+  }else{
+    annotation_top3 <- KEGG
+  }
+
+  return(list(annotation_top = annotation_top, annotation_top1 = annotation_top1, annotation_top2= annotation_top2,annotation_top3= annotation_top3))
 
 }
 
-rm(ind)
 
-#now we have to assign a statistical significance to those changes
+variation <- function(rawdata) {
+  library(jsonlite)
 
-# step 2.4 p-value computation
-N = ncol(dataN)
-M = ncol(dataC)
-#x is the first gene of the data matrix
-pval = apply(data,1,function(x){
-  t.test(x[1:N],x[(N+1):(M+N)],paired=paired)$p.value
-})
+  # Extract gene names
+  genes <- rawdata[, ncol(rawdata)]
 
-#adjustment p-value
-pval_adj = p.adjust(pval,method="fdr")
+  # Calculate variation using IQR for each gene
+  variation <- apply(rawdata[, -ncol(rawdata)], 1, IQR)
 
-#p-value filtering
-ind = which(pval_adj > thr_pval)
-if(length(ind)>0)
-{
-  dataN = dataN[-ind,]
-  dataC = dataC[-ind,]
-  data = data[-ind,]
-  genes = genes [-ind]
-  logFC = logFC[-ind]
-  pval = pval [-ind]
-  pval_adj = pval_adj[-ind]
+  # Create a data frame containing gene names and variation
+  variat_data <- data.frame(Gene = genes, Variation = variation)
+
+  # Convert data frame to JSON
+  json_data <- toJSON(variat_data)
+
+  # Return JSON data
+  return(json_data)
 }
-rm(ind)
 
-# Volcano plot
-# Define the color and shape for each point
-color <- ifelse(pval_adj > 0.05 | abs(logFC) <= log2(thr_fc), "black", ifelse(logFC > 0 & pval_adj < 0.05, "red", "green"))
+limmaDE <- function(dataC, dataN) {
+  library(limma)
 
-# Create the volcano plot
-plot(logFC, -log10(pval_adj), pch = 16, col = color, cex = 0.7, main = "Volcano Plot", xlab = "logFC", ylab = "-log10(Adjusted P-value)")
+  # Convert lists to data frames
+  dataC <- as.data.frame(dataC)
+  dataN <- as.data.frame(dataN)
 
-# Add horizontal line at p-value threshold
-abline(h = -log10(0.05), col = "blue", lty = 2)
+  # Convert all columns to numeric except for the last column (which is assumed to be the gene column)
+  dataC[,-ncol(dataC)] <- lapply(dataC[,-ncol(dataC)], as.numeric)
+  dataN[,-ncol(dataN)] <- lapply(dataN[,-ncol(dataN)], as.numeric)
 
-# Add vertical lines at logFC threshold
-abline(v = c(-log2(thr_fc), log2(thr_fc)), col = "blue", lty = 2)
+  # Set row names to gene names (assuming the gene names are in the last column)
+  rownames(dataC) <- dataC[,ncol(dataC)]
+  rownames(dataN) <- dataN[,ncol(dataN)]
 
+  # Drop the gene column
+  dataC <- dataC[,-ncol(dataC)]
+  dataN <- dataN[,-ncol(dataN)]
 
-##############
-#STEP 3 : exporting results
-##############
-results <- data.frame(genes = genes, logFC = logFC, pval = pval, pval_adj = pval_adj)
-direction <- ifelse(logFC > 0, "UP", "DOWN")
-results <- cbind(results, direction)
+  # Combine data
+  data_combined <- cbind(dataC, dataN)
 
-#we are splitting in 2 pieces
-#DEG = data.frame (str_split_fixed(genes,"\\|",2))  #non serve
-# colnames(DEG)=c("geneSymbol","ensembl_id")
+  # Create group vector
+  group <- factor(c(rep("Case", ncol(dataC)), rep("Normal", ncol(dataN))))
 
+  # Design matrix
+  design <- model.matrix(~ group)
 
-write.table(results,file = filename_DEG, row.names = F, sep = "\t", quote =F)
-write.table(data, file = filename_matrix_DEG,row.names = T,col.names = NA, sep="\t", quote = F)
-#write.table(pzC_com, filename_list_case,sep = "\t ", col.names = F, row.names = F,quote = F)
+  # Fit the model
+  fit <- lmFit(data_combined, design)
+  fit <- eBayes(fit)
 
-###########################
-# STEP 4 : PLOTS
-###########################
+  # Get the top table
+  results <- topTable(fit, coef = 2, number = Inf)
 
-plot(logFC, -log10(pval),
-     main = "Volcano Plot",
-     xlim = c(-4, 4),
-     ylim = c(0, 70),
-     xlab = "log2 fold change",
-     ylab = "-log10 p-value"
-)
+  # Rename column
+  colnames(results)[which(colnames(results) == "adj.P.Val")] <- "pval_adj"
 
-abline(h= - log10(thr_pval), lty = 2, lwd= 4, col= "red")
-abline(v = c(-log2(thr_fc), log2(thr_fc)),lty= 2,lwd = 4, col="grey")
+  # Convert pval_adj column to character
+  results$pval_adj <- as.character(results$pval_adj)
 
-#Pie chart
-count <- table(results$direction)
-pie(count,
-    labels= paste0(names(count), " ", round(100 * count/sum(count),2), "%"),
-    col = c("blue","gold"))
-
-# box plot
-ind = which.max(logFC) #most up-regulated
-gene_id = results$genes[ind]
-
-boxplot(as.numeric(dataN[ind,]), as.numeric(dataC[ind,]),
-        main=paste(gene_id,", ", "adjusted p-value= ",format(pval_adj[ind],digits =2)),
-        notch = T,
-        ylab="Gene expression value",
-        xlab= "Condition",
-        col= c("green","violet"),
-        names = c("Normal", "Case"),
-        pars= list(boxwex = 0.3, staplewex = 0.6))
-
-rm(ind)
-
-ind = which.min(logFC) #most down-regulated
-gene_id = results$genes[ind]
-
-boxplot(as.numeric(dataN[ind,]), as.numeric(dataC[ind,]),
-        main=paste(gene_id,", ", "adjusted p-value= ",format(pval_adj[ind],digits =2)),
-        notch = T,
-        ylab="Gene expression value",
-        xlab= "Condition",
-        col= c("green","violet"),
-        names = c("Normal", "Case"),
-        pars= list(boxwex = 0.3, staplewex = 0.6))
-
-rm(ind)
+  return(results)
+}
 
 
-df1 = data.frame(logFC = logFC, pval = -log10(pval_adj))
-condition1 <- (pval_adj <= thr_pval) & (logFC > log2(thr_fc))
-condition2 <- (pval_adj <= thr_pval) & (logFC < -log2(thr_fc))
-df1$legend <-ifelse(condition1,"up",ifelse(condition2,"down","delete"))
 
-p <- ggplot(df1, aes(x = logFC, y = pval, color = legend)) +
-  geom_point() +
-  scale_x_continuous(expand = c(0, 0)) +
-  scale_y_continuous(expand = c(0, 0)) +
-  scale_color_manual(values = c("delete" = "darkgrey", "up" = "red", "down" = "green")) +
-  theme(panel.background = element_rect(fill = "white", colour = "black", linewidth = 1),
-        legend.title = element_text(colour = "black", size = 8, face = "bold"),
-        legend.key = element_rect(fill = "white", colour = "white"),
-        legend.box.background = element_rect(colour = "black")) +
-  labs(title = "Volcano plot", x = "Log2 Fold change (FC)", y = "Log10( adjusted p value )") +
-  geom_hline(yintercept = -log10(0.01), linetype = 2, color = "black") +
-  geom_vline(xintercept = log2(thr_fc), linetype = 2, color = "black") +
-  geom_vline(xintercept = -log2(thr_fc), linetype = 2, color = "black")
 
-print(p)
+deseq2DE <- function(dataC, dataN) {
+  # Load DESeq2 library
+  library(DESeq2)
 
-###########################
-#HEAT:MWP
-#
-annotation <- data.frame(condition = metadata$`characteristics_ch1.1`)
-rownames(annotation) <- metadata$geo_accession
+  # Convert the data from list to data frames if they aren't already
+  dataC <- as.data.frame(dataC)
+  dataN <- as.data.frame(dataN)
 
-vect_color <- c("green","violet")
-names(vect_color) <- unique(annotation$condition)
+  # Remove the 'gene' column before combining and ensure numeric values
+  dataC_numeric <- as.matrix(dataC[,-1])  # Convert to matrix and exclude 'gene' column
+  dataN_numeric <- as.matrix(dataN[,-1])  # Convert to matrix and exclude 'gene' column
 
-annotation_colors <- list(condition = vect_color)
-# Stiamo plottando i dati diespressione
+  # Ensure all values are numeric
+  dataC_numeric <- apply(dataC_numeric, 2, as.numeric)
+  dataN_numeric <- apply(dataN_numeric, 2, as.numeric)
 
-pheatmap(data, scale = "row",
-         border_color = NA,
-         cluster_cols = T,
-         cluster_rows = T,
-         clustering_distance_rows = "correlation", #clustering con correlation (similarity)
-         clustering_distance_cols = "correlation",
-         clustering_method = "average", # dato l'insieme sono vicini con il valor medio
-         annotation_col = annotation,
-         annotation_colors = annotation_colors,
-         color = colorRampPalette(colors = c("blue", "blue3", "black", "yellow3", "yellow"))(100),
-         show_rownames = F,
-         show_colnames = F,
-         cutree_cols = 2,
-         cutree_rows = 2,
-         width = 10, height = 10,
-         filename = filename_heatmap)
+  # Combine the numeric matrices
+  data_combined <- cbind(dataC_numeric, dataN_numeric)
+
+  # Set row names from the 'gene' column in the original data frames
+  rownames(data_combined) <- dataC$gene  # Assuming 'gene' column is the same in both dataC and dataN
+
+  # Create metadata
+  coldata <- data.frame(
+    condition = factor(c(rep("Case", ncol(dataC_numeric)), rep("Normal", ncol(dataN_numeric))))
+  )
+  rownames(coldata) <- colnames(data_combined)
+
+  # Create DESeq2 dataset object
+  dds <- DESeqDataSetFromMatrix(countData = data_combined, colData = coldata, design = ~ condition)
+
+  # Run DESeq2 analysis
+  dds <- DESeq(dds)
+
+  # Extract results, including log2 fold change, p-values, and adjusted p-values
+  res <- results(dds, contrast = c("condition", "Case", "Normal"))
+
+  # Convert the results to a data frame
+  res_df <- as.data.frame(res)
+
+  # Add gene names to the results
+  res_df$Gene <- rownames(res_df)
+
+  # Select relevant columns for output (log2 fold change, standard error, p-value, adjusted p-value)
+  res_df <- res_df[, c("Gene", "log2FoldChange", "lfcSE", "pvalue", "padj")]
+
+  # Rename columns for clarity
+  colnames(res_df) <- c("Gene", "logFC", "lfcSE", "pvalue", "pval_adj")
+  res_df$pval_adj <- as.character(res_df$pval_adj)
+  res_df$logFC <- as.character(res_df$logFC)
+
+  return(res_df)
+}
+
+surv <- function (metadata,dataC, gene){
+  library(survival)
+  library(survminer)
+
+  print(metadata)
+  print(dataC)
+
+  # Remove the last element from gsm_cods
+  gsm_cods <- names(dataC)
+
+  # Remove the last element from gene_expression
+  gene_expression <- unlist(dataC, use.names = FALSE)
+
+  df <- data.frame(case_id = gsm_cods, counts = gene_expression)
+
+  print(df)
+
+  if (nrow(df) > 1) {
+    df <- df[-nrow(df), ]
+  }
+  df$counts <- as.numeric(df$counts)
+
+  print(df)
+
+  medianValue = median(df$counts)
+
+  print(medianValue)
+
+  df$strata = ifelse (df$counts >= medianValue,"HIGH","LOW")
+
+  df$event = ifelse(df$case_id == metadata$GSM,  metadata$Event[match(df$case_id, metadata$GSM)], "NA")
+
+  df$time = ifelse(df$case_id == metadata$GSM, metadata$Time_to_followUp[match(df$case_id, metadata$GSM)], "NA")
+
+
+  print(df)
+
+  df$counts <-(as.numeric(df$counts))
+  metadata$Event <- as.numeric(as.character(metadata$Event))
+  metadata$Time_to_followUp <- as.numeric(as.character(metadata$Time_to_followUp))
+
+  newDF = data.frame(time = as.numeric(df$time), event = as.numeric(df$event), gene = df$strata)
+
+  print(newDF)
+
+  fit=survfit(Surv(time,event) ~ gene, data = newDF)
+
+  members <- c("time", "n.risk", "n.event","n.censor","surv","strata")
+
+  last = list(unclass(fit)[members])
+
+  ####### UTILE PER CALCOLARE IL PVALUE DEL GENE PASSATO#######
+  obj_pval = surv_pvalue(fit,newDF)
+  members2 = c("pval")
+  pval=list(unclass(obj_pval)[members2])
+  print(pval)
+  #############################################################
+
+  return(list (obj = last, pval = pval))
+
+}
 
