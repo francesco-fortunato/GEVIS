@@ -4,14 +4,13 @@ GEVIS is a comprehensive dashboard for conducting differential gene expression a
 
 # Table of Contents
 
-- [GEVIS - Gene Expression VIS](#gevis---gene-expression-vis)
-  - [Introduction](#introduction)
-  - [Features](#features)
-  - [Download](#download)
-  - [Usage](#usage)
-  - [Docs](#docs)
-  - [Contributors](#contributors)
-  - [License](#license)
+- [Introduction](#introduction)
+- [Features](#features)
+- [Download](#download)
+- [Usage](#usage)
+- [Docs](#docs)
+- [Contributors](#contributors)
+- [License](#license)
 
 ## Introduction 
 
