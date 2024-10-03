@@ -1,10 +1,25 @@
 # GEVIS - Gene Expression VIS
 
-## Description
+GEVIS is a comprehensive dashboard for conducting differential gene expression analysis, designed to facilitate interactive visualization and in-depth exploration of gene expression data. This tool supports multiple analysis methods and visualization techniques, providing researchers with a versatile platform for understanding gene expression patterns and identifying key biomarkers across biological conditions.
 
-Gene expression analysis is a crucial component of understanding biological processes and identifying biomarkers in various diseases. Despite the availability of numerous tools and packages for differential expression (DE) analysis in programming languages like R, many researchers lack the programming skills necessary to effectively utilize these resources. To bridge this gap, we developed GeneExpressionVIS (GEVIS), an interactive web application designed to streamline the process of gene expression analysis. GEVIS integrates multiple DE analysis methodologies into an intuitive graphical user interface (GUI), enabling users to conduct analyses without the need for coding. The application generates a diverse range of visualizations and tables, enhancing the interpretability of results. Additionally, GEVIS supports comprehensive analysis frameworks, allowing users to integrate and compare findings from different computational methods. Implemented using HTML, CSS, and JavaScript, GEVIS is freely accessible, providing researchers with a powerful tool for advancing their understanding of gene expression data.
+# Table of Contents
+
+- [GEVIS - Gene Expression VIS](#gevis---gene-expression-vis)
+  - [Introduction](#introduction)
+  - [Features](#features)
+  - [Download](#download)
+  - [Usage](#usage)
+  - [Docs](#docs)
+  - [Contributors](#contributors)
+  - [License](#license)
+
+## Introduction 
+
+Gene expression analysis is among the most important means of uncovering biological mechanisms of diseases and identifying potential biomarkers. Whereas there are many tools to perform DE analyses, in particular within programming environments like R, there is significant hindrance to overcome given usually limited programming expertise among researchers. To this end, we propose herein GEVIS-a user-friendly, web application that enables access to advanced gene expression analytical techniques. Methods of integrated DE analysis, like t-tests, Limma, and DESeq2 in one GUI, allow users to do their analysis without prior coding. In this way, researchers, biologists, and doctors will be enabled to reduce efforts in interpreting the results instead of writing complex code. It enables the investigation of raw and pre-processed gene expression datasets into a rich set of visualizations, such as histograms, volcano plots, scatterplots, and PCA graphs that enable deep insight. Furthermore, GEVIS contains filtering and normalization functionalities and enrichment and survival analysis functionalities within one comprehensive analytical workflow. In this respect, for overcoming the limitations often observed in stand-alone tools, GEVIS is designed to enable the user to combine multiple analytical approaches and compare results among diverse computational frameworks. This flexibility is crucial when one wants to ensure robust biological interpretations. 
 
 <img src="pictures/GEVIS Dashboard v1.0.png" alt="Dashboard Image" style="max-width: 100%; height: auto;">
+
+---
 
 ## Features
 
