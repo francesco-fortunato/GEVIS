@@ -167,8 +167,6 @@ pca <- function(data, dataC, dataN) {
   # Calculate the proportion of variance explained by each principal component
   explained_variance <- summary(pca)$importance[2, ] * 100  # Multiply by 100 to get percentage
 
-  # Add explained variance to scores_df for display purposes
-  scores_df$explained_variance <- explained_variance[1:ncol(scores_df)-1]
 
   # Return the explained variance along with scores_df and scores_var
   return(list(scores_df = scores_df, scores_var = scores_var, explained_variance = explained_variance))
@@ -176,127 +174,126 @@ pca <- function(data, dataC, dataN) {
 
 
 
-enrichment <- function (data,direction){
+enrichment <- function(data, direction) {
   library(forcats)
   library(stringr)
   library(enrichR)
 
   top_term <- 10
   thr_pval <- 0.05
-  dbs <- c("DisGeNET","GO_Molecular_Function_2021", "GO_Biological_Process_2021", "KEGG_2021_Human", "TRANSFAC_and_JASPAR_PWMs")
+  dbs <- c("DisGeNET", "GO_Molecular_Function_2021", "GO_Biological_Process_2021", "KEGG_2021_Human", "TRANSFAC_and_JASPAR_PWMs")
 
-  list <- split(data$gene,data$direction)
+  list <- split(data$gene, data$direction)
 
-  df <- lapply(list, function(x){
+  df <- lapply(list, function(x) {
     enrichr(x, dbs)
   })
 
-
-
   DisGeNET <- df[[direction]]$DisGeNET
   DisGeNET <- DisGeNET[DisGeNET$Adjusted.P.value < thr_pval, ]
-  DisGeNET <- DisGeNET[order(DisGeNET$Adjusted.P.value, decreasing = F),]
+  DisGeNET <- DisGeNET[order(DisGeNET$Adjusted.P.value, decreasing = FALSE),]
 
-  DisGeNET$Gene_count <- sapply(DisGeNET$Genes, function(x){
+  # Convert Adjusted.P.value to string
+  DisGeNET$Adjusted.P.value <- as.character(DisGeNET$Adjusted.P.value)
+
+  DisGeNET$Gene_count <- sapply(DisGeNET$Genes, function(x) {
     tmp <- unlist(strsplit(x, split = ";"))
     count <- length(tmp)
   })
 
-  DisGeNET$Gene_ratio <- unlist(lapply(DisGeNET$Overlap, function(x){
+  DisGeNET$Gene_ratio <- unlist(lapply(DisGeNET$Overlap, function(x) {
+    total <- as.numeric(strsplit(x, "/")[[1]][2])
+    count <- as.numeric(strsplit(x, "/")[[1]][1])
+    Gene_ratio <- count / total
+  }))
 
-    total <- as.numeric(strsplit(x,"/")[[1]][2])
-    count <- as.numeric(strsplit(x,"/")[[1]][1])
-
-    Gene_ratio <- count/total
-
-  } ))
-
-  if(length(top_term) != 0 & top_term <= nrow(DisGeNET)){
+  if (length(top_term) != 0 & top_term <= nrow(DisGeNET)) {
     annotation_top <- DisGeNET[1:top_term,]
-  }else{
+  } else {
     annotation_top <- DisGeNET
   }
 
-
-
+  # Process GO Biological Process
   BP <- df[[direction]]$GO_Biological_Process_2021
   BP$Term <- gsub("\\s*\\(GO:\\d+\\)$", "", BP$Term)
   BP <- BP[BP$Adjusted.P.value < thr_pval, ]
-  BP <- BP[order(BP$Adjusted.P.value, decreasing = F),]
+  BP <- BP[order(BP$Adjusted.P.value, decreasing = FALSE),]
 
-  BP$Gene_count <- sapply(BP$Genes, function(x){
+  # Convert Adjusted.P.value to string
+  BP$Adjusted.P.value <- as.character(BP$Adjusted.P.value)
+
+  BP$Gene_count <- sapply(BP$Genes, function(x) {
     tmp <- unlist(strsplit(x, split = ";"))
     count <- length(tmp)
   })
 
-  BP$Gene_ratio <- unlist(lapply(BP$Overlap, function(x){
+  BP$Gene_ratio <- unlist(lapply(BP$Overlap, function(x) {
+    total <- as.numeric(strsplit(x, "/")[[1]][2])
+    count <- as.numeric(strsplit(x, "/")[[1]][1])
+    Gene_ratio <- count / total
+  }))
 
-    total <- as.numeric(strsplit(x,"/")[[1]][2])
-    count <- as.numeric(strsplit(x,"/")[[1]][1])
-
-    Gene_ratio <- count/total
-
-  } ))
-
-  if(length(top_term) != 0 & top_term <= nrow(BP)){
+  if (length(top_term) != 0 & top_term <= nrow(BP)) {
     annotation_top1 <- BP[1:top_term,]
-  }else{
+  } else {
     annotation_top1 <- BP
   }
 
+  # Process GO Molecular Function
   MF <- df[[direction]]$GO_Molecular_Function_2021
   MF$Term <- gsub("\\s*\\(GO:\\d+\\)$", "", MF$Term)
   MF <- MF[MF$Adjusted.P.value < thr_pval, ]
-  MF <- MF[order(MF$Adjusted.P.value, decreasing = F),]
+  MF <- MF[order(MF$Adjusted.P.value, decreasing = FALSE),]
 
-  MF$Gene_count <- sapply(MF$Genes, function(x){
+  # Convert Adjusted.P.value to string
+  MF$Adjusted.P.value <- as.character(MF$Adjusted.P.value)
+
+  MF$Gene_count <- sapply(MF$Genes, function(x) {
     tmp <- unlist(strsplit(x, split = ";"))
     count <- length(tmp)
   })
 
-  MF$Gene_ratio <- unlist(lapply(MF$Overlap, function(x){
+  MF$Gene_ratio <- unlist(lapply(MF$Overlap, function(x) {
+    total <- as.numeric(strsplit(x, "/")[[1]][2])
+    count <- as.numeric(strsplit(x, "/")[[1]][1])
+    Gene_ratio <- count / total
+  }))
 
-    total <- as.numeric(strsplit(x,"/")[[1]][2])
-    count <- as.numeric(strsplit(x,"/")[[1]][1])
-
-    Gene_ratio <- count/total
-
-  } ))
-
-  if(length(top_term) != 0 & top_term <= nrow(MF)){
+  if (length(top_term) != 0 & top_term <= nrow(MF)) {
     annotation_top2 <- MF[1:top_term,]
-  }else{
+  } else {
     annotation_top2 <- MF
   }
 
+  # Process KEGG
   KEGG <- df[[direction]]$KEGG_2021_Human
   KEGG$Term <- gsub("\\s*\\(KEGG:\\d+\\)$", "", KEGG$Term)
   KEGG <- KEGG[KEGG$Adjusted.P.value < thr_pval, ]
-  KEGG <- KEGG[order(KEGG$Adjusted.P.value, decreasing = F),]
+  KEGG <- KEGG[order(KEGG$Adjusted.P.value, decreasing = FALSE),]
 
-  KEGG$Gene_count <- sapply(KEGG$Genes, function(x){
+  # Convert Adjusted.P.value to string
+  KEGG$Adjusted.P.value <- as.character(KEGG$Adjusted.P.value)
+
+  KEGG$Gene_count <- sapply(KEGG$Genes, function(x) {
     tmp <- unlist(strsplit(x, split = ";"))
     count <- length(tmp)
   })
 
-  KEGG$Gene_ratio <- unlist(lapply(KEGG$Overlap, function(x){
+  KEGG$Gene_ratio <- unlist(lapply(KEGG$Overlap, function(x) {
+    total <- as.numeric(strsplit(x, "/")[[1]][2])
+    count <- as.numeric(strsplit(x, "/")[[1]][1])
+    Gene_ratio <- count / total
+  }))
 
-    total <- as.numeric(strsplit(x,"/")[[1]][2])
-    count <- as.numeric(strsplit(x,"/")[[1]][1])
-
-    Gene_ratio <- count/total
-
-  } ))
-
-  if(length(top_term) != 0 & top_term <= nrow(KEGG)){
+  if (length(top_term) != 0 & top_term <= nrow(KEGG)) {
     annotation_top3 <- KEGG[1:top_term,]
-  }else{
+  } else {
     annotation_top3 <- KEGG
   }
 
-  return(list(annotation_top = annotation_top, annotation_top1 = annotation_top1, annotation_top2= annotation_top2,annotation_top3= annotation_top3))
-
+  return(list(annotation_top = annotation_top, annotation_top1 = annotation_top1, annotation_top2 = annotation_top2, annotation_top3 = annotation_top3))
 }
+
 
 
 variation <- function(rawdata) {
@@ -420,8 +417,11 @@ deseq2DE <- function(dataC, dataN) {
 }
 
 surv <- function (metadata,dataC, gene){
-  library(survival)
-  library(survminer)
+  library(survminer)   # Load survminer first
+  library(survival)    # Then load survival
+
+  print(metadata)
+  print(dataC)
 
   # Remove the last element from gsm_cods
   gsm_cods <- names(dataC)
@@ -431,7 +431,18 @@ surv <- function (metadata,dataC, gene){
 
   df <- data.frame(case_id = gsm_cods, counts = gene_expression)
 
+  print(df)
+
+  if (nrow(df) > 1) {
+    df <- df[-nrow(df), ]
+  }
+  df$counts <- as.numeric(df$counts)
+
+  print(df)
+
   medianValue = median(df$counts)
+
+  print(medianValue)
 
   df$strata = ifelse (df$counts >= medianValue,"HIGH","LOW")
 
@@ -439,17 +450,16 @@ surv <- function (metadata,dataC, gene){
 
   df$time = ifelse(df$case_id == metadata$GSM, metadata$Time_to_followUp[match(df$case_id, metadata$GSM)], "NA")
 
-  if (nrow(df) > 1) {
-    df <- df[-nrow(df), ]
-  }
 
   print(df)
 
   df$counts <-(as.numeric(df$counts))
-  df$time = as.numeric(df$time)
-  df$event = as.numeric(df$event)
+  metadata$Event <- as.numeric(as.character(metadata$Event))
+  metadata$Time_to_followUp <- as.numeric(as.character(metadata$Time_to_followUp))
 
-  newDF = data.frame(time =df$time, event = df$event, gene = df$strata)
+  newDF = data.frame(time = as.numeric(df$time), event = as.numeric(df$event), gene = df$strata)
+
+  print(newDF)
 
   fit=survfit(Surv(time,event) ~ gene, data = newDF)
 
