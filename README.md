@@ -8,6 +8,9 @@ GEVIS is a comprehensive dashboard for conducting differential gene expression a
 - [Features](#features)
 - [Download](#download)
 - [Usage](#usage)
+- [Input File Format](#input-file-format)
+  - [Matrix File](#matrix-file)
+  - [Metadata File](#metadata-file)
 - [Docs](#docs)
 - [Contributors](#contributors)
 - [License](#license)
@@ -100,6 +103,48 @@ Gene expression analysis is among the most important means of uncovering biologi
    
 5. **Export Results:**
    - Export genes and analysis results for further exploration or reporting.
+
+---
+
+## Input File Format
+
+The application requires two input files in CSV format: a **matrix file** and a **metadata file**. Below is the detailed structure for each file:
+
+### Matrix File
+
+The matrix file should be structured as follows:
+
+- The first column must contain the gene identifiers, and the header for this column can have any name.
+- The subsequent columns should contain expression values corresponding to each sample, with the column headers representing the sample identifiers.
+
+**Example:**
+
+#### Gene Expression Matrix
+
+| ID_REF         | Sample 1           | Sample 2           | Sample 3           | ... |
+|----------------|----------------------|----------------------|----------------------|-----|
+| Gene A | 230     | 300     | 240     | ... |
+| Gene B | 518     | 551     | 569     | ... |
+| ...    | ...     | ...     | ...     | ... |
+
+### Metadata File
+
+The metadata file should be structured as follows:
+
+- The first column must contain metadata labels, which can have any descriptive name. This column may include various types of information about each sample, such as disease type, treatment group, or other relevant characteristics.
+- Each subsequent column should correspond to a specific sample, containing the relevant metadata for that sample.
+
+**Example:**
+
+#### Sample Metadata
+
+| Metadata | Sample 1           | Sample 2           | Sample 3           | ... |
+|----------------------|----------------------|----------------------|----------------------|-----|
+| Type                 | Intrahepatic cholangiocarcinoma | Intrahepatic cholangiocarcinoma | Intrahepatic cholangiocarcinoma | ... |
+| Gender               | Male                 | Female               | Male                 | ... |
+| ...                  | ...                  | ...                  | ...                  | ... |
+
+Ensure that both files are formatted correctly to conduct proper analysis within the application.
 
 ---
 
