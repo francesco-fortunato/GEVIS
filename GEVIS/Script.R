@@ -416,7 +416,7 @@ deseq2DE <- function(dataC, dataN) {
   return(res_df)
 }
 
-surv <- function (metadata,dataC, gene){
+surv <- function (metadata, dataC, gene) {
   library(survminer)   # Load survminer first
   library(survival)    # Then load survival
 
@@ -440,20 +440,21 @@ surv <- function (metadata,dataC, gene){
 
   print(df)
 
-  medianValue = median(df$counts)
+  # Calculate the median and convert it to character
+  medianValue <- median(df$counts)
+  medianValue_char <- as.character(medianValue)
 
   print(medianValue)
 
-  df$strata = ifelse (df$counts >= medianValue,"HIGH","LOW")
+  df$strata = ifelse(df$counts >= medianValue, "HIGH", "LOW")
 
-  df$event = ifelse(df$case_id == metadata$GSM,  metadata$Event[match(df$case_id, metadata$GSM)], "NA")
+  df$event = ifelse(df$case_id == metadata$GSM, metadata$Event[match(df$case_id, metadata$GSM)], "NA")
 
   df$time = ifelse(df$case_id == metadata$GSM, metadata$Time_to_followUp[match(df$case_id, metadata$GSM)], "NA")
 
-
   print(df)
 
-  df$counts <-(as.numeric(df$counts))
+  df$counts <- as.numeric(df$counts)
   metadata$Event <- as.numeric(as.character(metadata$Event))
   metadata$Time_to_followUp <- as.numeric(as.character(metadata$Time_to_followUp))
 
@@ -461,20 +462,19 @@ surv <- function (metadata,dataC, gene){
 
   print(newDF)
 
-  fit=survfit(Surv(time,event) ~ gene, data = newDF)
+  fit <- survfit(Surv(time, event) ~ gene, data = newDF)
 
-  members <- c("time", "n.risk", "n.event","n.censor","surv","strata")
+  members <- c("time", "n.risk", "n.event", "n.censor", "surv", "strata")
+  last <- list(unclass(fit)[members])
 
-  last = list(unclass(fit)[members])
-
-  ####### UTILE PER CALCOLARE IL PVALUE DEL GENE PASSATO#######
-  obj_pval = surv_pvalue(fit,newDF)
-  members2 = c("pval")
-  pval=list(unclass(obj_pval)[members2])
+  ####### Calculate p-value for the passed gene #######
+  obj_pval <- surv_pvalue(fit, newDF)
+  members2 <- c("pval")
+  pval <- list(unclass(obj_pval)[members2])
   print(pval)
-  #############################################################
+  ####################################################
 
-  return(list (obj = last, pval = pval))
-
+  # Return the survival object, p-value, and median value (as character)
+  return(list(obj = last, pval = pval, median = medianValue_char))
 }
 
