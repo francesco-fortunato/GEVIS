@@ -2419,7 +2419,7 @@
                 // "scrollCollapse": true // Collapse the table height to fit the scrolling container
             });
 
-            $('#csvTableData1_wrapper').css('margin-right', '40px');
+            // $('#csvTableData1_wrapper').css('margin-right', '40px');
 
             // Compare the headers excluding the first element
             var headers1ToCompare = Object.keys(data1[0]).slice(1);
@@ -5675,7 +5675,6 @@
                     // Show tooltip on mouseover
                     tooltip.transition()
                         .duration(200) // Add transition duration for mouseout
-                        .duration(200)
                         .style("opacity", .9);
                     tooltip.html("Gene Ratio: " + d.Gene_ratio)
                         .style("left", (d3.event.pageX) + "px")
@@ -5690,7 +5689,6 @@
                     // Hide tooltip on mouseout
                     tooltip.transition()
                         .duration(200) // Add transition duration for mouseout
-                        .duration(500)
                         .style("opacity", 0);
 
                     // Remove black stroke on mouseout
@@ -6081,7 +6079,6 @@
                     // Show tooltip on mouseover
                     tooltip.transition()
                         .duration(200) // Add transition duration for mouseout
-                        .duration(200)
                         .style("opacity", .9);
                     tooltip.html("Gene Ratio: " + d.Gene_ratio)
                         .style("left", (d3.event.pageX) + "px")
@@ -6096,7 +6093,6 @@
                     // Hide tooltip on mouseout
                     tooltip.transition()
                         .duration(200) // Add transition duration for mouseout
-                        .duration(500)
                         .style("opacity", 0);
 
                     // Remove black stroke on mouseout
