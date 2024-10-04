@@ -731,8 +731,11 @@
         <span style="margin-left: 10px;"></span> <!-- Adjust the margin as needed -->
         <button class="btn btn-secondary" id="importDatasetButton">Import Dataset</button>
         <button class="btn btn-secondary" id="openModalBtn1" style="margin-left: 10px;">Survival Plot</button>
-        <span id="currentMethod" style="font-weight: bold; margin-left: 54%; color: white; line-height: 1.2; text-align: center;">Method: N/A</span>
-        <span id="geneRegulationInfo" style="font-weight: bold; margin-left: 30px; color: white; line-height: 1.2; text-align: center;"></span>
+        <span id="currentMethod"
+            style="font-weight: bold; margin-left: 54%; color: white; line-height: 1.2; text-align: center;">Method:
+            N/A</span>
+        <span id="geneRegulationInfo"
+            style="font-weight: bold; margin-left: 30px; color: white; line-height: 1.2; text-align: center;"></span>
     </nav>
     <div id="loadingOverlay" style="display: flex; justify-content: center; align-items: center;">
         <div style="display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;">
@@ -785,7 +788,8 @@
                 <div> <!--div(3) bottoni IQR-->
                     <input type="range" id="thresholdSlider" class="range2" min="0.1" max="0.99" step="0.01" value="0.2"
                         style="width: 200px;">
-                    <span id="thresholdValue" style="color: white; vertical-align: middle; display: inline-block; margin-top: -24px;">20%</span>
+                    <span id="thresholdValue"
+                        style="color: white; vertical-align: middle; display: inline-block; margin-top: -24px;">20%</span>
                 </div><!-- div(3)-->
                 <div id="logFCHistogram" style="margin-top:1%;"></div> <!-- div(5) FC-->
 
@@ -793,7 +797,8 @@
 
                     <input type="range" id="log_thresholdSlider" class="range1" min="1.1" max="10" step="0.01"
                         value="1.1" style="width: 200px;">
-                    <span id="log_thresholdSliderValue" style="color: white; vertical-align: middle; display: inline-block; margin-top: -24px;">1.1</span>
+                    <span id="log_thresholdSliderValue"
+                        style="color: white; vertical-align: middle; display: inline-block; margin-top: -24px;">1.1</span>
                     <div id="boxPlot" style="margin-top:1%;"></div>
                     <!-- Initialize a select button -->
                     <select id="selectButton" class="btn btn-secondary dropdown-toggle">
@@ -1094,13 +1099,13 @@
         var first_dims = ['Age at Diagnosis']
 
         // Remove entries corresponding to ind from dataN
-        var dataC_copy_pval
+        let dataC_copy_pval
 
         // Remove entries corresponding to ind from dataN
         let dataN_copy_pval
 
 
-        var data_copy_pval
+        let data_copy_pval
 
         let deseq_p_adj = []
 
@@ -4204,6 +4209,7 @@
                             if (geneNames.length !== uniqueGeneNames.size) {
                                 console.error("Duplicate gene names detected in the input data.");
                             }
+                            console.log(data_copy_pval)
 
                             var req = ocpu.call("pca", {
                                 data: data_copy_pval,
@@ -4344,8 +4350,8 @@
 
                                         // Display the newData array
                                         console.log("PCA, first try ", pca_data);
-                                        pca(pca_data);
-                                        heatmap(heatmap_data);
+                                        if (obj.PC2 !== undefined) pca(pca_data);
+                                        if (obj.PC2 !== undefined) heatmap(heatmap_data);
                                     })
 
 
@@ -4779,6 +4785,7 @@
                                                 var pc1Values = [];
                                                 var pc2Values = [];
                                                 var groupValues = [];
+                                                console.log(data_copy_pval)
                                                 var req = ocpu.call("pca", {
                                                     data: data_copy_pval,
                                                     dataN: dataN_copy_pval,
@@ -4916,8 +4923,8 @@
 
                                                             // Display the newData array
                                                             console.log("PCA, first try ", pca_data);
-                                                            pca(pca_data);
-                                                            heatmap(heatmap_data);
+                                                            if (obj.PC2 !== undefined) pca(pca_data);
+                                                            if (obj.PC2 !== undefined) heatmap(heatmap_data);
 
                                                         })
 
@@ -4940,13 +4947,13 @@
                                     updateStatisticalMethod('limma');
                                     console.log(dataC_copy)
                                     console.log(dataN_copy)
-
+                                    console.log(data_copy_pval)
                                     var req = ocpu.call("limmaDE", {
                                         dataC: dataC_copy,  // Pass your processed case data
                                         dataN: dataN_copy   // Pass your processed normal data
                                     }, function (session) {
                                         var filteredDataURL = session.loc + "/R/.val/json";
-                                        //console.log(session);
+                                        // console.log(session);
                                         // Fetch the filtered data from the URL
                                         fetch(filteredDataURL)
                                             .then(response => response.json())
@@ -5237,7 +5244,7 @@
                                                 var pc1Values = [];
                                                 var pc2Values = [];
                                                 var groupValues = [];
-                                                console.log(data_copy_pval)
+                                                console.log("PCA DATA COPY PVAL:", data_copy_pval)
                                                 var req = ocpu.call("pca", {
                                                     data: data_copy_pval,
                                                     dataN: dataN_copy_pval,
@@ -5373,8 +5380,8 @@
 
                                                             // Display the newData array
                                                             console.log("PCA, first try ", pca_data);
-                                                            pca(pca_data);
-                                                            heatmap(heatmap_data);
+                                                            if (obj.PC2 !== undefined) pca(pca_data);
+                                                            if (obj.PC2 !== undefined) heatmap(heatmap_data);
 
                                                         })
 
@@ -6344,119 +6351,57 @@
             // Calculate the quantile
             thr_prc = ss.quantile(variation_data_copy, prc_IQR);
             updateHistogram(variation_data);
-            console.log(variation_data)
+            console.log(variation_data);
 
-            const ind = variation_data_copy.reduce((result, entry, index) => {
-
-                if (entry < thr_prc) {
-                    result.push(index);
+            // Step 1: Create a Set of genes that pass the IQR threshold
+            const iqrGeneset = new Set();
+            variation_data_copy.forEach((entry, index) => {
+                if (entry >= thr_prc) {
+                    iqrGeneset.add(data_original[index].gene);  // Assuming 'gene' is the key
                 }
-                return result;
-            }, []);
+            });
 
-            console.log(ind)
+            console.log("Number of genes passing the IQR filter:", iqrGeneset.size);
 
-            dataC_copy1 = dataC_original
-            dataN_copy1 = dataN_original
-            data_copy1 = data_original
+            dataC_copy1 = dataC_original;
+            dataN_copy1 = dataN_original;
+            data_copy1 = data_original;
 
-            console.log("geni tolti con IQR", ind.length)
-            if (ind.length > 0) {
-                // Remove entries corresponding to ind from dataC
-                dataC_copy1 = dataC_original.filter((entry, index) => !ind.includes(index));
-
-                // Remove entries corresponding to ind from data
-                dataN_copy1 = dataN_original.filter((entry, index) => !ind.includes(index));
-
-                data_copy1 = data_original.filter((entry, index) => !ind.includes(index));
-
-                // Remove entries corresponding to ind from genes
-                //genes = genes.filter((entry, index) => !ind.includes(index));
-
-                // Remove entries corresponding to ind from logFC
-                //parsedLogFC = parsedLogFC_origin.filter((entry, index) => !ind.includes(index));
-
+            if (iqrGeneset.size > 0) {
+                // Step 2: Filter data based on the IQR gene set
+                dataC_copy1 = dataC_original.filter(entry => iqrGeneset.has(entry.gene));  // Assuming 'gene' is the key
+                dataN_copy1 = dataN_original.filter(entry => iqrGeneset.has(entry.gene));
+                data_copy1 = data_original.filter(entry => iqrGeneset.has(entry.gene));
             }
-            // Update the gene count display
-            // const geneCountDiv = document.getElementById('geneCount');
-            // geneCountDiv.innerHTML = `Initial number of genes: ${initial_num_genes}<br>Number of genes after filtering: ${dataC_copy1.length}`;
 
-            first_filter_number_genes = dataC_copy.length
+            first_filter_number_genes = dataC_copy1.length;
 
+            // Step 3: Calculate the logFC after the IQR filtering
             parsedLogFC_origin = calculateLogFC(dataC_copy1, dataN_copy1);
-            parsedLogFC = parsedLogFC_origin
+            parsedLogFC = parsedLogFC_origin;
+            updateLogFCHistogram(parsedLogFC_origin);
 
-
-            //console.log(parsedLogFC_origin)
-            updateLogFCHistogram(parsedLogFC_origin)
-
-
-            // Calculate the quantile
-            log_thr_fc = Math.log2(thr_fc);
-            //console.log(log_thr_fc)
-            const ind2 = parsedLogFC_origin.reduce((result, entry, index) => {
-
-                if (Math.abs(entry.logFC) < Math.log2(thr_fc)) {
-                    result.push(index);
-
+            // Step 4: Create a Set of genes that pass the logFC threshold
+            const logFCGeneset = new Set();
+            parsedLogFC_origin.forEach(entry => {
+                if (Math.abs(entry.logFC) >= Math.log2(thr_fc)) {
+                    logFCGeneset.add(entry.Gene);  // Assuming 'Gene' is the key
                 }
-                return result;
-            }, []);
+            });
 
-            console.log("geni da togliere con il logFC da IQR", ind2.length)
-            console.log("ora rimuovo questi geni da data che partiva da", data_copy1.length)
+            console.log("Number of genes passing the logFC filter:", logFCGeneset.size);
 
-            // console.log("parsed log before ",parsedLogFC.length)
-            // console.log("data copy beforeC ",dataC_copy.length)
-            // console.log("data copy beforeN ",dataN_copy.length)
+            // Step 5: Filter data based on the logFC gene set
+            dataC_copy = dataC_copy1.filter(entry => logFCGeneset.has(entry.gene));
+            dataN_copy = dataN_copy1.filter(entry => logFCGeneset.has(entry.gene));
+            data_copy = data_copy1.filter(entry => logFCGeneset.has(entry.gene));
+            parsedLogFC = parsedLogFC_origin.filter(entry => logFCGeneset.has(entry.Gene));
 
-            // console.log("parsed log origin ",parsedLogFC_origin.length)
-            /////////////////////// 
+            console.log("Remaining genes after logFC filtering:", data_copy.length);
 
-            //DIMENSIONE DI PARSED E DATAC,DATAN SONO UGUALI , GIUSTAMENTE
-
-            //////////////////////
-
-            // console.log(parsedLogFC_origin)
-            // console.log(data_copy1)
-
-            dataC_copy = dataC_copy1
-            dataN_copy = dataN_copy1
-            data_copy = data_copy1
-            parsedLogFC = parsedLogFC_origin
-
-            if (ind2.length > 0) {
-                //console.log("ind2")
-                // Remove entries corresponding to ind from dataN
-                dataC_copy = dataC_copy1.filter((entry, index) => !ind2.includes(index));
-
-                // Remove entries corresponding to ind from dataN
-                dataN_copy = dataN_copy1.filter((entry, index) => !ind2.includes(index));
-
-                data_copy = data_copy1.filter((entry, index) => !ind2.includes(index));
-
-                parsedLogFC = parsedLogFC_origin.filter((entry, index) => !ind2.includes(index));
-            }
-
-            console.log("ho rimosso", ind2.length, " GENI da data e ne rimangono ", data_copy.length)
+            // Step 6: Update the gene count and plots
             updateCounter();
             updateUpandDown();
-            // console.log(parsedLogFC)
-            // console.log(data_copy)
-
-            // log_thr_fc = Math.log2(thr_fc);  
-            //       const ind2 = parsedLogFC_origin.reduce((result, entry, index) => {
-
-            //           if (Math.abs(entry.logFC) < Math.log2(thr_fc)) {
-            //             result.push(index);
-            //           }
-            //           return result;
-            //       }, []);
-
-
-            // const geneCountDiv2 = document.getElementById('geneCount2');
-            // geneCountDiv2.innerHTML = `First filtering number of genes: ${first_filter_number_genes}<br>Number of genes after filtering: ${parsedLogFC.length - ind2.length}`;
-
         });
 
         document.getElementById("thresholdSlider").addEventListener("change", function () {
@@ -6580,6 +6525,7 @@
                             var pc1Values = [];
                             var pc2Values = [];
                             var groupValues = [];
+                            console.log("PCA DATA COPY PVAL:", data_copy_pval)
                             var req = ocpu.call("pca", {
                                 data: data_copy_pval,
                                 dataN: dataN_copy_pval,
@@ -6719,8 +6665,8 @@
 
                                         // Display the newData array
                                         console.log("PCA, first try ", pca_data);
-                                        pca(pca_data);
-                                        heatmap(heatmap_data);
+                                        if (obj.PC2 !== undefined) pca(pca_data);
+                                        if (obj.PC2 !== undefined) heatmap(heatmap_data);
 
                                     })
 
@@ -6745,12 +6691,14 @@
 
             } else if (chosen_statistic == 'limma') {
                 console.log("data copy in iqr prima di chiamare limma", data_copy)
+                console.log(dataC_copy)
+                console.log(dataN_copy)
                 var req = ocpu.call("limmaDE", {
                     dataC: dataC_copy,  // Pass your processed case data
                     dataN: dataN_copy   // Pass your processed normal data
                 }, function (session) {
                     var filteredDataURL = session.loc + "/R/.val/json";
-                    //console.log(session);
+                    console.log(session);
                     // Fetch the filtered data from the URL
                     fetch(filteredDataURL)
                         .then(response => response.json())
@@ -6776,38 +6724,28 @@
 
 
 
-                            const ind = old_p_adj.reduce((result, entry, index) => {
-
-                                if (entry.pval_adj > threshold) {
-                                    result.push(index);
+                            const pvalGeneSet = new Set();
+                            old_p_adj.forEach(entry => {
+                                if (entry.pval_adj <= threshold) {  // Include genes that pass the p-value filter
+                                    pvalGeneSet.add(entry.Gene);  // Assuming 'Gene' is the key for genes
                                 }
-                                return result;
-                            }, []);
-                            console.log("geni con pval minore di thr nel iqr slider", ind.length)
-                            console.log("thr pval ", threshold)
-                            dataC_copy_pval = dataC_copy
-                            dataN_copy_pval = dataN_copy
-                            data_copy_pval = data_copy
+                            });
 
-                            if (ind.length > 0) {
+                            console.log("Number of genes passing the p-value filter:", pvalGeneSet.size);
+                            console.log("Threshold p-value:", threshold);
 
-                                //console.log(parsedLogFC.length)
+                            dataC_copy_pval = dataC_copy;
+                            dataN_copy_pval = dataN_copy;
+                            data_copy_pval = data_copy;
 
-                                // Remove entries corresponding to ind from dataN
+                            if (pvalGeneSet.size > 0) {
+                                // Filter the data based on the pvalGeneSet
+                                dataC_copy_pval = dataC_copy.filter(entry => pvalGeneSet.has(entry.gene));  // Assuming 'gene' is the key for dataC_copy
+                                dataN_copy_pval = dataN_copy.filter(entry => pvalGeneSet.has(entry.gene));  // Assuming 'gene' is the key for dataN_copy
+                                data_copy_pval = data_copy.filter(entry => pvalGeneSet.has(entry.gene));    // Assuming 'gene' is the key for data_copy
+                                parsedLogFC_pval = parsedLogFC.filter(entry => pvalGeneSet.has(entry.Gene));  // Assuming 'Gene' is the key for parsedLogFC
 
-                                // Remove entries corresponding to ind from dataN
-                                dataC_copy_pval = dataC_copy.filter((entry, index) => !ind.includes(index));
-
-                                // Remove entries corresponding to ind from dataN
-                                dataN_copy_pval = dataN_copy.filter((entry, index) => !ind.includes(index));
-
-
-                                data_copy_pval = data_copy.filter((entry, index) => !ind.includes(index));
-
-                                // Remove entries corresponding to ind from logFC
-                                parsedLogFC_pval = parsedLogFC.filter((entry, index) => !ind.includes(index));
-
-                                console.log("geni passati a box dal IQR slider", parsedLogFC.length)
+                                console.log("Genes passed to box plot after p-value filter:", parsedLogFC_pval.length);
                             }
                             updateBoxPlot(last_box, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
 
@@ -6893,155 +6831,159 @@
                             var pc1Values = [];
                             var pc2Values = [];
                             var groupValues = [];
-                            var req = ocpu.call("pca", {
-                                data: data_copy_pval,
-                                dataN: dataN_copy_pval,
-                                dataC: dataC_copy_pval
-                            }, function (session) {
-                                var filteredDataURL = session.loc + "/R/.val/json";
-                                //console.log(session);
-                                // Fetch the filtered data from the URL
-                                fetch(filteredDataURL)
-                                    .then(response => response.json())
-                                    .then(data => {
-                                        json = data
-                                        console.log(filteredDataURL)
-                                        console.log(json)
+                            console.log("PCA DATA COPY PVAL:", data_copy_pval)
 
-                                        var pc1Key = "PC1";
-                                        var pc2Key = "PC2";
-                                        var groupKey = "Group";
+                            if (data_copy_pval.length > 0) {
+                                var req = ocpu.call("pca", {
+                                    data: data_copy_pval,
+                                    dataN: dataN_copy_pval,
+                                    dataC: dataC_copy_pval
+                                }, function (session) {
+                                    var filteredDataURL = session.loc + "/R/.val/json";
+                                    //console.log(session);
+                                    // Fetch the filtered data from the URL
+                                    fetch(filteredDataURL)
+                                        .then(response => response.json())
+                                        .then(data => {
+                                            json = data
+                                            console.log(filteredDataURL)
+                                            console.log(json)
 
-                                        // Arrays to store PC1 and PC2 values
+                                            var pc1Key = "PC1";
+                                            var pc2Key = "PC2";
+                                            var groupKey = "Group";
+
+                                            // Arrays to store PC1 and PC2 values
 
 
-                                        // Iterate over each object in the JSON array
-                                        json.scores_df.forEach(function (obj) {
-                                            // Push PC1, PC2, and Group values to the arrays
-                                            pc1Values.push(obj[pc1Key]);
-                                            pc2Values.push(obj[pc2Key]);
-                                            groupValues.push(obj[groupKey]);
-                                        });
-                                        // console.log(pc1Values)
+                                            // Iterate over each object in the JSON array
+                                            json.scores_df.forEach(function (obj) {
+                                                // Push PC1, PC2, and Group values to the arrays
+                                                pc1Values.push(obj[pc1Key]);
+                                                pc2Values.push(obj[pc2Key]);
+                                                groupValues.push(obj[groupKey]);
+                                            });
+                                            // console.log(pc1Values)
 
-                                        // Extract metadata categories from the values of the first column
-                                        var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
-                                        console.log("Metadata categories:", metadataCategories);
+                                            // Extract metadata categories from the values of the first column
+                                            var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
+                                            console.log("Metadata categories:", metadataCategories);
 
-                                        explainedVariance = json.explained_variance; // Access explained variance
-                                        console.log("Explained variance", explainedVariance)
+                                            explainedVariance = json.explained_variance; // Access explained variance
+                                            console.log("Explained variance", explainedVariance)
 
-                                        // Initialize pca_data array
-                                        pca_data = [];
+                                            // Initialize pca_data array
+                                            pca_data = [];
 
-                                        // Iterate over each object in the JSON array
-                                        json.scores_df.forEach(function (obj) {
-                                            // Retrieve additional data from metadata based on _row
-                                            var gsm = obj._row;
-                                            var group = obj.Group;
-                                            // Create an object with the required fields
-                                            var newObj = {
-                                                GSM: gsm,
-                                                group: group,
-                                            };
+                                            // Iterate over each object in the JSON array
+                                            json.scores_df.forEach(function (obj) {
+                                                // Retrieve additional data from metadata based on _row
+                                                var gsm = obj._row;
+                                                var group = obj.Group;
+                                                // Create an object with the required fields
+                                                var newObj = {
+                                                    GSM: gsm,
+                                                    group: group,
+                                                };
 
-                                            // Check for the existence of each principal component before adding to newObj
-                                            if (obj.PC1 !== undefined) newObj.pc1 = obj.PC1;
-                                            if (obj.PC2 !== undefined) newObj.pc2 = obj.PC2;
-                                            if (obj.PC3 !== undefined) newObj.pc3 = obj.PC3;
-                                            if (obj.PC4 !== undefined) newObj.pc4 = obj.PC4;
-                                            if (obj.PC5 !== undefined) newObj.pc5 = obj.PC5;
-                                            if (obj.PC6 !== undefined) newObj.pc6 = obj.PC6;
+                                                // Check for the existence of each principal component before adding to newObj
+                                                if (obj.PC1 !== undefined) newObj.pc1 = obj.PC1;
+                                                if (obj.PC2 !== undefined) newObj.pc2 = obj.PC2;
+                                                if (obj.PC3 !== undefined) newObj.pc3 = obj.PC3;
+                                                if (obj.PC4 !== undefined) newObj.pc4 = obj.PC4;
+                                                if (obj.PC5 !== undefined) newObj.pc5 = obj.PC5;
+                                                if (obj.PC6 !== undefined) newObj.pc6 = obj.PC6;
 
-                                            // Add metadata values for each category to the newObj
-                                            metadataCategories.forEach((category, index) => {
-                                                newObj[category] = metadata[index][gsm];
+                                                // Add metadata values for each category to the newObj
+                                                metadataCategories.forEach((category, index) => {
+                                                    newObj[category] = metadata[index][gsm];
+                                                });
+
+                                                // Push the new object to the pca_data array
+                                                pca_data.push(newObj);
                                             });
 
-                                            // Push the new object to the pca_data array
-                                            pca_data.push(newObj);
-                                        });
+                                            heatmap_data = []
+                                            json.scores_var.forEach(function (obj) {
+                                                // Push PC1, PC2, and Group values to the arrays
+                                                var gene = obj._row
 
-                                        heatmap_data = []
-                                        json.scores_var.forEach(function (obj) {
-                                            // Push PC1, PC2, and Group values to the arrays
-                                            var gene = obj._row
+                                                var newObj = {
+                                                    gene: gene,
+                                                };
+                                                // Check for the existence of each principal component before adding to newObj
+                                                if (obj.PC1 !== undefined) newObj.pc1 = obj.PC1;
+                                                if (obj.PC2 !== undefined) newObj.pc2 = obj.PC2;
+                                                if (obj.PC3 !== undefined) newObj.pc3 = obj.PC3;
+                                                if (obj.PC4 !== undefined) newObj.pc4 = obj.PC4;
+                                                if (obj.PC5 !== undefined) newObj.pc5 = obj.PC5;
+                                                if (obj.PC6 !== undefined) newObj.pc6 = obj.PC6;
 
-                                            var newObj = {
-                                                gene: gene,
-                                            };
-                                            // Check for the existence of each principal component before adding to newObj
-                                            if (obj.PC1 !== undefined) newObj.pc1 = obj.PC1;
-                                            if (obj.PC2 !== undefined) newObj.pc2 = obj.PC2;
-                                            if (obj.PC3 !== undefined) newObj.pc3 = obj.PC3;
-                                            if (obj.PC4 !== undefined) newObj.pc4 = obj.PC4;
-                                            if (obj.PC5 !== undefined) newObj.pc5 = obj.PC5;
-                                            if (obj.PC6 !== undefined) newObj.pc6 = obj.PC6;
+                                                heatmap_data.push(newObj);
+                                            })
 
-                                            heatmap_data.push(newObj);
-                                        })
+                                            // Assuming you want to work with the first object in the array
+                                            let obj = json.scores_df[0]; // Get the first object
 
-                                        // Assuming you want to work with the first object in the array
-                                        let obj = json.scores_df[0]; // Get the first object
+                                            // Initialize an array to hold available principal components
+                                            availablePCs = [];
 
-                                        // Initialize an array to hold available principal components
-                                        availablePCs = [];
+                                            // Check for the existence of each principal component
+                                            if (obj.PC1 !== undefined) availablePCs.push('pc1');
+                                            if (obj.PC2 !== undefined) availablePCs.push('pc2');
+                                            if (obj.PC3 !== undefined) availablePCs.push('pc3');
+                                            if (obj.PC4 !== undefined) availablePCs.push('pc4');
+                                            if (obj.PC5 !== undefined) availablePCs.push('pc5');
+                                            if (obj.PC6 !== undefined) availablePCs.push('pc6');
 
-                                        // Check for the existence of each principal component
-                                        if (obj.PC1 !== undefined) availablePCs.push('pc1');
-                                        if (obj.PC2 !== undefined) availablePCs.push('pc2');
-                                        if (obj.PC3 !== undefined) availablePCs.push('pc3');
-                                        if (obj.PC4 !== undefined) availablePCs.push('pc4');
-                                        if (obj.PC5 !== undefined) availablePCs.push('pc5');
-                                        if (obj.PC6 !== undefined) availablePCs.push('pc6');
+                                            // Function to update the dropdowns based on available PCs
+                                            function updateDropdowns() {
+                                                const xAxisSelect = document.getElementById("x-axis-select");
+                                                const yAxisSelect = document.getElementById("y-axis-select");
 
-                                        // Function to update the dropdowns based on available PCs
-                                        function updateDropdowns() {
-                                            const xAxisSelect = document.getElementById("x-axis-select");
-                                            const yAxisSelect = document.getElementById("y-axis-select");
+                                                // Clear existing options
+                                                xAxisSelect.innerHTML = '';
+                                                yAxisSelect.innerHTML = '';
 
-                                            // Clear existing options
-                                            xAxisSelect.innerHTML = '';
-                                            yAxisSelect.innerHTML = '';
+                                                // Add available options to the X-axis dropdown
+                                                availablePCs.forEach(function (pc) {
+                                                    const option = document.createElement("option");
+                                                    option.value = pc;
+                                                    option.textContent = pc.toUpperCase(); // Set text to uppercase
+                                                    xAxisSelect.appendChild(option);
+                                                });
 
-                                            // Add available options to the X-axis dropdown
-                                            availablePCs.forEach(function (pc) {
-                                                const option = document.createElement("option");
-                                                option.value = pc;
-                                                option.textContent = pc.toUpperCase(); // Set text to uppercase
-                                                xAxisSelect.appendChild(option);
-                                            });
+                                                // Add available options to the Y-axis dropdown
+                                                availablePCs.forEach(function (pc) {
+                                                    const option = document.createElement("option");
+                                                    option.value = pc;
+                                                    option.textContent = pc.toUpperCase(); // Set text to uppercase
+                                                    yAxisSelect.appendChild(option);
+                                                });
 
-                                            // Add available options to the Y-axis dropdown
-                                            availablePCs.forEach(function (pc) {
-                                                const option = document.createElement("option");
-                                                option.value = pc;
-                                                option.textContent = pc.toUpperCase(); // Set text to uppercase
-                                                yAxisSelect.appendChild(option);
-                                            });
+                                                // Set the default selected value for the Y-axis to PC2, if available
+                                                if (availablePCs.includes("pc2")) {
+                                                    yAxisSelect.value = "pc2"; // Set PC2 as the selected value
+                                                }
 
-                                            // Set the default selected value for the Y-axis to PC2, if available
-                                            if (availablePCs.includes("pc2")) {
-                                                yAxisSelect.value = "pc2"; // Set PC2 as the selected value
                                             }
 
-                                        }
+                                            // Call the function to update dropdowns
+                                            updateDropdowns();
 
-                                        // Call the function to update dropdowns
-                                        updateDropdowns();
-
-                                        // Display the newData array
-                                        console.log("PCA, first try ", pca_data);
-                                        pca(pca_data);
-                                        heatmap(heatmap_data);
-                                    })
+                                            // Display the newData array
+                                            console.log("PCA, first try ", pca_data);
+                                            if (obj.PC2 !== undefined) pca(pca_data);
+                                            if (obj.PC2 !== undefined) heatmap(heatmap_data);
+                                        })
 
 
 
-                                // DEG(data_copy_pval,parsedLogFC_pval,old_p_adj)
+                                    // DEG(data_copy_pval,parsedLogFC_pval,old_p_adj)
 
 
-                            })
+                                })
+                            }
                             scatter.selectAll("circle")
                                 .filter(circleData => circleData.gene === mostUpregulatedGeneName || circleData.gene === mostDownregulatedGeneName)
                                 .style("fill", d => {
@@ -7066,34 +7008,50 @@
 
 
         document.getElementById("log_thresholdSlider").addEventListener("input", function () {
-            // Update the threshold value on slider change
+            // Step 1: Create a Set of genes that pass the logFC threshold
             thr_fc = parseFloat(this.value);
             document.getElementById("log_thresholdSliderValue").innerText = thr_fc;
-
-            // Calculate the quantile
             log_thr_fc = Math.log2(thr_fc);
-            //console.log(log_thr_fc)
-            const ind = parsedLogFC_origin.reduce((result, entry, index) => {
 
-                if (Math.abs(entry.logFC) < Math.log2(thr_fc)) {
-                    result.push(index);
 
+            const geneset = new Set();
+            parsedLogFC_origin.forEach(entry => {
+                if (Math.abs(entry.logFC) >= log_thr_fc) {
+                    geneset.add(entry.Gene);  // Add the gene to the set if it passes the filter
                 }
-                return result;
-            }, []);
+            });
 
-            if (ind.length > 0) {
+            console.log("Number of genes passing the LOGFC filter:", geneset.size);
 
-                // Remove entries corresponding to ind from dataN
-                dataC_copy = dataC_copy1.filter((entry, index) => !ind.includes(index));
-
-                // Remove entries corresponding to ind from dataN
-                dataN_copy = dataN_copy1.filter((entry, index) => !ind.includes(index));
-
-                data_copy = data_copy1.filter((entry, index) => !ind.includes(index));
-
-                parsedLogFC = parsedLogFC_origin.filter((entry, index) => !ind.includes(index));
+            // Step 2: Filter dataC_copy1, dataN_copy1, data_copy1, and parsedLogFC_origin using the geneset
+            if (geneset.size > 0) {
+                dataC_copy = dataC_copy1.filter(entry => geneset.has(entry.gene));  // Use the 'gene' key for comparison
+                dataN_copy = dataN_copy1.filter(entry => geneset.has(entry.gene));
+                data_copy = data_copy1.filter(entry => geneset.has(entry.gene));
+                parsedLogFC = parsedLogFC_origin.filter(entry => geneset.has(entry.Gene));  // Use the 'Gene' key for comparison
             }
+
+            // const ind = parsedLogFC_origin.reduce((result, entry, index) => {
+
+            //     if (Math.abs(entry.logFC) < Math.log2(thr_fc)) {
+            //         result.push(index);
+
+            //     }
+            //     return result;
+            // }, []);
+
+            // if (ind.length > 0) {
+
+            //     // Remove entries corresponding to ind from dataN
+            //     dataC_copy = dataC_copy1.filter((entry, index) => !ind.includes(index));
+
+            //     // Remove entries corresponding to ind from dataN
+            //     dataN_copy = dataN_copy1.filter((entry, index) => !ind.includes(index));
+
+            //     data_copy = data_copy1.filter((entry, index) => !ind.includes(index));
+
+            //     parsedLogFC = parsedLogFC_origin.filter((entry, index) => !ind.includes(index));
+            // }
 
             updateCounter();
             updateUpandDown();
@@ -7103,9 +7061,15 @@
 
         document.getElementById("log_thresholdSlider").addEventListener("change", function () {
             document.getElementById("loadingOverlay").style.display = "block";
+            console.log(dataC_copy_pval)
+            console.log(dataN_copy_pval)
+            console.log(data_copy_pval)
             dataC_copy_pval = dataC_copy
             dataN_copy_pval = dataN_copy
             data_copy_pval = data_copy
+            console.log(dataC_copy_pval)
+            console.log(dataN_copy_pval)
+            console.log(data_copy_pval)
             updateCounter();
             updateUpandDown();
 
@@ -7198,152 +7162,157 @@
                             //   var pc1Values = [];
                             // var pc2Values = [];
                             // var groupValues = [];
-                            var req = ocpu.call("pca", {
-                                data: data_copy_pval,
-                                dataN: dataN_copy_pval,
-                                dataC: dataC_copy_pval
-                            }, function (session) {
-                                var filteredDataURL = session.loc + "R/.val/json";
-                                //console.log(session);
-                                // Fetch the filtered data from the URL
-                                fetch(filteredDataURL)
-                                    .then(response => response.json())
-                                    .then(data => {
-                                        json = data
-                                        console.log(filteredDataURL)
-                                        console.log(json)
+                            console.log("PCA DATA COPY PVAL:", data_copy_pval)
 
-                                        var pc1Key = "PC1";
-                                        var pc2Key = "PC2";
-                                        var groupKey = "Group";
+                            if (data_copy_pval.length > 0) {
 
-                                        // Arrays to store PC1 and PC2 values
+                                var req = ocpu.call("pca", {
+                                    data: data_copy_pval,
+                                    dataN: dataN_copy_pval,
+                                    dataC: dataC_copy_pval
+                                }, function (session) {
+                                    var filteredDataURL = session.loc + "R/.val/json";
+                                    //console.log(session);
+                                    // Fetch the filtered data from the URL
+                                    fetch(filteredDataURL)
+                                        .then(response => response.json())
+                                        .then(data => {
+                                            json = data
+                                            console.log(filteredDataURL)
+                                            console.log(json)
+
+                                            var pc1Key = "PC1";
+                                            var pc2Key = "PC2";
+                                            var groupKey = "Group";
+
+                                            // Arrays to store PC1 and PC2 values
 
 
-                                        // Iterate over each object in the JSON array
-                                        json.scores_df.forEach(function (obj) {
-                                            // Push PC1, PC2, and Group values to the arrays
-                                            pc1Values.push(obj[pc1Key]);
-                                            pc2Values.push(obj[pc2Key]);
-                                            groupValues.push(obj[groupKey]);
-                                        });
-                                        // console.log(pc1Values)
+                                            // Iterate over each object in the JSON array
+                                            json.scores_df.forEach(function (obj) {
+                                                // Push PC1, PC2, and Group values to the arrays
+                                                pc1Values.push(obj[pc1Key]);
+                                                pc2Values.push(obj[pc2Key]);
+                                                groupValues.push(obj[groupKey]);
+                                            });
+                                            // console.log(pc1Values)
 
-                                        // Extract metadata categories from the values of the first column
-                                        var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
-                                        console.log("Metadata categories:", metadataCategories);
+                                            // Extract metadata categories from the values of the first column
+                                            var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
+                                            console.log("Metadata categories:", metadataCategories);
 
-                                        explainedVariance = json.explained_variance; // Access explained variance
-                                        console.log("Explained variance", explainedVariance)
+                                            explainedVariance = json.explained_variance; // Access explained variance
+                                            console.log("Explained variance", explainedVariance)
 
-                                        // Initialize pca_data array
-                                        pca_data = [];
+                                            // Initialize pca_data array
+                                            pca_data = [];
 
-                                        // Iterate over each object in the JSON array
-                                        json.scores_df.forEach(function (obj) {
-                                            // Retrieve additional data from metadata based on _row
-                                            var gsm = obj._row;
-                                            var group = obj.Group;
-                                            // Create an object with the required fields
-                                            var newObj = {
-                                                GSM: gsm,
-                                                group: group,
-                                            };
+                                            // Iterate over each object in the JSON array
+                                            json.scores_df.forEach(function (obj) {
+                                                // Retrieve additional data from metadata based on _row
+                                                var gsm = obj._row;
+                                                var group = obj.Group;
+                                                // Create an object with the required fields
+                                                var newObj = {
+                                                    GSM: gsm,
+                                                    group: group,
+                                                };
 
-                                            // Check for the existence of each principal component before adding to newObj
-                                            if (obj.PC1 !== undefined) newObj.pc1 = obj.PC1;
-                                            if (obj.PC2 !== undefined) newObj.pc2 = obj.PC2;
-                                            if (obj.PC3 !== undefined) newObj.pc3 = obj.PC3;
-                                            if (obj.PC4 !== undefined) newObj.pc4 = obj.PC4;
-                                            if (obj.PC5 !== undefined) newObj.pc5 = obj.PC5;
-                                            if (obj.PC6 !== undefined) newObj.pc6 = obj.PC6;
+                                                // Check for the existence of each principal component before adding to newObj
+                                                if (obj.PC1 !== undefined) newObj.pc1 = obj.PC1;
+                                                if (obj.PC2 !== undefined) newObj.pc2 = obj.PC2;
+                                                if (obj.PC3 !== undefined) newObj.pc3 = obj.PC3;
+                                                if (obj.PC4 !== undefined) newObj.pc4 = obj.PC4;
+                                                if (obj.PC5 !== undefined) newObj.pc5 = obj.PC5;
+                                                if (obj.PC6 !== undefined) newObj.pc6 = obj.PC6;
 
-                                            // Add metadata values for each category to the newObj
-                                            metadataCategories.forEach((category, index) => {
-                                                newObj[category] = metadata[index][gsm];
+                                                // Add metadata values for each category to the newObj
+                                                metadataCategories.forEach((category, index) => {
+                                                    newObj[category] = metadata[index][gsm];
+                                                });
+
+                                                // Push the new object to the pca_data array
+                                                pca_data.push(newObj);
                                             });
 
-                                            // Push the new object to the pca_data array
-                                            pca_data.push(newObj);
-                                        });
+                                            heatmap_data = []
+                                            json.scores_var.forEach(function (obj) {
+                                                // Push PC1, PC2, and Group values to the arrays
+                                                var gene = obj._row
 
-                                        heatmap_data = []
-                                        json.scores_var.forEach(function (obj) {
-                                            // Push PC1, PC2, and Group values to the arrays
-                                            var gene = obj._row
+                                                var newObj = {
+                                                    gene: gene,
+                                                };
+                                                // Check for the existence of each principal component before adding to newObj
+                                                if (obj.PC1 !== undefined) newObj.pc1 = obj.PC1;
+                                                if (obj.PC2 !== undefined) newObj.pc2 = obj.PC2;
+                                                if (obj.PC3 !== undefined) newObj.pc3 = obj.PC3;
+                                                if (obj.PC4 !== undefined) newObj.pc4 = obj.PC4;
+                                                if (obj.PC5 !== undefined) newObj.pc5 = obj.PC5;
+                                                if (obj.PC6 !== undefined) newObj.pc6 = obj.PC6;
 
-                                            var newObj = {
-                                                gene: gene,
-                                            };
-                                            // Check for the existence of each principal component before adding to newObj
-                                            if (obj.PC1 !== undefined) newObj.pc1 = obj.PC1;
-                                            if (obj.PC2 !== undefined) newObj.pc2 = obj.PC2;
-                                            if (obj.PC3 !== undefined) newObj.pc3 = obj.PC3;
-                                            if (obj.PC4 !== undefined) newObj.pc4 = obj.PC4;
-                                            if (obj.PC5 !== undefined) newObj.pc5 = obj.PC5;
-                                            if (obj.PC6 !== undefined) newObj.pc6 = obj.PC6;
+                                                heatmap_data.push(newObj);
+                                            })
 
-                                            heatmap_data.push(newObj);
-                                        })
+                                            // Assuming you want to work with the first object in the array
+                                            let obj = json.scores_df[0]; // Get the first object
 
-                                        // Assuming you want to work with the first object in the array
-                                        let obj = json.scores_df[0]; // Get the first object
+                                            // Initialize an array to hold available principal components
+                                            availablePCs = [];
 
-                                        // Initialize an array to hold available principal components
-                                        availablePCs = [];
+                                            // Check for the existence of each principal component
+                                            if (obj.PC1 !== undefined) availablePCs.push('pc1');
+                                            if (obj.PC2 !== undefined) availablePCs.push('pc2');
+                                            if (obj.PC3 !== undefined) availablePCs.push('pc3');
+                                            if (obj.PC4 !== undefined) availablePCs.push('pc4');
+                                            if (obj.PC5 !== undefined) availablePCs.push('pc5');
+                                            if (obj.PC6 !== undefined) availablePCs.push('pc6');
 
-                                        // Check for the existence of each principal component
-                                        if (obj.PC1 !== undefined) availablePCs.push('pc1');
-                                        if (obj.PC2 !== undefined) availablePCs.push('pc2');
-                                        if (obj.PC3 !== undefined) availablePCs.push('pc3');
-                                        if (obj.PC4 !== undefined) availablePCs.push('pc4');
-                                        if (obj.PC5 !== undefined) availablePCs.push('pc5');
-                                        if (obj.PC6 !== undefined) availablePCs.push('pc6');
+                                            // Function to update the dropdowns based on available PCs
+                                            function updateDropdowns() {
+                                                const xAxisSelect = document.getElementById("x-axis-select");
+                                                const yAxisSelect = document.getElementById("y-axis-select");
 
-                                        // Function to update the dropdowns based on available PCs
-                                        function updateDropdowns() {
-                                            const xAxisSelect = document.getElementById("x-axis-select");
-                                            const yAxisSelect = document.getElementById("y-axis-select");
+                                                // Clear existing options
+                                                xAxisSelect.innerHTML = '';
+                                                yAxisSelect.innerHTML = '';
 
-                                            // Clear existing options
-                                            xAxisSelect.innerHTML = '';
-                                            yAxisSelect.innerHTML = '';
+                                                // Add available options to the X-axis dropdown
+                                                availablePCs.forEach(function (pc) {
+                                                    const option = document.createElement("option");
+                                                    option.value = pc;
+                                                    option.textContent = pc.toUpperCase(); // Set text to uppercase
+                                                    xAxisSelect.appendChild(option);
+                                                });
 
-                                            // Add available options to the X-axis dropdown
-                                            availablePCs.forEach(function (pc) {
-                                                const option = document.createElement("option");
-                                                option.value = pc;
-                                                option.textContent = pc.toUpperCase(); // Set text to uppercase
-                                                xAxisSelect.appendChild(option);
-                                            });
+                                                // Add available options to the Y-axis dropdown
+                                                availablePCs.forEach(function (pc) {
+                                                    const option = document.createElement("option");
+                                                    option.value = pc;
+                                                    option.textContent = pc.toUpperCase(); // Set text to uppercase
+                                                    yAxisSelect.appendChild(option);
+                                                });
 
-                                            // Add available options to the Y-axis dropdown
-                                            availablePCs.forEach(function (pc) {
-                                                const option = document.createElement("option");
-                                                option.value = pc;
-                                                option.textContent = pc.toUpperCase(); // Set text to uppercase
-                                                yAxisSelect.appendChild(option);
-                                            });
+                                                // Set the default selected value for the Y-axis to PC2, if available
+                                                if (availablePCs.includes("pc2")) {
+                                                    yAxisSelect.value = "pc2"; // Set PC2 as the selected value
+                                                }
 
-                                            // Set the default selected value for the Y-axis to PC2, if available
-                                            if (availablePCs.includes("pc2")) {
-                                                yAxisSelect.value = "pc2"; // Set PC2 as the selected value
                                             }
 
-                                        }
+                                            // Call the function to update dropdowns
+                                            updateDropdowns();
 
-                                        // Call the function to update dropdowns
-                                        updateDropdowns();
+                                            // Display the newData array
+                                            console.log("PCA, first try ", pca_data);
+                                            if (obj.PC2 !== undefined) pca(pca_data);
+                                            if (obj.PC2 !== undefined) heatmap(heatmap_data);
+                                        })
 
-                                        // Display the newData array
-                                        console.log("PCA, first try ", pca_data);
-                                        pca(pca_data);
-                                        heatmap(heatmap_data);
-                                    })
+                                    //DEG(data_copy_pval,parsedLogFC_pval,old_p_adj)
 
-                                //DEG(data_copy_pval,parsedLogFC_pval,old_p_adj)
-
-                            })
+                                })
+                            }
 
 
 
@@ -7352,13 +7321,15 @@
                         });
                 })
             } else if (chosen_statistic == 'limma') {
+                console.log(dataC_copy)
+                console.log(dataN_copy)
 
                 var req = ocpu.call("limmaDE", {
                     dataC: dataC_copy,  // Pass your processed case data
                     dataN: dataN_copy   // Pass your processed normal data
                 }, function (session) {
                     var filteredDataURL = session.loc + "/R/.val/json";
-                    //console.log(session);
+                    console.log(session);
                     // Fetch the filtered data from the URL
                     fetch(filteredDataURL)
                         .then(response => response.json())
@@ -7398,50 +7369,46 @@
 
                             dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
 
-                            const ind = old_p_adj.reduce((result, entry, index) => {
-
-                                if (entry.pval_adj > threshold) {
-                                    result.push(index);
+                            // Step 1: Create a Set of genes that pass the p-value threshold
+                            const pvalGeneset = new Set();
+                            old_p_adj.forEach(entry => {
+                                if (entry.pval_adj <= threshold) {
+                                    pvalGeneset.add(entry.Gene);  // Assuming 'Gene' is the key
                                 }
-                                return result;
-                            }, []);
-                            dataC_copy_pval = dataC_copy
-                            dataN_copy_pval = dataN_copy
-                            data_copy_pval = data_copy
+                            });
 
-                            console.log("geni con pval minore di thr nel logFC slider", ind.length)
+                            console.log("Number of genes passing the p-value filter:", pvalGeneset.size);
 
-                            if (ind.length > 0) {
+                            // Step 2: Initialize copies of the data
+                            dataC_copy_pval = dataC_copy;
+                            dataN_copy_pval = dataN_copy;
+                            data_copy_pval = data_copy;
 
-                                //console.log(parsedLogFC.length)
+                            if (pvalGeneset.size > 0) {
+                                // Step 3: Filter dataC_copy, dataN_copy, and data_copy using the p-value gene set
+                                dataC_copy_pval = dataC_copy.filter(entry => pvalGeneset.has(entry.gene));  // Assuming 'gene' is the key
+                                dataN_copy_pval = dataN_copy.filter(entry => pvalGeneset.has(entry.gene));
+                                data_copy_pval = data_copy.filter(entry => pvalGeneset.has(entry.gene));
 
-                                // Remove entries corresponding to ind from dataN
+                                // Step 4: Filter parsedLogFC_pval based on the gene set
+                                parsedLogFC_pval = parsedLogFC.filter(entry => pvalGeneset.has(entry.Gene));  // Assuming 'Gene' is the key
 
-                                // Remove entries corresponding to ind from dataN
-                                dataC_copy_pval = dataC_copy.filter((entry, index) => !ind.includes(index));
+                                console.log("First gene after p-value filtering:", dataN_copy_pval[0]);
 
-                                // Remove entries corresponding to ind from dataN
-                                dataN_copy_pval = dataN_copy.filter((entry, index) => !ind.includes(index));
+                                // Step 5: Update box plot
+                                updateBoxPlot(last_box, parsedLogFC_pval, dataN_copy_pval, dataC_copy_pval);
 
-                                data_copy_pval = data_copy.filter((entry, index) => !ind.includes(index));
+                                // Step 6: Filter selectedGeneData based on whether genes are in dataC_copy or dataN_copy
+                                selectedGeneData = selectedGeneData.filter(gene =>
+                                    dataC_copy_pval.some(d => d.gene === gene) || dataN_copy_pval.some(d => d.gene === gene)
+                                );
 
-                                // Remove entries corresponding to ind from logFC
-                                parsedLogFC_pval = parsedLogFC.filter((entry, index) => !ind.includes(index));
+                                console.log("Selected gene data after filtering:", selectedGeneData);
 
-                                console.log(dataN_copy_pval[0])
+                                // Step 7: Update the parallel coordinates plot
+                                dynamicParallel(selectedGeneData, data_copy_pval, dataC_copy_pval, dataN_copy_pval, first_dims);
 
-                                updateBoxPlot(last_box, parsedLogFC_pval, dataN_copy_pval, dataC_copy_pval)
-                                selectedGeneData = selectedGeneData.filter(function (gene) {
-                                    // Check if the gene is present in dataC_copy or dataN_copy
-                                    return dataC_copy.some(function (d) { return d.gene === gene; }) ||
-                                        dataN_copy.some(function (d) { return d.gene === gene; });
-                                });
-
-                                console.log(selectedGeneData)
-
-                                dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
-
-                                console.log(dataN_copy.length)
+                                console.log("Filtered dataN_copy length:", dataN_copy_pval.length);
                             }
                             updateCounter();
                             updateUpandDown();
@@ -7449,6 +7416,8 @@
                             //   var pc1Values = [];
                             // var pc2Values = [];
                             // var groupValues = [];
+                            console.log("PCA DATA COPY PVAL:", data_copy_pval)
+
                             var req = ocpu.call("pca", {
                                 data: data_copy_pval,
                                 dataN: dataN_copy_pval,
@@ -7588,8 +7557,8 @@
 
                                         // Display the newData array
                                         console.log("PCA, first try ", pca_data);
-                                        pca(pca_data);
-                                        heatmap(heatmap_data);
+                                        if (obj.PC2 !== undefined) pca(pca_data);
+                                        if (obj.PC2 !== undefined) heatmap(heatmap_data);
                                     })
 
                                 //DEG(data_copy_pval,parsedLogFC_pval,old_p_adj)
@@ -7744,7 +7713,9 @@
 
                 //   var pc1Values = [];
                 // var pc2Values = [];
-                // var groupValues = [];
+                // var groupValues = [];                                                
+                console.log("PCA DATA COPY PVAL:", data_copy_pval)
+
                 var req = ocpu.call("pca", {
                     data: data_copy_pval,
                     dataN: dataN_copy_pval,
@@ -7884,8 +7855,8 @@
 
                             // Display the newData array
                             console.log("PCA, first try ", pca_data);
-                            pca(pca_data);
-                            heatmap(heatmap_data);
+                            if (obj.PC2 !== undefined) pca(pca_data);
+                            if (obj.PC2 !== undefined) heatmap(heatmap_data);
                         })
 
                     //DEG(data_copy_pval,parsedLogFC_pval,old_p_adj)
@@ -7910,7 +7881,6 @@
             // Now, dataN, dataC, data, genes, and logFC are updated
         })
 
-        // Assuming newdataNJSON, newdataCJSON, and newdataJSON are your arrays of data
         document.getElementById('thresholdSelect').addEventListener('change', function () {
             //console.log(dataC_copy)
             //console.log(data_copy)
@@ -7964,6 +7934,8 @@
                 var pc1Values = [];
                 var pc2Values = [];
                 var groupValues = [];
+                console.log("PCA DATA COPY PVAL:", data_copy_pval)
+
                 var req = ocpu.call("pca", {
                     data: data_copy_pval,
                     dataN: dataN_copy_pval,
@@ -8100,8 +8072,8 @@
 
                             // Display the newData array
                             console.log("PCA, first try ", pca_data);
-                            pca(pca_data);
-                            heatmap(heatmap_data);
+                            if (obj.PC2 !== undefined) pca(pca_data);
+                            if (obj.PC2 !== undefined) heatmap(heatmap_data);
                         })
 
 
@@ -8209,9 +8181,9 @@
                     // On click, select the circle and add the GSM value to the list
                     d3.select(this).attr("stroke", "black").attr("stroke-width", 2);
                     var selectedGSM = d.GSM; // Assuming GSM is a property in the object
-                    console.log("Selected GSM:", selectedGSM);
+                    // console.log("Selected GSM:", selectedGSM);
                     gsmList.push(selectedGSM);
-                    console.log("GSM List:", gsmList);
+                    // console.log("GSM List:", gsmList);
 
                     // Check if the selected GSM is in the transposedData list
                     var selectedData = transposedData.find(function (data) {
@@ -11923,7 +11895,7 @@
                 // Get all the active animations on this element
                 const anims = elem.getAnimations();
 
-                console.log(anims)
+                // console.log(anims)
 
                 // Return the first one with the expected animationName
                 return anims.find((anim) => anim.animationName === name);
@@ -12338,7 +12310,7 @@
                 // Get all the active animations on this element
                 const anims = elem.getAnimations();
 
-                console.log(anims)
+                // console.log(anims)
 
                 // Return the first one with the expected animationName
                 return anims.find((anim) => anim.animationName === name);
@@ -12936,7 +12908,7 @@
                 // Get all the active animations on this element
                 const anims = elem.getAnimations();
 
-                console.log(anims)
+                // console.log(anims)
 
                 // Return the first one with the expected animationName
                 return anims.find((anim) => anim.animationName === name);
@@ -13536,7 +13508,7 @@
                 // Get all the active animations on this element
                 const anims = elem.getAnimations();
 
-                console.log(anims)
+                // console.log(anims)
 
                 // Return the first one with the expected animationName
                 return anims.find((anim) => anim.animationName === name);
