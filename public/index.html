@@ -108,6 +108,12 @@
             /* Add some space between category containers */
         }
 
+        #csvTableData2_wrapper {
+            overflow-x: hidden;
+            /* Hide the x scrollbar */
+        }
+
+
         .value-span {
             display: inline-block;
             text-align: left;
@@ -616,9 +622,14 @@
                     style="display: block; width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
             </div>
 
-            <button id="loadCsvBtn"
-                style="display: block; width: 100%; padding: 10px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer;">Load
-                Dataset</button>
+            <div style="display: flex; justify-content: center; gap: 20px; margin-top: 20px;">
+                <button id="loadCsvBtn"
+                    style="padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer;">Load
+                    Dataset</button>
+                <button id="backBtn"
+                    style="padding: 10px 20px; background-color: #F44336; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer;">Back</button>
+            </div>
+
         </div>
     </div>
 
@@ -818,18 +829,24 @@
                     <div id="scatterPlot" style="position: relative">
                     </div>
                     <div id="controlPanel">
-                        <button id="resetButton" class="btn btn-secondary">Reset Zoom</button>
-                        <button id="switchButton" class="btn btn-secondary">Switch Plot</button>
+                        <button id="resetButton" class="btn btn-secondary"
+                            style="padding: 0.25rem 0.5rem; font-size: 0.875rem; margin-left:20px">Reset Zoom</button>
+                        <button id="switchButton" class="btn btn-secondary"
+                            style="padding: 0.25rem 0.5rem; font-size: 0.875rem; margin-left:20px">Switch Plot</button>
                         <label for="thresholdSelect">
-                            <p style="color: #ddd;">Select Threshold:</p>
+                            <span
+                                style="margin: 0; padding: 0; color: #ddd; margin-left:30px; margin-top: 10px; margin-bottom: 7px; display: inline-block;">Select
+                                Threshold:</span>
                         </label>
-                        <select id="thresholdSelect" class="btn btn-secondary dropdown-toggle">
+                        <select id="thresholdSelect" class="btn btn-secondary dropdown-toggle"
+                            style="padding: 0.25rem 0.5rem; font-size: 0.875rem; margin-left:10px">
                             <option value="0.05" selected>0.05</option>
                             <option value="0.01">0.01</option>
                         </select>
                         <div class="search-container">
                             <div id="searchInputContainer" style="position: relative;">
-                                <input type="text" id="searchInput" class="form-control" placeholder="Search">
+                                <input type="text" id="searchInput" class="form-control" placeholder="Search"
+                                    style="padding: 0.25rem 0.5rem; font-size: 0.875rem; margin-left:40px">
                                 <div id="searchResults" class="dropdown-content"
                                     style="display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 1000000; background-color: white;">
                                 </div>
@@ -918,8 +935,9 @@
                 <div>
                     <div id="pca"></div>
                     <!-- Dropdown for X-axis selection -->
-                    <label for="x-axis-select" style="color: white;">Select X-axis:</label>
-                    <select id="x-axis-select">
+                    <label for="x-axis-select" style="color: white; margin-left: 20px;">Select X-axis:</label>
+                    <select id="x-axis-select" class="btn btn-secondary dropdown-toggle"
+                        style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">
                         <option value="pc1">PC1</option>
                         <option value="pc2">PC2</option>
                         <option value="pc3">PC3</option>
@@ -930,7 +948,8 @@
 
                     <!-- Dropdown for Y-axis selection -->
                     <label for="y-axis-select" style="color: white;">Select Y-axis:</label>
-                    <select id="y-axis-select">
+                    <select id="y-axis-select" class="btn btn-secondary dropdown-toggle"
+                        style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">
                         <option value="pc2">PC2</option>
                         <option value="pc1">PC1</option>
                         <option value="pc3">PC3</option>
@@ -939,7 +958,8 @@
                         <option value="pc6">PC6</option>
                     </select>
 
-                    <button id="update-plot">Update Plot</button>
+                    <button id="update-plot" class="btn btn-secondary"
+                        style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">Update Plot</button>
 
                 </div>
                 <div id="heatmap"></div>
@@ -1599,6 +1619,13 @@
         function hideLoadCsvOverlay() {
             document.getElementById("loadDatasetOverlay").style.display = "none";
         }
+
+        // Event listener for the "Back" button
+        document.getElementById('backBtn').addEventListener('click', () => {
+            hideLoadCsvOverlay()
+            showOverlay()
+        });
+
 
         // File paths
         const filePath1 = 'examples/matrix_lung.csv';
@@ -2418,6 +2445,10 @@
                 // "scrollY": "200px", // Height of the scrolling container
                 // "scrollCollapse": true // Collapse the table height to fit the scrolling container
             });
+
+            // Add CSS to hide the x-axis scrollbar
+            $('#csvTableData2_wrapper .dataTables_scrollBody').css('overflow-x', 'hidden');
+
 
             // $('#csvTableData1_wrapper').css('margin-right', '40px');
 
