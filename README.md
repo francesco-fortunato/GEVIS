@@ -140,7 +140,7 @@ The metadata file should be structured as follows:
 
 | Metadata | Sample 1           | Sample 2           | Sample 3           | ... |
 |----------------------|----------------------|----------------------|----------------------|-----|
-| Type                 | Intrahepatic cholangiocarcinoma | Intrahepatic cholangiocarcinoma | Intrahepatic cholangiocarcinoma | ... |
+| Type                 | Intrahepatic cholangiocarcinoma | Intrahepatic cholangiocarcinoma | Normal intrahepatic bile duct | ... |
 | Gender               | Male                 | Female               | Male                 | ... |
 | ...                  | ...                  | ...                  | ...                  | ... |
 
