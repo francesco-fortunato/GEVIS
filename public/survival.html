@@ -368,7 +368,7 @@
                             if (isPlotDataCached(selectedGene)) {
                                 // Use cached data to generate plot
                                 const cachedData = getCachedPlotData(selectedGene);
-                                survivalplot(cachedData.data, selectedGene, cachedData.pvalue);
+                                survivalplot(cachedData.data, selectedGene, cachedData.pvalue, cachedData.median);
                                 console.log(`Plot for ${selectedGene} retrieved from cache.`);
                             } else {
                                 // Make the call to generate the plot
@@ -428,11 +428,11 @@
                     .then(response => response.json())
                     .then(data => {
                         console.log(filteredDataURL)
-
-                        survivalplot(data.obj, genename, data.pval[0].pval);
+                        console.log(data.median[0])
+                        survivalplot(data.obj, genename, data.pval[0].pval, data.median[0]);
 
                         // Cache the plot data
-                        cachePlotData(genename, { data: data.obj, pvalue: data.pval[0].pval });
+                        cachePlotData(genename, { data: data.obj, pvalue: data.pval[0].pval, median: data.median[0] });
 
                         document.getElementById("submission").disabled = false;
                     })
@@ -441,7 +441,7 @@
 
         }
 
-        function survivalplot(data, name, pvalue) {
+        function survivalplot(data, name, pvalue, median) {
             console.log(data);
 
             // Calculate survival probability
@@ -590,10 +590,10 @@
 
             svg.append("text")
                 .attr("x", width / 2)
-                .attr("y", 15)
+                .attr("y", 0)
                 .attr("text-anchor", "middle")
                 .style("font-size", "18px")
-                .text("Survival plot for " + name.split('|')[0])
+                .text("Survival plot for " + name.split('|')[0] + " (median: " + parseFloat(median).toFixed(2) + ")")
                 .style("fill", "white");
 
             // Define the lines for the survival plot
