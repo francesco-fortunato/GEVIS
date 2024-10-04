@@ -653,20 +653,43 @@
             <h2 style="margin-bottom: 20px;">Load Raw RNA-Seq CSV Files</h2>
             <p style="margin-bottom: 20px; font-size: 16px; color: #555;">Please upload two CSV files:</p>
             <ul style="margin-bottom: 30px; font-size: 16px; color: #333;">
-                <li><strong>File 1:</strong> Expression Data</li>
-                <li><strong>File 2:</strong> Metadata</li>
+                <li>
+                    <strong>File 1:</strong> Expression Data
+                    <button class="tippyBtn"
+                        data-tippy-content="This file should contain gene expression values for each sample, with genes as rows and samples as columns.<br><br><strong>Example:</strong><br><br>ID_REF,Sample 1,Sample 2,Sample 3<br>Gene A,230,300,240<br>Gene B,518,551,569"
+                        style="background-color: transparent; border: none; cursor: pointer; margin-left: 5px;">
+                        <span
+                            style="display: inline-block; width: 20px; height: 20px; border-radius: 50%; background-color: #2196F3; color: white; text-align: center; line-height: 20px; font-weight: bold;">?</span>
+                    </button>
+                </li>
+                <div style="margin-bottom: 20px;">
+                    <input type="file" id="fileInput1" accept=".csv"
+                        style="display: block; margin-bottom: 10px; width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <li>
+                    <strong>File 2:</strong> Metadata
+                    <button class="tippyBtn"
+                        data-tippy-content="This file should contain sample information such as conditions, replicates, and other relevant metadata.<br><br><strong>Example:</strong><br><br>Metadata,Sample 1,Sample 2,Sample 3<br>Type,Cancer,Healthy,Cancer<br>Gender,Male,Female,Male"
+                        style="background-color: transparent; border: none; cursor: pointer; margin-left: 5px;">
+                        <span
+                            style="display: inline-block; width: 20px; height: 20px; border-radius: 50%; background-color: #2196F3; color: white; text-align: center; line-height: 20px; font-weight: bold;">?</span>
+                    </button>
+                </li>
+                <div>
+                    <input type="file" id="fileInput2" accept=".csv"
+                        style="display: block; width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+
             </ul>
 
-            <div style="margin-bottom: 20px;">
-                <input type="file" id="fileInput1"
-                    style="display: block; margin-bottom: 10px; width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
-                <input type="file" id="fileInput2"
-                    style="display: block; width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+            <div id="notification" style="margin-top: 10px; font-size: 16px; text-align: center; color: #555;">
+                Please upload two CSV files.
             </div>
 
             <div style="display: flex; justify-content: center; gap: 20px; margin-top: 20px;">
                 <button id="loadCsvBtn"
-                    style="padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer;">Load
+                    style="padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: not-allowed; opacity: 0.6;"
+                    disabled>Load
                     Dataset</button>
                 <button id="backBtn"
                     style="padding: 10px 20px; background-color: #F44336; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer;">Back</button>
@@ -1711,8 +1734,56 @@
 
         // Preload the files into the file inputs
         document.addEventListener('DOMContentLoaded', () => {
+            const loadCsvBtn = document.getElementById('loadCsvBtn');
             const fileInput1 = document.getElementById('fileInput1');
             const fileInput2 = document.getElementById('fileInput2');
+            const notification = document.getElementById('notification');
+
+            // // Initial notification
+            // notification.textContent = "Please upload two CSV files.";
+            // notification.style.color = '#555'; // Default color
+
+
+            function checkFileType() {
+                console.log(checkFileType)
+                const file1 = fileInput1.files[0];
+                const file2 = fileInput2.files[0];
+                const isFile1Csv = file1 && (file1.name.endsWith('.csv') || file1.name.endsWith('.CSV'));
+                const isFile2Csv = file2 && (file2.name.endsWith('.csv') || file2.name.endsWith('.CSV'));
+                console.log("File 1 is CSV", isFile1Csv)
+                console.log("File 2 is CSV", isFile2Csv)
+                if (!file1 || !file2) {
+                    notification.textContent = "Please upload two CSV files.";
+                    notification.style.color = '#555'; // Default color
+                }
+                else if (isFile1Csv && isFile2Csv) {
+                    loadCsvBtn.style.cursor = 'pointer';
+                    loadCsvBtn.style.opacity = '1';
+                    loadCsvBtn.disabled = false;
+                    notification.textContent = "Both files are valid CSV files.";
+                    notification.style.color = 'green';
+                } else {
+                    loadCsvBtn.style.cursor = 'not-allowed';
+                    loadCsvBtn.style.opacity = '0.6';
+                    loadCsvBtn.disabled = true;
+                    notification.textContent = "Please ensure both files are valid CSV files.";
+                    notification.style.color = 'red';
+
+                }
+            }
+
+            fileInput1.addEventListener('change', checkFileType);
+            fileInput2.addEventListener('change', checkFileType);
+            tippy('.tippyBtn', {
+                content: (reference) => reference.getAttribute('data-tippy-content'),
+                arrow: true,
+                animation: 'fade',
+                duration: [200, 300],
+                theme: 'light', // Optional: change the tooltip theme
+                maxWidth: 300, // Optional: set maximum width for the tooltip
+                allowHTML: true // Allows HTML content in tooltips
+
+            });
 
             // preloadFile(filePath1, fileInput1);
             // preloadFile(filePath2, fileInput2);
