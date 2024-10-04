@@ -600,8 +600,50 @@
                     style="padding: 10px 20px; background-color: #2196F3; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer;">Try
                     Example</button>
             </div>
+            <!-- Adjusted the help button styling and position -->
+            <div style="margin-top: 20px;">
+                <button id="helpBtn"
+                    style="padding: 10px 20px; background-color: #FF9800; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer;">Help</button>
+            </div>
         </div>
     </div>
+
+    <div id="helpOverlay"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 1000; display: none;">
+
+        <div
+            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); width: 80%; max-width: 500px; text-align: center;">
+
+            <h2 style="margin-bottom: 20px; font-size: 20px; color: #333;">Help - How to Use GEVIS</h2>
+
+            <p style="margin-bottom: 30px; font-size: 16px; color: #555;">
+                GEVIS allows you to conduct differential gene expression analysis through a user-friendly interface.
+                Here’s how to use the application:
+            </p>
+
+            <ul style="text-align: left; margin: 0 auto; padding: 0; max-width: 400px; font-size: 16px; color: #555;">
+                <li><strong>Data Upload:</strong> Upload your gene expression matrix and metadata files in CSV format.
+                </li>
+                <li><strong>Select Analysis Type:</strong> Choose between statistical methods like t-test, Limma, or
+                    DESeq2 for your analysis.</li>
+                <li><strong>Interactive Visualization:</strong> Explore the results through various plots such as
+                    scatterplots and volcano plots.</li>
+                <li><strong>Enrichment & Survival Analysis:</strong> Utilize the built-in tools for enrichment and
+                    survival analysis based on your results.</li>
+                <li><strong>Export Results:</strong> Export your significant genes and analysis results for further
+                    processing or reporting.</li>
+            </ul>
+
+            <p style="margin-top: 20px; font-size: 16px; color: #555;">
+                For more information, visit the official <a href="https://github.com/francesco-fortunato/GEVIS" target="_blank"
+                    style="color: #2196F3; text-decoration: none;">GitHub repository</a>.
+            </p>
+
+            <button id="closeHelpOverlayBtn"
+                style="padding: 10px 20px; background-color: #f44336; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; margin-top: 20px;">Close</button>
+        </div>
+    </div>
+
     <div id="loadDatasetOverlay"
         style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 1001; display: none;">
 
@@ -1625,6 +1667,24 @@
             hideLoadCsvOverlay()
             showOverlay()
         });
+
+        // Show help overlay
+        document.getElementById('helpBtn').addEventListener('click', function () {
+            document.getElementById('helpOverlay').style.display = 'block';
+        });
+
+        // Close help overlay
+        document.getElementById('closeHelpOverlayBtn').addEventListener('click', function () {
+            document.getElementById('helpOverlay').style.display = 'none';
+        });
+
+        // Optional: Close overlay when clicking outside of it
+        document.getElementById('helpOverlay').addEventListener('click', function (event) {
+            if (event.target === this) {
+                this.style.display = 'none';
+            }
+        });
+
 
 
         // File paths
