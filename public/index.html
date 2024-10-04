@@ -7663,51 +7663,43 @@
 
                 dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
 
-                const ind = old_p_adj.reduce((result, entry, index) => {
-
-                    if (entry.pval_adj > threshold) {
-                        result.push(index);
+                const pvalGeneSet = new Set();
+                old_p_adj.forEach(entry => {
+                    if (entry.pval_adj <= threshold) {  // Include genes that pass the p-value filter
+                        pvalGeneSet.add(entry.Gene);  // Assuming 'Gene' is the key for genes
                     }
-                    return result;
-                }, []);
-                dataC_copy_pval = dataC_copy
-                dataN_copy_pval = dataN_copy
-                data_copy_pval = data_copy
+                });
 
-                console.log("geni con pval minore di thr nel logFC slider", ind.length)
+                console.log("Number of genes passing the p-value filter in the logFC slider:", pvalGeneSet.size);
 
-                if (ind.length > 0) {
+                dataC_copy_pval = dataC_copy;
+                dataN_copy_pval = dataN_copy;
+                data_copy_pval = data_copy;
 
-                    //console.log(parsedLogFC.length)
+                if (pvalGeneSet.size > 0) {
+                    // Filter the data based on the pvalGeneSet
+                    dataC_copy_pval = dataC_copy.filter(entry => pvalGeneSet.has(entry.gene));  // Assuming 'gene' is the key for dataC_copy
+                    dataN_copy_pval = dataN_copy.filter(entry => pvalGeneSet.has(entry.gene));  // Assuming 'gene' is the key for dataN_copy
+                    data_copy_pval = data_copy.filter(entry => pvalGeneSet.has(entry.gene));    // Assuming 'gene' is the key for data_copy
+                    parsedLogFC_pval = parsedLogFC.filter(entry => pvalGeneSet.has(entry.Gene));  // Assuming 'Gene' is the key for parsedLogFC
 
-                    // Remove entries corresponding to ind from dataN
+                    console.log(dataN_copy_pval[0]);
 
-                    // Remove entries corresponding to ind from dataN
-                    dataC_copy_pval = dataC_copy.filter((entry, index) => !ind.includes(index));
+                    updateBoxPlot(last_box, parsedLogFC_pval, dataN_copy_pval, dataC_copy_pval);
 
-                    // Remove entries corresponding to ind from dataN
-                    dataN_copy_pval = dataN_copy.filter((entry, index) => !ind.includes(index));
-
-                    data_copy_pval = data_copy.filter((entry, index) => !ind.includes(index));
-
-                    // Remove entries corresponding to ind from logFC
-                    parsedLogFC_pval = parsedLogFC.filter((entry, index) => !ind.includes(index));
-
-                    console.log(dataN_copy_pval[0])
-
-                    updateBoxPlot(last_box, parsedLogFC_pval, dataN_copy_pval, dataC_copy_pval)
+                    // Update selectedGeneData based on the filtered data
                     selectedGeneData = selectedGeneData.filter(function (gene) {
-                        // Check if the gene is present in dataC_copy or dataN_copy
-                        return dataC_copy.some(function (d) { return d.gene === gene; }) ||
-                            dataN_copy.some(function (d) { return d.gene === gene; });
+                        // Check if the gene is present in the filtered data
+                        return dataC_copy.some(d => d.gene === gene) || dataN_copy.some(d => d.gene === gene);
                     });
-
-                    console.log(selectedGeneData)
-
-                    dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
-
-                    console.log(dataN_copy.length)
                 }
+
+                console.log(selectedGeneData)
+
+                dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
+
+                console.log(dataN_copy.length)
+
                 updateCounter();
                 updateUpandDown();
 
