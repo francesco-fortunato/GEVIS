@@ -61,6 +61,22 @@
             align-items: flex-start;
         }
 
+        .tooltip {
+            position: absolute;
+            text-align: center;
+            width: 120px;
+            height: auto;
+            padding: 8px;
+            font-size: 14px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            border-radius: 5px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+
+
         .table-container {
             flex: 2;
             margin-right: 40px;
@@ -220,6 +236,7 @@
             fetch(`/retrieveData?sessionId=${sessionId}`)
                 .then(response => {
                     if (!response.ok) {
+                        console.log(response)
                         throw new Error('Network response was not ok');
                     }
                     return response.json();
@@ -232,7 +249,7 @@
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('Failed to retrieve data for enrichment');
+                    alert('Session expired. Please, run a new enrichment analysis.');
                 });
         } else {
             alert('Session ID not found');
@@ -298,19 +315,19 @@
                 var filteredDataURL = session.loc + "/R/.val/json"; // Extract JSON data URL
                 d3.json(filteredDataURL, function (data) {
                     // Convert Adjusted.P.value to float for each item in annotation_top
-                    data.annotation_top = data.annotation_top.map(function(item) {
+                    data.annotation_top = data.annotation_top.map(function (item) {
                         item['Adjusted.P.value'] = parseFloat(item['Adjusted.P.value']);
                         return item;
                     });
-                    data.annotation_top1 = data.annotation_top1.map(function(item) {
+                    data.annotation_top1 = data.annotation_top1.map(function (item) {
                         item['Adjusted.P.value'] = parseFloat(item['Adjusted.P.value']);
                         return item;
                     });
-                    data.annotation_top2 = data.annotation_top2.map(function(item) {
+                    data.annotation_top2 = data.annotation_top2.map(function (item) {
                         item['Adjusted.P.value'] = parseFloat(item['Adjusted.P.value']);
                         return item;
                     });
-                    data.annotation_top3 = data.annotation_top3.map(function(item) {
+                    data.annotation_top3 = data.annotation_top3.map(function (item) {
                         item['Adjusted.P.value'] = parseFloat(item['Adjusted.P.value']);
                         return item;
                     });
@@ -329,19 +346,19 @@
                 console.log(session); // Log the session object
                 var filteredDataURL = session.loc + "/R/.val/json"; // Extract JSON data URL
                 d3.json(filteredDataURL, function (data1) {
-                    data1.annotation_top = data1.annotation_top.map(function(item) {
+                    data1.annotation_top = data1.annotation_top.map(function (item) {
                         item['Adjusted.P.value'] = parseFloat(item['Adjusted.P.value']);
                         return item;
                     });
-                    data1.annotation_top1 = data1.annotation_top1.map(function(item) {
+                    data1.annotation_top1 = data1.annotation_top1.map(function (item) {
                         item['Adjusted.P.value'] = parseFloat(item['Adjusted.P.value']);
                         return item;
                     });
-                    data1.annotation_top2 = data1.annotation_top2.map(function(item) {
+                    data1.annotation_top2 = data1.annotation_top2.map(function (item) {
                         item['Adjusted.P.value'] = parseFloat(item['Adjusted.P.value']);
                         return item;
                     });
-                    data1.annotation_top3 = data1.annotation_top3.map(function(item) {
+                    data1.annotation_top3 = data1.annotation_top3.map(function (item) {
                         item['Adjusted.P.value'] = parseFloat(item['Adjusted.P.value']);
                         return item;
                     });
@@ -421,6 +438,10 @@
                 .attr("class", "y axis")
                 .call(d3.axisLeft(y)
                     .tickSize(-width) // Add gridlines along the y-axis
+                    .tickFormat(function (d) {
+                        // If the Term is longer than 44 characters, truncate it and add '...'
+                        return d.length > 44 ? d.slice(0, 44) + '...' : d;
+                    })
                 );
 
             // Add title
@@ -453,6 +474,32 @@
 
             yAxis.selectAll("text")
                 .style("fill", "white");
+
+            // Add tooltips for the full term on the Y-axis labels
+            yAxis.selectAll(".tick text")
+                .each(function (d) {
+                    // Add the full term as the title for tooltips
+                    d3.select(this).attr("title", d);
+                })
+                .on("mouseover", function (d) {
+                    // Show the full term in a tooltip on hover
+                    if (d.length > 44) {
+                        tooltip.transition()
+                            .duration(200)
+                            .style("opacity", .9);
+                        tooltip.html(d)
+                            .style("left", (d3.event.pageX + 10) + "px")
+                            .style("top", (d3.event.pageY - 28) + "px")
+                            .style("color", "white")
+                            .style("width", "auto");
+                    }
+                })
+                .on("mouseout", function () {
+                    // Hide tooltip on mouseout
+                    tooltip.transition()
+                        .duration(500)
+                        .style("opacity", 0);
+                });
 
             xAxis.selectAll(".tick line")
                 .style("fill", "white");
@@ -488,10 +535,19 @@
                         .duration(200)
                         .style("opacity", .9)
                         .style("pointer-events", "none"); // Disable pointer events for the tooltip
-                    tooltip.html("Gene Ratio: " + d.Gene_ratio)
+
+                    // Create the tooltip HTML with the desired format
+                    tooltip.html(`
+                        <strong>Gene Ratio</strong>: ${d.Gene_ratio}<br>
+                        <strong>Overlap:</strong> ${d.Overlap}<br>
+                        <strong>Genes:</strong> 
+                        <span style="display: block; max-width: 250px; word-wrap: break-word;">${d.Genes.split(';').join(', ')}</span>
+                        <strong>Adjusted P-value:</strong> ${d['Adjusted.P.value']}<br>
+                        `)
                         .style("left", (d3.event.pageX) + "px")
                         .style("top", (d3.event.pageY - 28) + "px")
-                        .style("color", "white");
+                        .style("color", "white")
+                        .style("width", "250px");
 
                     // Add black stroke on mouseover
                     d3.select(this).style("stroke", "black")
@@ -599,9 +655,9 @@
             var legendData = [minGeneRatio, (minGeneRatio + maxGeneRatio) / 2, maxGeneRatio];
 
             // Define the cy positions for the circles
-            var circleYPositions = [190+15, 212+15, 242+15];
+            var circleYPositions = [190 + 15, 212 + 15, 242 + 15];
             // Define the title position
-            var titleYPosition = 175+15; // Adjust as necessary for your layout
+            var titleYPosition = 175 + 15; // Adjust as necessary for your layout
 
             // Add title "Gene Ratio" to the legend
             legend.append("text")
@@ -623,30 +679,80 @@
                 .style("fill", "none")
                 .style("stroke", "white");
 
-            // Directly add labels next to the circles
-            legend.append("text")
-                .attr("class", "legend-label")
-                .attr("x", 30) // Position text next to circles
-                .attr("y", 195+15) // Position for first circle
-                .style("fill", "white")
-                .style("font-size", "12px") // Set smaller font size
-                .text(minGeneRatio.toFixed(2)); // Min Gene Ratio
+            if (data_disgen.length == 0) {
 
-            legend.append("text")
-                .attr("class", "legend-label")
-                .attr("x", 30) // Position text next to circles
-                .attr("y", 235) // Position for second circle
-                .style("fill", "white")
-                .style("font-size", "12px") // Set smaller font size
-                .text(((minGeneRatio + maxGeneRatio) / 2).toFixed(2)); // Midpoint Gene Ratio
+                // Display the message in the center of the SVG
+                svg.append("text")
+                    .attr("class", "no-data-message") // Assign a class to the text
+                    .attr("x", width / 2)
+                    .attr("y", height / 2 - 10) // Adjust y position for the first line
+                    .attr("text-anchor", "middle")
+                    .style("font-size", "18px")
+                    .style("fill", "white")
+                    .text("DisGenNet"); // First line: selected group
 
-            legend.append("text")
-                .attr("class", "legend-label")
-                .attr("x", 30) // Position text next to circles
-                .attr("y", 247+15) // Position for third circle
-                .style("fill", "white")
-                .style("font-size", "12px") // Set smaller font size
-                .text(maxGeneRatio.toFixed(2)); // Max Gene Ratio
+                svg.append("text")
+                    .attr("class", "no-data-message") // Assign a class to the text
+                    .attr("x", width / 2)
+                    .attr("y", height / 2 + 10) // Adjust y position for the second line
+                    .attr("text-anchor", "middle")
+                    .style("font-size", "18px")
+                    .style("fill", "white")
+                    .text("Enrichment returned no data"); // Second line: message
+
+                // Directly add labels next to the circles
+                legend.append("text")
+                    .attr("class", "legend-label")
+                    .attr("x", 30) // Position text next to circles
+                    .attr("y", 195 + 15) // Position for first circle
+                    .style("fill", "white")
+                    .style("font-size", "12px") // Set smaller font size
+                    .text("NaN"); // Min Gene Ratio
+
+                legend.append("text")
+                    .attr("class", "legend-label")
+                    .attr("x", 30) // Position text next to circles
+                    .attr("y", 235) // Position for second circle
+                    .style("fill", "white")
+                    .style("font-size", "12px") // Set smaller font size
+                    .text("NaN"); // Min Gene Ratio
+
+                legend.append("text")
+                    .attr("class", "legend-label")
+                    .attr("x", 30) // Position text next to circles
+                    .attr("y", 247 + 15) // Position for third circle
+                    .style("fill", "white")
+                    .style("font-size", "12px") // Set smaller font size
+                    .text("NaN"); // Min Gene Ratio
+
+
+            } else {
+
+                // Directly add labels next to the circles
+                legend.append("text")
+                    .attr("class", "legend-label")
+                    .attr("x", 30) // Position text next to circles
+                    .attr("y", 195 + 15) // Position for first circle
+                    .style("fill", "white")
+                    .style("font-size", "12px") // Set smaller font size
+                    .text(minGeneRatio.toFixed(2)); // Min Gene Ratio
+
+                legend.append("text")
+                    .attr("class", "legend-label")
+                    .attr("x", 30) // Position text next to circles
+                    .attr("y", 235) // Position for second circle
+                    .style("fill", "white")
+                    .style("font-size", "12px") // Set smaller font size
+                    .text(((minGeneRatio + maxGeneRatio) / 2).toFixed(2)); // Midpoint Gene Ratio
+
+                legend.append("text")
+                    .attr("class", "legend-label")
+                    .attr("x", 30) // Position text next to circles
+                    .attr("y", 247 + 15) // Position for third circle
+                    .style("fill", "white")
+                    .style("font-size", "12px") // Set smaller font size
+                    .text(maxGeneRatio.toFixed(2)); // Max Gene Ratio
+            }
 
             function update(selectedGroup, data) {
                 var minValue;
@@ -703,6 +809,11 @@
                     .duration(1000)
                     .call(d3.axisLeft(y)
                         .tickSize(-width) // Add gridlines along the y-axis
+                        .tickFormat(function (d) {
+                            // If the Term is longer than 44 characters, truncate it and add '...'
+                            return d.length > 44 ? d.slice(0, 44) + '...' : d;
+                        })
+
                     );
 
                 // Style axes and gridlines
@@ -718,6 +829,32 @@
                 yAxis.selectAll("text")
                     .style("fill", "white");
 
+                // Add tooltips for the full term on the Y-axis labels
+                yAxis.selectAll(".tick text")
+                    .each(function (d) {
+                        // Add the full term as the title for tooltips
+                        d3.select(this).attr("title", d);
+                    })
+                    .on("mouseover", function (d) {
+                        // Show the full term in a tooltip on hover
+                        if (d.length > 44) {
+                            tooltip.transition()
+                                .duration(200)
+                                .style("opacity", .9);
+                            tooltip.html(d)
+                                .style("left", (d3.event.pageX + 10) + "px")
+                                .style("top", (d3.event.pageY - 28) + "px")
+                                .style("color", "white")
+                                .style("width", "auto");
+                        }
+                    })
+                    .on("mouseout", function () {
+                        // Hide tooltip on mouseout
+                        tooltip.transition()
+                            .duration(500)
+                            .style("opacity", 0);
+                    });
+
                 xAxis.selectAll(".tick line")
                     .style("fill", "white");
 
@@ -730,31 +867,75 @@
                     .range([8, 15]); // Adjust these values to control the min/max circle sizes
 
                 // Update dots
-                var dots = svg.selectAll("circle")
+                var dots = svg.selectAll("circle.dot")
                     .data(data);
 
-                // Remove existing circles
-                dots.exit().remove();
-
-                // Append new circles for any new data points
-                dots.enter().append("circle")
-                    .attr("cx", d => x(d.Gene_count))
-                    .attr("cy", d => y(d.Term) + y.bandwidth() / 2)
-                    .attr("r", d => sizeScale(d.Gene_ratio)) // Use sizeScale for radius
-                    .style("fill", d => {
-                        adjustedPValue = d['Adjusted.P.value'];
-                        return colorScale(adjustedPValue);
-                    })
-                    .merge(dots) // Merge the enter selection with the update selection
+                // Handle the exit selection (fade out and remove old circles)
+                dots.exit()
                     .transition()
                     .duration(1000)
+                    .style("opacity", 0)  // Fade out by transitioning opacity
+                    .remove();  // Remove the element after the transition
+
+                // Append new circles for any new data points
+                var newDots = dots.enter().append("circle")
+                    .attr("class", "dot")
                     .attr("cx", d => x(d.Gene_count))
                     .attr("cy", d => y(d.Term) + y.bandwidth() / 2)
-                    .attr("r", d => sizeScale(d.Gene_ratio)) // Use sizeScale for radius
+                    .attr("r", 0) // Start radius at 0 for transition
                     .style("fill", d => {
                         adjustedPValue = d['Adjusted.P.value'];
                         return colorScale(adjustedPValue);
                     });
+
+                // Merge the enter selection with the update selection and add transition
+                newDots.merge(dots)
+                    .transition()
+                    .duration(1000)
+                    .attr("cx", d => x(d.Gene_count))
+                    .attr("cy", d => y(d.Term) + y.bandwidth() / 2)
+                    .attr("r", d => sizeScale(d.Gene_ratio)) // Transition radius to final size
+                    .style("fill", d => {
+                        adjustedPValue = d['Adjusted.P.value'];
+                        return colorScale(adjustedPValue);
+                    });
+
+                // Reapply tooltips for all dots
+                newDots.on("mouseover", function (d) {
+                    // Show tooltip on mouseover
+                    tooltip.transition()
+                        .duration(200)
+                        .style("opacity", .9)
+                        .style("pointer-events", "none"); // Disable pointer events for the tooltip
+
+                    // Create the tooltip HTML with the desired format
+                    tooltip.html(`
+                        <strong>Gene Ratio</strong>: ${d.Gene_ratio}<br>
+                        <strong>Overlap:</strong> ${d.Overlap}<br>
+                        <strong>Genes:</strong> 
+                        <span style="display: block; max-width: 250px; word-wrap: break-word;">${d.Genes.split(';').join(', ')}</span>
+                        <strong>Adjusted P-value:</strong> ${d['Adjusted.P.value']}<br>
+                        `)
+                        .style("left", (d3.event.pageX) + "px")
+                        .style("top", (d3.event.pageY - 28) + "px")
+                        .style("color", "white")
+                        .style("width", "250px");
+
+                    // Add black stroke on mouseover
+                    d3.select(this).style("stroke", "black")
+                        .style("stroke-width", "2px");
+                })
+                    .on("mouseout", function (d) {
+                        // Hide tooltip on mouseout
+                        tooltip.transition()
+                            .duration(500)
+                            .style("opacity", 0)
+                            .style("pointer-events", "none"); // Disable pointer events for the tooltip
+
+                        // Remove black stroke on mouseout
+                        d3.select(this).style("stroke", "none");
+                    });
+
 
                 // Update legend
                 legendScale.domain([d3.min(data, function (d) { return d['Adjusted.P.value']; }), d3.max(data, function (d) { return d['Adjusted.P.value']; })]);
@@ -780,7 +961,7 @@
                 var legendData = [minGeneRatio, (minGeneRatio + maxGeneRatio) / 2, maxGeneRatio];
 
                 // Define the cy positions for the circles
-                var circleYPositions = [190+15, 212+15, 242+15];
+                var circleYPositions = [190 + 15, 212 + 15, 242 + 15];
 
                 // Add circles for the circle legend under the gradient legend
                 legend.selectAll("circle.legend-circle")
@@ -801,24 +982,72 @@
                 // Remove existing labels
                 legendLabels.exit().remove();
 
-                // Update existing labels
-                legendLabels
-                    .attr("x", 30) // Position text next to circles
-                    .style("fill", "white")
-                    .style("font-size", "12px") // Set smaller font size
-                    .text(d => d.toFixed(2)); // Update text with new values
+                if (data.length == 0) {
+                    // Remove the no data message if it exists
+                    svg.selectAll(".no-data-message").remove();
 
-                // Append new labels if needed
-                var newLabels = legendLabels.enter().append("text")
-                    .attr("class", "legend-label")
-                    .attr("x", 30) // Position text next to circles
-                    .style("fill", "white")
-                    .style("font-size", "12px"); // Set smaller font size
+                    // Display the message in the center of the SVG
+                    svg.append("text")
+                        .attr("class", "no-data-message") // Assign a class to the text
+                        .attr("x", width / 2)
+                        .attr("y", height / 2 - 10) // Adjust y position for the first line
+                        .attr("text-anchor", "middle")
+                        .style("font-size", "18px")
+                        .style("fill", "white")
+                        .text(selectedGroup); // First line: selected group
 
-                // Set the y positions for new labels
-                newLabels
-                    .attr("y", (d, i) => circleYPositions[i]) // Use predefined y positions
-                    .text(d => d.toFixed(2)); // Set text for new labels
+                    svg.append("text")
+                        .attr("class", "no-data-message") // Assign a class to the text
+                        .attr("x", width / 2)
+                        .attr("y", height / 2 + 10) // Adjust y position for the second line
+                        .attr("text-anchor", "middle")
+                        .style("font-size", "18px")
+                        .style("fill", "white")
+                        .text("Enrichment returned no data"); // Second line: message
+
+                    legendLabels
+                        .attr("x", 30) // Position text next to circles
+                        .style("fill", "white")
+                        .style("font-size", "12px") // Set smaller font size
+                        .text("NaN"); // Update text with new values
+
+                    // Append new labels if needed
+                    var newLabels = legendLabels.enter().append("text")
+                        .attr("class", "legend-label")
+                        .attr("x", 30) // Position text next to circles
+                        .style("fill", "white")
+                        .style("font-size", "12px"); // Set smaller font size
+
+                    // Set the y positions for new labels
+                    newLabels
+                        .attr("y", (d, i) => circleYPositions[i]) // Use predefined y positions
+                        .text("NaN"); // Update text with new values
+
+
+                } else {
+
+                    // Remove the no data message if it exists
+                    svg.selectAll(".no-data-message").remove();
+                    // Update existing labels
+                    legendLabels
+                        .attr("x", 30) // Position text next to circles
+                        .style("fill", "white")
+                        .style("font-size", "12px") // Set smaller font size
+                        .text(d => d.toFixed(2)); // Update text with new values
+
+                    // Append new labels if needed
+                    var newLabels = legendLabels.enter().append("text")
+                        .attr("class", "legend-label")
+                        .attr("x", 30) // Position text next to circles
+                        .style("fill", "white")
+                        .style("font-size", "12px"); // Set smaller font size
+
+                    // Set the y positions for new labels
+                    newLabels
+                        .attr("y", (d, i) => circleYPositions[i]) // Use predefined y positions
+                        .text(d => d.toFixed(2)); // Set text for new labels
+
+                }
 
             }
 
@@ -892,6 +1121,10 @@
                 .attr("class", "y axis")
                 .call(d3.axisLeft(y)
                     .tickSize(-width) // Add gridlines along the y-axis
+                    .tickFormat(function (d) {
+                        // If the Term is longer than 44 characters, truncate it and add '...'
+                        return d.length > 44 ? d.slice(0, 44) + '...' : d;
+                    })
                 );
 
             // Add title
@@ -924,6 +1157,32 @@
 
             yAxis.selectAll("text")
                 .style("fill", "white");
+
+            // Add tooltips for the full term on the Y-axis labels
+            yAxis.selectAll(".tick text")
+                .each(function (d) {
+                    // Add the full term as the title for tooltips
+                    d3.select(this).attr("title", d);
+                })
+                .on("mouseover", function (d) {
+                    // Show the full term in a tooltip on hover
+                    if (d.length > 44) {
+                        tooltip.transition()
+                            .duration(200)
+                            .style("opacity", .9);
+                        tooltip.html(d)
+                            .style("left", (d3.event.pageX + 10) + "px")
+                            .style("top", (d3.event.pageY - 28) + "px")
+                            .style("color", "white")
+                            .style("width", "auto");
+                    }
+                })
+                .on("mouseout", function () {
+                    // Hide tooltip on mouseout
+                    tooltip.transition()
+                        .duration(500)
+                        .style("opacity", 0);
+                });
 
             xAxis.selectAll(".tick line")
                 .style("fill", "white");
@@ -960,10 +1219,18 @@
                         .style("opacity", .9)
                         .style("pointer-events", "none"); // Disable pointer events for the tooltip
 
-                    tooltip.html("Gene Ratio: " + d.Gene_ratio)
+                    // Create the tooltip HTML with the desired format
+                    tooltip.html(`
+                        <strong>Gene Ratio</strong>: ${d.Gene_ratio}<br>
+                        <strong>Overlap:</strong> ${d.Overlap}<br>
+                        <strong>Genes:</strong> 
+                        <span style="display: block; max-width: 250px; word-wrap: break-word;">${d.Genes.split(';').join(', ')}</span>
+                        <strong>Adjusted P-value:</strong> ${d['Adjusted.P.value']}<br>
+                        `)
                         .style("left", (d3.event.pageX) + "px")
                         .style("top", (d3.event.pageY - 28) + "px")
-                        .style("color", "white");
+                        .style("color", "white")
+                        .style("width", "250px");
 
                     // Add black stroke on mouseover
                     d3.select(this).style("stroke", "black")
@@ -1026,7 +1293,6 @@
                 .text("p.adjust"); // Set title text
 
 
-
             // Draw the rectangle and fill with the linear gradient
             legend.append("rect")
                 .attr("width", legendWidth)
@@ -1071,9 +1337,9 @@
             var legendData = [minGeneRatio, (minGeneRatio + maxGeneRatio) / 2, maxGeneRatio];
 
             // Define the cy positions for the circles
-            var circleYPositions = [190+15, 212+15, 242+15];
+            var circleYPositions = [190 + 15, 212 + 15, 242 + 15];
             // Define the title position
-            var titleYPosition = 175+15; // Adjust as necessary for your layout
+            var titleYPosition = 175 + 15; // Adjust as necessary for your layout
 
             // Add title "Gene Ratio" to the legend
             legend.append("text")
@@ -1095,30 +1361,80 @@
                 .style("fill", "none")
                 .style("stroke", "white");
 
-            // Directly add labels next to the circles
-            legend.append("text")
-                .attr("class", "legend-label")
-                .attr("x", 30) // Position text next to circles
-                .attr("y", 195+15) // Position for first circle
-                .style("fill", "white")
-                .style("font-size", "12px") // Set smaller font size
-                .text(minGeneRatio.toFixed(2)); // Min Gene Ratio
+            if (data_disgen.length == 0) {
 
-            legend.append("text")
-                .attr("class", "legend-label")
-                .attr("x", 30) // Position text next to circles
-                .attr("y", 235) // Position for second circle
-                .style("fill", "white")
-                .style("font-size", "12px") // Set smaller font size
-                .text(((minGeneRatio + maxGeneRatio) / 2).toFixed(2)); // Midpoint Gene Ratio
+                // Display the message in the center of the SVG
+                svg.append("text")
+                    .attr("class", "no-data-message") // Assign a class to the text
+                    .attr("x", width / 2)
+                    .attr("y", height / 2 - 10) // Adjust y position for the first line
+                    .attr("text-anchor", "middle")
+                    .style("font-size", "18px")
+                    .style("fill", "white")
+                    .text("DisGenNet"); // First line: selected group
 
-            legend.append("text")
-                .attr("class", "legend-label")
-                .attr("x", 30) // Position text next to circles
-                .attr("y", 247+15) // Position for third circle
-                .style("fill", "white")
-                .style("font-size", "12px") // Set smaller font size
-                .text(maxGeneRatio.toFixed(2)); // Max Gene Ratio
+                svg.append("text")
+                    .attr("class", "no-data-message") // Assign a class to the text
+                    .attr("x", width / 2)
+                    .attr("y", height / 2 + 10) // Adjust y position for the second line
+                    .attr("text-anchor", "middle")
+                    .style("font-size", "18px")
+                    .style("fill", "white")
+                    .text("Enrichment returned no data"); // Second line: message
+
+                // Directly add labels next to the circles
+                legend.append("text")
+                    .attr("class", "legend-label")
+                    .attr("x", 30) // Position text next to circles
+                    .attr("y", 195 + 15) // Position for first circle
+                    .style("fill", "white")
+                    .style("font-size", "12px") // Set smaller font size
+                    .text("NaN"); // Min Gene Ratio
+
+                legend.append("text")
+                    .attr("class", "legend-label")
+                    .attr("x", 30) // Position text next to circles
+                    .attr("y", 235) // Position for second circle
+                    .style("fill", "white")
+                    .style("font-size", "12px") // Set smaller font size
+                    .text("NaN"); // Min Gene Ratio
+
+                legend.append("text")
+                    .attr("class", "legend-label")
+                    .attr("x", 30) // Position text next to circles
+                    .attr("y", 247 + 15) // Position for third circle
+                    .style("fill", "white")
+                    .style("font-size", "12px") // Set smaller font size
+                    .text("NaN"); // Min Gene Ratio
+
+
+            } else {
+
+                // Directly add labels next to the circles
+                legend.append("text")
+                    .attr("class", "legend-label")
+                    .attr("x", 30) // Position text next to circles
+                    .attr("y", 195 + 15) // Position for first circle
+                    .style("fill", "white")
+                    .style("font-size", "12px") // Set smaller font size
+                    .text(minGeneRatio.toFixed(2)); // Min Gene Ratio
+
+                legend.append("text")
+                    .attr("class", "legend-label")
+                    .attr("x", 30) // Position text next to circles
+                    .attr("y", 235) // Position for second circle
+                    .style("fill", "white")
+                    .style("font-size", "12px") // Set smaller font size
+                    .text(((minGeneRatio + maxGeneRatio) / 2).toFixed(2)); // Midpoint Gene Ratio
+
+                legend.append("text")
+                    .attr("class", "legend-label")
+                    .attr("x", 30) // Position text next to circles
+                    .attr("y", 247 + 15) // Position for third circle
+                    .style("fill", "white")
+                    .style("font-size", "12px") // Set smaller font size
+                    .text(maxGeneRatio.toFixed(2)); // Max Gene Ratio
+            }
 
             function update(selectedGroup, data1) {
                 var minValue;
@@ -1175,6 +1491,11 @@
                     .duration(1000)
                     .call(d3.axisLeft(y)
                         .tickSize(-width) // Add gridlines along the y-axis
+                        .tickFormat(function (d) {
+                            // If the Term is longer than 44 characters, truncate it and add '...'
+                            return d.length > 44 ? d.slice(0, 44) + '...' : d;
+                        })
+
                     );
 
                 // Style axes and gridlines
@@ -1190,6 +1511,33 @@
                 yAxis.selectAll("text")
                     .style("fill", "white");
 
+                // Add tooltips for the full term on the Y-axis labels
+                yAxis.selectAll(".tick text")
+                    .each(function (d) {
+                        // Add the full term as the title for tooltips
+                        d3.select(this).attr("title", d);
+                    })
+                    .on("mouseover", function (d) {
+                        // Show the full term in a tooltip on hover
+                        if (d.length > 44) {
+                            tooltip.transition()
+                                .duration(200)
+                                .style("opacity", .9);
+                            tooltip.html(d)
+                                .style("left", (d3.event.pageX + 10) + "px")
+                                .style("top", (d3.event.pageY - 28) + "px")
+                                .style("color", "white")
+                                .style("width", "auto");
+                        }
+                    })
+                    .on("mouseout", function () {
+                        // Hide tooltip on mouseout
+                        tooltip.transition()
+                            .duration(500)
+                            .style("opacity", 0);
+                    });
+
+
                 xAxis.selectAll(".tick line")
                     .style("fill", "white");
 
@@ -1202,31 +1550,76 @@
                     .range([8, 15]); // Adjust these values to control the min/max circle sizes
 
                 // Update dots
-                var dots = svg.selectAll("circle")
+                var dots = svg.selectAll("circle.dot")
                     .data(data1);
 
-                // Remove existing circles
-                dots.exit().remove();
-
-                // Append new circles for any new data points
-                dots.enter().append("circle")
-                    .attr("cx", d => x(d.Gene_count))
-                    .attr("cy", d => y(d.Term) + y.bandwidth() / 2)
-                    .attr("r", d => sizeScale(d.Gene_ratio)) // Use sizeScale for radius
-                    .style("fill", d => {
-                        adjustedPValue = d['Adjusted.P.value'];
-                        return colorScale(adjustedPValue);
-                    })
-                    .merge(dots) // Merge the enter selection with the update selection
+                // Handle the exit selection (fade out and remove old circles)
+                dots.exit()
                     .transition()
                     .duration(1000)
+                    .style("opacity", 0)  // Fade out by transitioning opacity
+                    .remove();  // Remove the element after the transition
+
+                // Append new circles for any new data points
+                var newDots = dots.enter().append("circle")
+                    .attr("class", "dot")
                     .attr("cx", d => x(d.Gene_count))
                     .attr("cy", d => y(d.Term) + y.bandwidth() / 2)
-                    .attr("r", d => sizeScale(d.Gene_ratio)) // Use sizeScale for radius
+                    .attr("r", 0) // Start radius at 0 for transition
                     .style("fill", d => {
                         adjustedPValue = d['Adjusted.P.value'];
                         return colorScale(adjustedPValue);
                     });
+
+                // Merge the enter selection with the update selection and add transition
+                newDots.merge(dots)
+                    .transition()
+                    .duration(1000)
+                    .attr("cx", d => x(d.Gene_count))
+                    .attr("cy", d => y(d.Term) + y.bandwidth() / 2)
+                    .attr("r", d => sizeScale(d.Gene_ratio)) // Transition radius to final size
+                    .style("fill", d => {
+                        adjustedPValue = d['Adjusted.P.value'];
+                        return colorScale(adjustedPValue);
+                    });
+
+
+                // Reapply tooltips for all dots
+                newDots.on("mouseover", function (d) {
+                    // Show tooltip on mouseover
+                    tooltip.transition()
+                        .duration(200)
+                        .style("opacity", .9)
+                        .style("pointer-events", "none"); // Disable pointer events for the tooltip
+
+                    // Create the tooltip HTML with the desired format
+                    tooltip.html(`
+                        <strong>Gene Ratio</strong>: ${d.Gene_ratio}<br>
+                        <strong>Overlap:</strong> ${d.Overlap}<br>
+                        <strong>Genes:</strong> 
+                        <span style="display: block; max-width: 250px; word-wrap: break-word;">${d.Genes.split(';').join(', ')}</span>
+                        <strong>Adjusted P-value:</strong> ${d['Adjusted.P.value']}<br>
+                        `)
+                        .style("left", (d3.event.pageX) + "px")
+                        .style("top", (d3.event.pageY - 28) + "px")
+                        .style("color", "white")
+                        .style("width", "250px");
+
+                    // Add black stroke on mouseover
+                    d3.select(this).style("stroke", "black")
+                        .style("stroke-width", "2px");
+                })
+                    .on("mouseout", function (d) {
+                        // Hide tooltip on mouseout
+                        tooltip.transition()
+                            .duration(500)
+                            .style("opacity", 0)
+                            .style("pointer-events", "none"); // Disable pointer events for the tooltip
+
+                        // Remove black stroke on mouseout
+                        d3.select(this).style("stroke", "none");
+                    });
+
 
                 // Update legend
                 legendScale.domain([d3.min(data1, function (d) { return d['Adjusted.P.value']; }), d3.max(data1, function (d) { return d['Adjusted.P.value']; })]);
@@ -1252,7 +1645,7 @@
                 var legendData = [minGeneRatio, (minGeneRatio + maxGeneRatio) / 2, maxGeneRatio];
 
                 // Define the cy positions for the circles
-                var circleYPositions = [190+15, 212+15, 242+15];
+                var circleYPositions = [190 + 15, 212 + 15, 242 + 15];
 
                 // Add circles for the circle legend under the gradient legend
                 legend.selectAll("circle.legend-circle")
@@ -1273,24 +1666,72 @@
                 // Remove existing labels
                 legendLabels.exit().remove();
 
-                // Update existing labels
-                legendLabels
-                    .attr("x", 30) // Position text next to circles
-                    .style("fill", "white")
-                    .style("font-size", "12px") // Set smaller font size
-                    .text(d => d.toFixed(2)); // Update text with new values
+                if (data1.length == 0) {
+                    // Remove the no data message if it exists
+                    svg.selectAll(".no-data-message").remove();
 
-                // Append new labels if needed
-                var newLabels = legendLabels.enter().append("text")
-                    .attr("class", "legend-label")
-                    .attr("x", 30) // Position text next to circles
-                    .style("fill", "white")
-                    .style("font-size", "12px"); // Set smaller font size
+                    // Display the message in the center of the SVG
+                    svg.append("text")
+                        .attr("class", "no-data-message") // Assign a class to the text
+                        .attr("x", width / 2)
+                        .attr("y", height / 2 - 10) // Adjust y position for the first line
+                        .attr("text-anchor", "middle")
+                        .style("font-size", "18px")
+                        .style("fill", "white")
+                        .text(selectedGroup); // First line: selected group
 
-                // Set the y positions for new labels
-                newLabels
-                    .attr("y", (d, i) => circleYPositions[i]) // Use predefined y positions
-                    .text(d => d.toFixed(2)); // Set text for new labels
+                    svg.append("text")
+                        .attr("class", "no-data-message") // Assign a class to the text
+                        .attr("x", width / 2)
+                        .attr("y", height / 2 + 10) // Adjust y position for the second line
+                        .attr("text-anchor", "middle")
+                        .style("font-size", "18px")
+                        .style("fill", "white")
+                        .text("Enrichment returned no data"); // Second line: message
+
+                    legendLabels
+                        .attr("x", 30) // Position text next to circles
+                        .style("fill", "white")
+                        .style("font-size", "12px") // Set smaller font size
+                        .text("NaN"); // Update text with new values
+
+                    // Append new labels if needed
+                    var newLabels = legendLabels.enter().append("text")
+                        .attr("class", "legend-label")
+                        .attr("x", 30) // Position text next to circles
+                        .style("fill", "white")
+                        .style("font-size", "12px"); // Set smaller font size
+
+                    // Set the y positions for new labels
+                    newLabels
+                        .attr("y", (d, i) => circleYPositions[i]) // Use predefined y positions
+                        .text("NaN"); // Update text with new values
+
+
+                } else {
+                    // Remove the no data message if it exists
+                    svg.selectAll(".no-data-message").remove();
+                    // Update existing labels
+                    legendLabels
+                        .attr("x", 30) // Position text next to circles
+                        .style("fill", "white")
+                        .style("font-size", "12px") // Set smaller font size
+                        .text(d => d.toFixed(2)); // Update text with new values
+
+                    // Append new labels if needed
+                    var newLabels = legendLabels.enter().append("text")
+                        .attr("class", "legend-label")
+                        .attr("x", 30) // Position text next to circles
+                        .style("fill", "white")
+                        .style("font-size", "12px"); // Set smaller font size
+
+                    // Set the y positions for new labels
+                    newLabels
+                        .attr("y", (d, i) => circleYPositions[i]) // Use predefined y positions
+                        .text(d => d.toFixed(2)); // Set text for new labels
+
+                }
+
 
             }
 
