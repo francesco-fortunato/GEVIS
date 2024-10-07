@@ -4,6 +4,9 @@ FROM node:14
 # Create and change to the app directory
 WORKDIR /usr/src/app
 
+# Create an empty session folder
+RUN mkdir -p sessions
+
 # Copy package.json and package-lock.json
 COPY package*.json ./
 

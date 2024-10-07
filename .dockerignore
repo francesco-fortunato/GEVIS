@@ -2,6 +2,7 @@ node_modules
 npm-debug.log
 GEVIS
 Dockerfile
+sessions
 .dockerignore
 .git
 .gitignore

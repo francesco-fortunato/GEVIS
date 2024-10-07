@@ -7,13 +7,16 @@ const { v4: uuidv4 } = require('uuid'); // Import uuidv4 from uuid module
 const app = express();
 const port = 3000;
 
-// Configure session middleware
 app.use(session({
-  store: new FileStore({}), // Using session-file-store for storing sessions in the file system
-  secret: 'your_secret_key', // Replace with secret key
-  resave: false,
-  saveUninitialized: true,
-  cookie: { secure: false, maxAge: 3600000 } // session expires in 1 hour (in milliseconds)
+  store: new FileStore({ 
+    // Optional configuration for the file store
+    path: './sessions', // Path to store session files
+    ttl: 3600 // Session expiration time in seconds (1 hour)
+  }),
+  secret: 'your_secret_key', // Replace with your actual secret
+  resave: false, // Don't save session if unmodified
+  saveUninitialized: false, // Don't save uninitialized sessions
+  cookie: { secure: false, maxAge: 3600000 } // Session cookie expires in 1 hour
 }));
 
 app.use(express.static('public'));
@@ -70,8 +73,12 @@ app.get('/retrieveData', (req, res) => {
   // Check if session ID exists in session data
   if (req.session && req.session.sessionId === sessionId) {
     const data = req.session.data;
-    // Respond with the stored data
-    res.json(data);
+    if (data) {
+      // Respond with the stored data
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'No data found in session' });
+    }
   } else {
     res.status(404).json({ error: 'Session ID not found or expired' });
   }
