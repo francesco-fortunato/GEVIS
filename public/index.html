@@ -877,10 +877,11 @@
 
                 <div><!-- div(6) bottoni FC-->
 
-                    <input type="range" id="log_thresholdSlider" class="range1" min="1.1" max="10" step="0.01"
+                    <input type="range" id="log_thresholdSlider" class="range1" min="1.1" max="9.9" step="0.01"
                         value="1.1" style="width: 200px;">
-                    <span id="log_thresholdSliderValue"
-                        style="color: white; vertical-align: middle; display: inline-block; margin-top: -24px;">1.1</span>
+                    <!-- Replacing the span with an input placeholder -->
+                    <input type="text" id="log_thresholdSliderValue" value="1.1" readonly
+                        style="width: 35px; color: white; background-color: transparent; border: none; vertical-align: middle; display: inline-block; text-align: center; margin-top: -24px; margin-left: -5px;">
                     <div id="boxPlot" style="margin-top:1%;"></div>
                     <!-- Initialize a select button -->
                     <select id="selectButton" class="btn btn-secondary dropdown-toggle">
@@ -1306,6 +1307,8 @@
 
         // Get the <span> element that closes the modal
         var span1 = document.getElementsByClassName("close1")[0];
+
+        let second_time = false;
 
         // Function to display loading message inside the modal
         function showLoadingMessageSurv() {
@@ -2454,7 +2457,7 @@
                 tableData1 += "<tr>";
                 headers.forEach(function (key) {
                     let value = normalizedData[i][key]; // Get the value
-                    tableData1 += createCell(value !== undefined ? value : '', 9); // Handle undefined
+                    tableData1 += createCell(value !== undefined ? value : '', 8); // Handle undefined
                 });
                 tableData1 += "</tr>";
             }
@@ -2537,7 +2540,7 @@
             for (var i = 0; i < data1.length; i++) {
                 tableData1 += "<tr>";
                 headersData1.forEach(function (key) {
-                    tableData1 += createCell(data1[i][key] || '', 9);
+                    tableData1 += createCell(data1[i][key] || '', 8);
                 });
                 tableData1 += "</tr>";
             }
@@ -2547,7 +2550,7 @@
             for (var i = 0; i < data2.length; i++) {
                 tableData2 += "<tr>";
                 headersData2.forEach(function (key) {
-                    tableData2 += createCell(data2[i][key] || '', 9);
+                    tableData2 += createCell(data2[i][key] || '', 8);
                 });
                 tableData2 += "</tr>";
             }
@@ -3442,7 +3445,7 @@
                         worker.terminate();
 
                         // Start the next step
-                        start(data1, data2, selectedRowIndex, dataC, dataN, chosen_statistic);
+                        start(data1, data2, selectedRowIndex, dataC, dataN, chosen_statistic, second_time);
 
                     }).catch(error => {
                         console.error('Error in web worker:', error);
@@ -3655,7 +3658,7 @@
                         worker.terminate();
 
                         // Start the next step
-                        start(data1, data2, selectedRowIndex, dataC, dataN, chosen_statistic);
+                        start(data1, data2, selectedRowIndex, dataC, dataN, chosen_statistic, second_time);
 
                     }).catch(error => {
                         console.error('Error in web worker:', error);
@@ -3925,7 +3928,7 @@
                         worker.terminate();
 
                         // Start the next step
-                        start(data1, data2, selectedRowIndex, dataC, dataN, chosen_statistic);
+                        start(data1, data2, selectedRowIndex, dataC, dataN, chosen_statistic, second_time);
 
                     }).catch(error => {
                         console.error('Error in web worker:', error);
@@ -3951,7 +3954,17 @@
         }
 
 
-        function start(data1, data2, selectedRowIndex, dataC, dataN, chosen_statistic) {
+        function start(data1, data2, selectedRowIndex, dataC, dataN, chosen_statistic, second) {
+            if (second){
+                document.getElementById("loadingOverlay").style.display = "block";
+            }
+            document.getElementById("overlay").style.display = "none";
+            // Hide all elements with the ID 'selectMetadataOverlay'
+            const overlays = document.querySelectorAll('#selectMetadataOverlay');
+            overlays.forEach(function (overlay) {
+                overlay.style.display = 'none';
+            });
+            document.getElementById("myModal1").style.display = "none";
             updateChosenAnalysis()
             dataC_original = dataC
             dataN_original = dataN
@@ -6261,10 +6274,88 @@
         });
 
 
+        // Reference to the input field for the threshold value
+        const thresholdInput = document.getElementById('log_thresholdSliderValue');
+        const thresholdSlider = document.getElementById('log_thresholdSlider');
+        var last_log_selected = 1.1
+
+        // Make the input editable on double-click
+        thresholdInput.addEventListener('dblclick', function () {
+            last_log_selected = thresholdSlider.value; // Store the slider value
+            this.readOnly = false;
+            this.style.backgroundColor = '#fff'; // Change background to indicate edit mode
+            this.style.color = "black"; // Change text color to black
+
+            // Handle clicks outside the input field to make it non-editable
+            const clickOutsideHandler = function (event) {
+                if (event.target !== thresholdInput) { // Check if the click target is not the input field
+                    thresholdInput.readOnly = true;
+                    thresholdInput.style.backgroundColor = 'transparent'; // Return to non-edit mode
+                    thresholdInput.style.color = "white"; // Change text color back to white
+
+                    // Update the slider and input to the last selected value
+                    thresholdSlider.value = last_log_selected;
+                    thresholdInput.value = thresholdSlider.value; // Sync input with slider
+
+                    // Trigger slider input event
+                    thresholdSlider.dispatchEvent(new Event('input'));
+
+                    // Remove the event listener after clicking outside
+                    document.removeEventListener('click', clickOutsideHandler);
+                }
+            };
+
+            // Add event listener for clicks outside
+            document.addEventListener('click', clickOutsideHandler);
+        });
+
+        // Validate and restrict input to only float/int numbers
+        thresholdInput.addEventListener('input', function () {
+            const regex = /^[0-9]*[.]?[0-9]*$/; // Regex for float or int, allowing optional digits before and after the dot
+
+            // Check if input is a valid number
+            if (!regex.test(this.value)) {
+                this.value = this.value.slice(0, -1); // Remove the last invalid character
+            }
+
+            const value = this.value;
+
+            // Check if the last character is a decimal point
+            const isLastCharPoint = value.endsWith('.');
+
+            // Convert the input value to a float
+            const newValue = parseFloat(value);
+
+            // Validate the new value
+            if (!isNaN(newValue) && !isLastCharPoint && newValue >= thresholdSlider.min && newValue <= thresholdSlider.max) {
+                thresholdSlider.value = newValue;
+                thresholdSlider.dispatchEvent(new Event('input')); // Trigger slider input event
+            }
+        });
+
+        // Trigger the threshold slider's logic when the user presses "Enter"
+        thresholdInput.addEventListener('keypress', function (event) {
+            if (event.key === 'Enter') {
+                this.readOnly = true;
+                this.style.backgroundColor = 'transparent'; // Return to non-edit mode
+                this.style.color = "white"; // Change text color back to white
+
+                // Trigger the slider input event
+                const newValue = parseFloat(this.value);
+                if (!isNaN(newValue) && newValue >= thresholdSlider.min && newValue <= thresholdSlider.max) {
+                    thresholdSlider.value = newValue;
+                    thresholdSlider.dispatchEvent(new Event('input')); // Trigger slider input event
+                    thresholdSlider.dispatchEvent(new Event('change')); // Trigger slider change event
+                } else {
+                    alert(`Please enter a value between ${thresholdSlider.min} and ${thresholdSlider.max}`);
+                }
+            }
+        });
+
         document.getElementById("log_thresholdSlider").addEventListener("input", function () {
             // Step 1: Create a Set of genes that pass the logFC threshold
             thr_fc = parseFloat(this.value);
-            document.getElementById("log_thresholdSliderValue").innerText = thr_fc;
+            thresholdInput.value = thr_fc;
             log_thr_fc = Math.log2(thr_fc);
 
 
@@ -6285,28 +6376,6 @@
                 parsedLogFC = parsedLogFC_origin.filter(entry => geneset.has(entry.Gene));  // Use the 'Gene' key for comparison
             }
 
-            // const ind = parsedLogFC_origin.reduce((result, entry, index) => {
-
-            //     if (Math.abs(entry.logFC) < Math.log2(thr_fc)) {
-            //         result.push(index);
-
-            //     }
-            //     return result;
-            // }, []);
-
-            // if (ind.length > 0) {
-
-            //     // Remove entries corresponding to ind from dataN
-            //     dataC_copy = dataC_copy1.filter((entry, index) => !ind.includes(index));
-
-            //     // Remove entries corresponding to ind from dataN
-            //     dataN_copy = dataN_copy1.filter((entry, index) => !ind.includes(index));
-
-            //     data_copy = data_copy1.filter((entry, index) => !ind.includes(index));
-
-            //     parsedLogFC = parsedLogFC_origin.filter((entry, index) => !ind.includes(index));
-            // }
-
             updateCounter();
             updateUpandDown();
             updateLogFCHistogram(parsedLogFC_origin);
@@ -6314,16 +6383,11 @@
         });
 
         document.getElementById("log_thresholdSlider").addEventListener("change", function () {
+            last_log_selected = thr_fc
             document.getElementById("loadingOverlay").style.display = "block";
-            console.log(dataC_copy_pval)
-            console.log(dataN_copy_pval)
-            console.log(data_copy_pval)
             dataC_copy_pval = dataC_copy
             dataN_copy_pval = dataN_copy
             data_copy_pval = data_copy
-            console.log(dataC_copy_pval)
-            console.log(dataN_copy_pval)
-            console.log(data_copy_pval)
             updateCounter();
             updateUpandDown();
 
@@ -7732,6 +7796,8 @@
 
             // Add button click listener to update the plot
             d3.select("#update-plot").on("click", updatePlot);
+
+            document.getElementById("loadingOverlay").style.display = "none";
 
         }
 
@@ -13240,8 +13306,14 @@
         // Function to show the CSV file loading overlay
         function showLoadCsvOverlayMod() {
             event.stopPropagation();
-
+            second_time = true
             document.getElementById("loadDatasetOverlay").style.display = "block";
+
+            document.getElementById("backBtn").addEventListener("click", function (event) {
+                hideLoadCsvOverlay();
+                event.stopPropagation();
+
+            })
 
             // Add event listener to detect clicks outside of the overlay
             document.body.addEventListener("click", hideLoadCsvOverlayOnClickOutside);
@@ -13250,6 +13322,7 @@
         // Function to hide the CSV file loading overlay
         function hideLoadCsvOverlay() {
             document.getElementById("loadDatasetOverlay").style.display = "none";
+            document.getElementById("overlay").style.display = "none";
 
             // Remove the click event listener from the body
             document.body.removeEventListener("click", hideLoadCsvOverlayOnClickOutside);
