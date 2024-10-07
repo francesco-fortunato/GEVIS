@@ -307,69 +307,98 @@
 
         // Function to perform enrichment analysis using OpenCPU
         function enrichment(list) {
-            // Call OpenCPU for 'UP' direction
-            var reqUp = ocpu.call("enrichment", {
-                data: list,
-                direction: 'UP'
-            }, function (session) {
-                console.log(session); // Log the session object
-                var filteredDataURL = session.loc + "/R/.val/json"; // Extract JSON data URL
-                d3.json(filteredDataURL, function (data) {
-                    // Convert Adjusted.P.value to float for each item in annotation_top
-                    data.annotation_top = data.annotation_top.map(function (item) {
-                        item['Adjusted.P.value'] = parseFloat(item['Adjusted.P.value']);
-                        return item;
+            let UP_No_Result = false;
+            let DOWN_No_Result = false;
+
+            // Create a Promise for 'UP' direction
+            const reqUpPromise = new Promise((resolve, reject) => {
+                ocpu.call("enrichment", { data: list, direction: 'UP' }, function (session) {
+                    console.log(session); // Log the session object
+                    var filteredDataURL = session.loc + "/R/.val/json"; // Extract JSON data URL
+                    d3.json(filteredDataURL, function (data) {
+                        // Convert Adjusted.P.value to float for each item in annotation_top
+                        data.annotation_top = data.annotation_top.map(function (item) {
+                            item['Adjusted.P.value'] = parseFloat(item['Adjusted.P.value']);
+                            return item;
+                        });
+                        data.annotation_top1 = data.annotation_top1.map(function (item) {
+                            item['Adjusted.P.value'] = parseFloat(item['Adjusted.P.value']);
+                            return item;
+                        });
+                        data.annotation_top2 = data.annotation_top2.map(function (item) {
+                            item['Adjusted.P.value'] = parseFloat(item['Adjusted.P.value']);
+                            return item;
+                        });
+                        data.annotation_top3 = data.annotation_top3.map(function (item) {
+                            item['Adjusted.P.value'] = parseFloat(item['Adjusted.P.value']);
+                            return item;
+                        });
+
+                        // Check if result is empty
+                        if (data.annotation_top.length == 0 && data.annotation_top1.length == 0 && data.annotation_top2.length == 0 && data.annotation_top3.length == 0) {
+                            UP_No_Result = true;
+                        }
+                        createDotPlot(data); // Process data and create dot plot
+
+                        resolve(); // Resolve the promise when done
                     });
-                    data.annotation_top1 = data.annotation_top1.map(function (item) {
-                        item['Adjusted.P.value'] = parseFloat(item['Adjusted.P.value']);
-                        return item;
-                    });
-                    data.annotation_top2 = data.annotation_top2.map(function (item) {
-                        item['Adjusted.P.value'] = parseFloat(item['Adjusted.P.value']);
-                        return item;
-                    });
-                    data.annotation_top3 = data.annotation_top3.map(function (item) {
-                        item['Adjusted.P.value'] = parseFloat(item['Adjusted.P.value']);
-                        return item;
-                    });
-                    createDotPlot(data); // Process data and create dot plot
+                }).fail(function () {
+                    console.log("Error: OpenCPU call failed for UP direction.");
+                    showError("EnrichR takes too much to respond. Please try again!!");
+                    reject(); // Reject the promise on failure
                 });
-            }).fail(function () {
-                console.log("Error: OpenCPU call failed.");
-                showError("EnrichR takes too much to respond. Please try again!!");
             });
 
-            // Call OpenCPU for 'DOWN' direction
-            var reqDown = ocpu.call("enrichment", {
-                data: list,
-                direction: 'DOWN'
-            }, function (session) {
-                console.log(session); // Log the session object
-                var filteredDataURL = session.loc + "/R/.val/json"; // Extract JSON data URL
-                d3.json(filteredDataURL, function (data1) {
-                    data1.annotation_top = data1.annotation_top.map(function (item) {
-                        item['Adjusted.P.value'] = parseFloat(item['Adjusted.P.value']);
-                        return item;
-                    });
-                    data1.annotation_top1 = data1.annotation_top1.map(function (item) {
-                        item['Adjusted.P.value'] = parseFloat(item['Adjusted.P.value']);
-                        return item;
-                    });
-                    data1.annotation_top2 = data1.annotation_top2.map(function (item) {
-                        item['Adjusted.P.value'] = parseFloat(item['Adjusted.P.value']);
-                        return item;
-                    });
-                    data1.annotation_top3 = data1.annotation_top3.map(function (item) {
-                        item['Adjusted.P.value'] = parseFloat(item['Adjusted.P.value']);
-                        return item;
-                    });
+            // Create a Promise for 'DOWN' direction
+            const reqDownPromise = new Promise((resolve, reject) => {
+                ocpu.call("enrichment", { data: list, direction: 'DOWN' }, function (session) {
+                    console.log(session); // Log the session object
+                    var filteredDataURL = session.loc + "/R/.val/json"; // Extract JSON data URL
+                    d3.json(filteredDataURL, function (data1) {
+                        data1.annotation_top = data1.annotation_top.map(function (item) {
+                            item['Adjusted.P.value'] = parseFloat(item['Adjusted.P.value']);
+                            return item;
+                        });
+                        data1.annotation_top1 = data1.annotation_top1.map(function (item) {
+                            item['Adjusted.P.value'] = parseFloat(item['Adjusted.P.value']);
+                            return item;
+                        });
+                        data1.annotation_top2 = data1.annotation_top2.map(function (item) {
+                            item['Adjusted.P.value'] = parseFloat(item['Adjusted.P.value']);
+                            return item;
+                        });
+                        data1.annotation_top3 = data1.annotation_top3.map(function (item) {
+                            item['Adjusted.P.value'] = parseFloat(item['Adjusted.P.value']);
+                            return item;
+                        });
 
-                    createDotPlot1(data1); // Process data and create dot plot
+                        // Check if result is empty
+                        if (data1.annotation_top.length == 0 && data1.annotation_top1.length == 0 && data1.annotation_top2.length == 0 && data1.annotation_top3.length == 0) {
+                            DOWN_No_Result = true;
+                        }
+                        createDotPlot1(data1); // Process data and create dot plot
+
+                        resolve(); // Resolve the promise when done
+                    });
+                }).fail(function () {
+                    console.log("Error: OpenCPU call failed for DOWN direction.");
+                    showError("EnrichR takes too much to respond. Please try again!!");
+                    reject(); // Reject the promise on failure
                 });
-            }).fail(function () {
-                console.log("Error: OpenCPU call failed.");
-                showError("EnrichR takes too much to respond. Please try again!!");
             });
+
+            // Wait for both requests to finish using Promise.all()
+            Promise.all([reqUpPromise, reqDownPromise])
+                .then(() => {
+                    // Both requests are completed, now check if both are empty
+                    if (UP_No_Result && DOWN_No_Result) {
+                        showError("No results found for both UP and DOWN directions.");
+                    }
+                })
+                .catch(() => {
+                    // Handle any failure in one or both of the requests
+                    showError("There was an error processing the enrichment analysis. Please retry");
+                });
 
             function showError(message) {
                 alert(message); // Display error message to the user
@@ -1192,6 +1221,11 @@
                 .style("fill", "white");
 
             console.log(data1)
+
+            if (data1.annotation_top.length == 0 && data1.annotation_top1.length == 0 && data1.annotation_top2.length == 0 && data1.annotation_top3.length == 0) {
+                DOWN_No_Result = true;
+            }
+
 
             // Create a size scale for circle radius based on Gene_ratio
             var sizeScale = d3.scaleSqrt()
