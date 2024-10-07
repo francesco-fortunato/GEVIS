@@ -413,10 +413,9 @@
             var maxValue = d3.max(data_disgen, function (d) { return d['Adjusted.P.value']; });
             data_disgen.sort((a, b) => b.Gene_count - a.Gene_count);
 
-            // Define a linear color scale from red to blue based on the calculated domain
             var colorScale = d3.scaleLinear()
                 .domain([minValue, maxValue])
-                .range([d3.interpolateViridis(0), d3.interpolateViridis(1)]); // Use Viridis from 0 to 1
+                .range([d3.interpolateViridis(1), d3.interpolateViridis(0)]);
 
             var options = ["DisGenNet", "Bio. Process", "Molecular function", "KEGG"]
 
@@ -651,11 +650,11 @@
 
             // Define the scale for the legend axis
             var legendScale = d3.scaleLinear()
-                .domain([minValue, maxValue])
+                .domain([maxValue, minValue])
                 .range([legendHeight, 0]);
 
             // Generate tick values for the legend axis
-            var tickValues = [minValue, maxValue];
+            var tickValues = [maxValue, minValue];
 
             // Append and style the legend axis
             var legendAxis = d3.axisRight(legendScale)
@@ -814,7 +813,7 @@
 
                 var colorScale = d3.scaleLinear()
                     .domain([minValue, maxValue])
-                    .range([d3.interpolateViridis(0), d3.interpolateViridis(1)]);
+                    .range([d3.interpolateViridis(1), d3.interpolateViridis(0)]);
 
                 // Update x scale
                 var x = d3.scaleLinear()
@@ -968,8 +967,8 @@
 
 
                 // Update legend
-                legendScale.domain([d3.min(data, function (d) { return d['Adjusted.P.value']; }), d3.max(data, function (d) { return d['Adjusted.P.value']; })]);
-                var tickValues = [d3.min(data, function (d) { return d['Adjusted.P.value']; }), d3.max(data, function (d) { return d['Adjusted.P.value']; })];
+                legendScale.domain([d3.max(data, function (d) { return d['Adjusted.P.value']; }), d3.min(data, function (d) { return d['Adjusted.P.value']; })]);
+                var tickValues = [d3.max(data, function (d) { return d['Adjusted.P.value']; }), d3.min(data, function (d) { return d['Adjusted.P.value']; })];
                 legendAxis.tickValues(tickValues);
                 axis.call(legendAxis);
 
@@ -1096,10 +1095,9 @@
             var maxValue = d3.max(data_disgen, function (d) { return d['Adjusted.P.value']; });
             data_disgen.sort((a, b) => b.Gene_count - a.Gene_count);
 
-            // Define a linear color scale from red to blue based on the calculated domain
             var colorScale = d3.scaleLinear()
                 .domain([minValue, maxValue])
-                .range([d3.interpolateViridis(0), d3.interpolateViridis(1)]); // Use Viridis from 0 to 1
+                .range([d3.interpolateViridis(1), d3.interpolateViridis(0)]); // Inverted colors: light to dark
 
             var options = ["DisGenNet", "Bio. Process", "Molecular function", "KEGG"]
 
@@ -1338,11 +1336,11 @@
 
             // Define the scale for the legend axis
             var legendScale = d3.scaleLinear()
-                .domain([minValue, maxValue])
+                .domain([maxValue, minValue])
                 .range([legendHeight, 0]);
 
             // Generate tick values for the legend axis
-            var tickValues = [minValue, maxValue];
+            var tickValues = [maxValue, minValue];
 
             // Append and style the legend axis
             var legendAxis = d3.axisRight(legendScale)
@@ -1501,7 +1499,7 @@
 
                 var colorScale = d3.scaleLinear()
                     .domain([minValue, maxValue])
-                    .range([d3.interpolateViridis(0), d3.interpolateViridis(1)]);
+                    .range([d3.interpolateViridis(1), d3.interpolateViridis(0)]); // Inverted colors: light to dark
 
                 // Update x scale
                 var x = d3.scaleLinear()
@@ -1657,8 +1655,8 @@
 
 
                 // Update legend
-                legendScale.domain([d3.min(data1, function (d) { return d['Adjusted.P.value']; }), d3.max(data1, function (d) { return d['Adjusted.P.value']; })]);
-                var tickValues = [d3.min(data1, function (d) { return d['Adjusted.P.value']; }), d3.max(data1, function (d) { return d['Adjusted.P.value']; })];
+                legendScale.domain([d3.max(data1, function (d) { return d['Adjusted.P.value']; }), d3.min(data1, function (d) { return d['Adjusted.P.value']; })]);
+                var tickValues = [d3.max(data1, function (d) { return d['Adjusted.P.value']; }), d3.min(data1, function (d) { return d['Adjusted.P.value']; })];
                 legendAxis.tickValues(tickValues);
                 axis.call(legendAxis);
 
