@@ -205,6 +205,33 @@
             z-index: 10;
         }
 
+        .loading-spinner {
+            border: 8px solid rgba(255, 255, 255, 0.3);
+            /* Light grey background */
+            border-top: 8px solid #FFA726;
+            /* Orange spinner color */
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: spin 1s cubic-bezier(0.25, 0.3, 0.5, 1) infinite;
+            /* Custom easing for variable speed */
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+
         /* Ensure proper layout on smaller screens */
         @media (max-width: 768px) {
             .flex1 {
@@ -244,6 +271,8 @@
             </div>
             <div class="dotplot-container">
                 <div id="survival" style="width: 800px; height: 600px; display: flex; justify-content: center; align-items: center;"></div>
+                <div class="loading-spinner" id="loadingMessage" style="display: none;"></div>
+
                 <label for="timeUnit" style="vertical-align: middle;">
                     <span
                         style="margin: 0; padding: 0; color: #ddd; margin-left:30px; margin-top: 28px; display: inline-block; line-height: 2.2rem;">Select
@@ -357,6 +386,7 @@
             fetch(`/retrieveData?sessionId=${sessionId}`)
                 .then(response => {
                     if (!response.ok) {
+                        console.log(response)
                         throw new Error('Network response was not ok');
                     }
                     return response.json();
@@ -389,6 +419,7 @@
                                 console.log(`Plot for ${selectedGene} retrieved from cache.`);
                             } else {
                                 survivalContainer.innerHTML = "<h3 style='color: white;'>Computing the plot... </h3>";
+                                document.getElementById("loadingMessage").style.display = 'block';
                                 // Make the call to generate the plot
                                 survival(data.filteredMetadata, data.dataC_copy_pval, selectedGene);
                             }
@@ -396,12 +427,21 @@
                             alert('No gene selected!');
                         }
                     };
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Session expired. Please, run a new enrichment analysis.');
                 });
         } else {
             alert('Session ID not found');
         }
 
         function survival(clinical, cases, genename) {
+
+            if (!clinical || clinical.length === 0 || clinical.length ===1) {
+                alert("Error: The clinical data is not available, undefined or not well structured. Check the metadata field you passed.");
+                return; // Exit the function early
+            }
 
             console.log("tutto il dataset", clinical)
             // console.log("i casi",cases)
@@ -460,6 +500,7 @@
         }
 
         function survivalplot(data, name, pvalue, median) {
+            document.getElementById("loadingMessage").style.display = 'none';
             console.log(data);
 
             // Calculate survival probability
@@ -749,7 +790,7 @@
                 .attr("stroke-width", 2)
                 .merge(highLine) // Merge enter and update selections
                 .transition()
-                .duration(1000)
+                .duration(500)
                 .attr("d", lineGenerator);
 
             highLine.exit().remove(); // Remove old lines if necessary
@@ -765,7 +806,7 @@
                 .attr("stroke-width", 2)
                 .merge(lowLine) // Merge enter and update selections
                 .transition()
-                .duration(1000)
+                .duration(500)
                 .attr("d", lineGenerator);
 
             lowLine.exit().remove(); // Remove old lines if necessary
@@ -847,8 +888,24 @@
                         .attr("cy", mouseY)
                         .transition().duration(50); // Smooth transition
 
+                    switch (selectedUnit) {
+                        case "months":
+                            updatedTimeData = data[0].time.map(d => d / 30.417); // Convert to months
+                            break;
+                        case "years":
+                            updatedTimeData = data[0].time.map(d => d / 365); // Convert to years
+                            break;
+                        default: // days
+                            updatedTimeData = data[0].time;
+                    }
+
+                    var xSa = d3.scaleLinear()
+                    .domain([0, d3.max(updatedTimeData)])
+                    .range([0, width]);
+
+
                     // Convert mouse coordinates to time and survival probability
-                    const time = x.invert(mouseX);
+                    const time = xSa.invert(mouseX);
                     const survivalProb = y.invert(mouseY);
 
                     // Show tooltip
