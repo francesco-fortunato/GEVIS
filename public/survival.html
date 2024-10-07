@@ -194,7 +194,7 @@
         .tooltip {
             position: absolute;
             text-align: center;
-            width: 120px;
+            width: 150px;
             height: auto;
             padding: 8px;
             font-size: 14px;
@@ -243,7 +243,18 @@
                 <button id="submission" type="button" class="btn btn-secondary">Submit</button>
             </div>
             <div class="dotplot-container">
-                <div id="survival"></div>
+                <div id="survival" style="width: 800px; height: 600px; display: flex; justify-content: center; align-items: center;"></div>
+                <label for="timeUnit" style="vertical-align: middle;">
+                    <span
+                        style="margin: 0; padding: 0; color: #ddd; margin-left:30px; margin-top: 28px; display: inline-block; line-height: 2.2rem;">Select
+                        Time Unit for x axis:</span>
+                </label>
+                <select id="timeUnit" class="btn btn-secondary dropdown-toggle"
+                    style="padding: 0.25rem 0.5rem; font-size: 0.875rem; margin-left: 10px; vertical-align: middle;">
+                    <option value="days" selected>Days</option>
+                    <option value="months">Months</option>
+                    <option value="years">Years</option>
+                </select>
             </div>
         </div>
     </div>
@@ -257,6 +268,13 @@
         }
 
         let table;
+        let selectedUnit = "days";
+
+        // Add the event listener for the dropdown menu
+        d3.select("#timeUnit").on("change", function () {
+            selectedUnit = d3.select(this).property("value");
+        });
+
 
         // Function to parse URL query parameters
         function getUrlParameter(name) {
@@ -351,7 +369,7 @@
                     // Create initial DataTable
                     createGeneDataTable(data.old_p_adj);
 
-                    survivalContainer.innerHTML = "<h3 style='color: white; margin-left: 50px; width:100%'>Select a gene </h3>";
+                    survivalContainer.innerHTML = "<h3 style='color: white;'>Select a gene to start </h3>";
 
                     // Form submission handler
                     document.getElementById('submission').onclick = function (event) {
@@ -362,7 +380,6 @@
 
                         if (selectedRowData) {
                             const selectedGene = selectedRowData.rawGene;
-                            survivalContainer.innerHTML = "<h3 style='color: white; margin-left: 50px'>Computing the plot... </h3>";
 
                             // Check if plot data is cached
                             if (isPlotDataCached(selectedGene)) {
@@ -371,6 +388,7 @@
                                 survivalplot(cachedData.data, selectedGene, cachedData.pvalue, cachedData.median);
                                 console.log(`Plot for ${selectedGene} retrieved from cache.`);
                             } else {
+                                survivalContainer.innerHTML = "<h3 style='color: white;'>Computing the plot... </h3>";
                                 // Make the call to generate the plot
                                 survival(data.filteredMetadata, data.dataC_copy_pval, selectedGene);
                             }
@@ -502,166 +520,306 @@
                 width = 800 - margin.left - margin.right,
                 height = 600 - margin.top - margin.bottom;
 
-            const svg = d3.select("#survival")
-                .html("")
-                .append("svg")
-                .attr("width", width + margin.left + margin.right)
-                .attr("height", height + margin.top + margin.bottom)
-                .append("g")
-                .attr("transform", `translate(${margin.left},${margin.top})`);
+            // Check if an SVG already exists; if not, create one
+            let svg = d3.select("#survival").select("svg").select("g");
+            console.log(svg)
+            if (svg.empty()) {
+                svg = d3.select("#survival")
+                    .html("") // Clear the contents of the container
+                    .append("svg")
+                    .attr("width", width + margin.left + margin.right)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform", `translate(${margin.left},${margin.top})`);
 
+                console.log(svg)
+            } else {
+                console.log(svg)
+
+                console.log("Already exists")
+                // // If SVG exists, update its dimensions
+                // svg.attr("width", width + margin.left + margin.right)
+                //     .attr("height", height + margin.top + margin.bottom)
+
+            }
+
+            // Define the scales and axes for the initial plot
             const x = d3.scaleLinear()
                 .domain([0, d3.max(data[0].time)])
                 .range([0, width]);
-
-            const xAxis = svg.append("g")
-                .attr("transform", `translate(0,${height})`)
-                .call(d3.axisBottom(x));
-
-            xAxis.selectAll("line, path")
-                .style("stroke", "white");
-            xAxis.selectAll("text")
-                .style("fill", "white");
 
             const y = d3.scaleLinear()
                 .domain([0, 1])
                 .range([height, 0]);
 
-            const yAxis = svg.append("g")
-                .call(d3.axisLeft(y));
+            // Create or update the x-axis
+            const xAxis = svg.selectAll(".xAxis")
+                .data([0]); // Binding a single-element array
 
-            yAxis.selectAll("line, path")
+            const xAxisEnter = xAxis.enter()
+                .append("g")
+                .attr("class", "xAxis")
+                .attr("transform", `translate(0,${height})`);
+
+            // Merge enter and update selections and call the axis
+            const xAxisUpdate = xAxisEnter.merge(xAxis)
+                .call(d3.axisBottom(x));
+
+            // Style the x-axis lines and ticks AFTER merging
+            xAxisUpdate.selectAll("line, path") // Select lines and paths within xAxis
                 .style("stroke", "white");
-            yAxis.selectAll("text")
+            xAxisUpdate.selectAll("text") // Select text within xAxis
                 .style("fill", "white");
 
-            svg.append("text")
+            // Create or update the y-axis
+            const yAxis = svg.selectAll(".yAxis")
+                .data([0]); // Binding a single-element array
+
+            const yAxisEnter = yAxis.enter()
+                .append("g")
+                .attr("class", "yAxis");
+
+            // Merge enter and update selections and call the axis
+            const yAxisUpdate = yAxisEnter.merge(yAxis)
+                .call(d3.axisLeft(y));
+
+            // Style the y-axis lines and ticks AFTER merging
+            yAxisUpdate.selectAll("line, path") // Select lines and paths within yAxis
+                .style("stroke", "white");
+            yAxisUpdate.selectAll("text") // Select text within yAxis
+                .style("fill", "white");
+
+            // Create or update the x-axis title
+            const xAxisTitle = svg.selectAll(".xAxisTitle")
+                .data([0]); // Binding a single-element array
+
+            const xAxisTitleEnter = xAxisTitle.enter()
+                .append("text")
+                .attr("class", "xAxisTitle")
                 .attr("x", width / 2)
                 .attr("y", height + margin.bottom - 10)
                 .attr("text-anchor", "middle")
                 .style("font-size", "14px")
-                .style("fill", "white")
-                .text("Time (in days)");
+                .style("fill", "white") // Set fill to white
+                .text("Time (in Days)");
 
-            svg.append("text")
+            // Merge the enter selection for x-axis title
+            const xAxisTitleUpdate = xAxisTitleEnter.merge(xAxisTitle);
+
+            // Create or update the y-axis title
+            const yAxisTitle = svg.selectAll(".yAxisTitle")
+                .data([0]); // Binding a single-element array
+
+            const yAxisTitleEnter = yAxisTitle.enter()
+                .append("text")
+                .attr("class", "yAxisTitle")
                 .attr("transform", "rotate(-90)")
                 .attr("x", -height / 2)
                 .attr("y", -margin.left + 12)
                 .attr("text-anchor", "middle")
                 .style("font-size", "14px")
-                .style("fill", "white")
+                .style("fill", "white") // Set fill to white
                 .text("Survival Probability");
 
-            const legend = svg.append("g")
-                .attr("class", "legend")
-                .attr("transform", `translate(${width - 100}, 20)`);
+            // Merge the enter selection for y-axis title
+            yAxisTitleEnter.merge(yAxisTitle)
+                .text("Survival Probability");
 
-            legend.append("rect")
-                .attr("x", 0)
-                .attr("y", 0)
-                .attr("width", 10)
-                .attr("height", 10)
-                .attr("fill", "#F8766D");
+            // Add the event listener for the dropdown menu
+            d3.select("#timeUnit").on("change", function () {
+                selectedUnit = d3.select(this).property("value");
+                updateXAxis(selectedUnit, data[0].time, x, xAxis, xAxisTitleUpdate);
+            });
 
-            legend.append("text")
-                .attr("x", 15)
-                .attr("y", 8)
-                .style("fill", "white")
-                .text("High Expression");
+            function updateXAxis(unit, timeData, xScale, axis, xAxisTitle) {
+                let updatedTimeData;
 
-            legend.append("rect")
-                .attr("x", 0)
-                .attr("y", 20)
-                .attr("width", 10)
-                .attr("height", 10)
-                .attr("fill", "#00BFC4");
+                switch (unit) {
+                    case "months":
+                        updatedTimeData = timeData.map(d => d / 30.417); // Convert to months
+                        break;
+                    case "years":
+                        updatedTimeData = timeData.map(d => d / 365); // Convert to years
+                        break;
+                    default: // days
+                        updatedTimeData = timeData;
+                }
 
-            legend.append("text")
-                .attr("x", 15)
-                .attr("y", 28)
-                .style("fill", "white")
-                .text("Low Expression");
+                const x = d3.scaleLinear()
+                    .domain([0, d3.max(updatedTimeData)])
+                    .range([0, width]);
 
-            legend.append("text")
-                .attr("x", 15)
-                .attr("y", 48)
-                .style("fill", "white")
-                .text("p-value: " + pvalue);
+                xAxisEnter.merge(xAxis)
+                    .transition()
+                    .duration(1000)
+                    .call(d3.axisBottom(x));
 
-            svg.append("text")
-                .attr("x", width / 2)
-                .attr("y", 0)
-                .attr("text-anchor", "middle")
-                .style("font-size", "18px")
-                .text("Survival plot for " + name.split('|')[0] + " (median: " + parseFloat(median).toFixed(2) + ")")
-                .style("fill", "white");
+                // Style the x-axis lines and ticks AFTER merging
+                xAxisUpdate.selectAll("line, path") // Select lines and paths within xAxis
+                    .style("stroke", "white");
+                xAxisUpdate.selectAll("text") // Select text within xAxis
+                    .style("fill", "white");
 
-            // Define the lines for the survival plot
-            const highLine = d3.line()
+                // Update x-axis label with capitalized unit
+                const capitalizedUnit = unit.charAt(0).toUpperCase() + unit.slice(1);
+                xAxisTitle.text("Time (in " + capitalizedUnit + ")");
+            }
+
+
+            // Select the existing legend group or create it if it doesn't exist
+            let legend = svg.select(".legend");
+
+            if (legend.empty()) {
+                // Legend does not exist, create it
+                legend = svg.append("g")
+                    .attr("class", "legend")
+                    .attr("transform", `translate(${width - 100}, 20)`);
+
+                // Append high expression rectangle and text
+                legend.append("rect")
+                    .attr("x", 0)
+                    .attr("y", 0)
+                    .attr("width", 10)
+                    .attr("height", 10)
+                    .attr("fill", "#F8766D");
+
+                legend.append("text")
+                    .attr("x", 15)
+                    .attr("y", 8)
+                    .style("fill", "white")
+                    .text("High Expression");
+
+                // Append low expression rectangle and text
+                legend.append("rect")
+                    .attr("x", 0)
+                    .attr("y", 20)
+                    .attr("width", 10)
+                    .attr("height", 10)
+                    .attr("fill", "#00BFC4");
+
+                legend.append("text")
+                    .attr("x", 15)
+                    .attr("y", 28)
+                    .style("fill", "white")
+                    .text("Low Expression");
+
+                // Append p-value text
+                legend.append("text")
+                    .attr("x", 15)
+                    .attr("y", 48)
+                    .style("fill", "white")
+                    .text("p-value: " + pvalue);
+            } else {
+                // Legend exists, update it
+                legend.selectAll("text")
+                    .filter((d, i) => i === 2) // Select the p-value text to update
+                    .text("p-value: " + pvalue);
+            }
+
+            // Update title text
+            svg.select("text.title") // Assuming you assign a class "title" to your title text
+                .text("Survival plot for " + name.split('|')[0] + " (median: " + parseFloat(median).toFixed(2) + ")");
+
+            // If title text doesn't exist, create it
+            if (svg.select("text.title").empty()) {
+                svg.append("text")
+                    .attr("class", "title") // Add class for future selections
+                    .attr("x", width / 2)
+                    .attr("y", 0)
+                    .attr("text-anchor", "middle")
+                    .style("font-size", "18px")
+                    .text("Survival plot for " + name.split('|')[0] + " (median: " + parseFloat(median).toFixed(2) + ")")
+                    .style("fill", "white");
+            }
+
+            // Create the line generator
+            const lineGenerator = d3.line()
                 .x(d => x(d.time))
                 .y(d => y(d.survivalProb));
 
-            const lowLine = d3.line()
-                .x(d => x(d.time))
-                .y(d => y(d.survivalProb));
+            // Add lines to the SVG (or update existing ones)
+            const highLine = svg.selectAll(".highLine")
+                .data([highExprPlotData]);
 
-            // Add paths
-            svg.append("path")
-                .datum(highExprPlotData)
+            highLine.enter()
+                .append("path")
+                .attr("class", "highLine")
                 .attr("fill", "none")
                 .attr("stroke", "#F8766D")
                 .attr("stroke-width", 2)
-                .attr("d", highLine);
+                .merge(highLine) // Merge enter and update selections
+                .transition()
+                .duration(1000)
+                .attr("d", lineGenerator);
 
-            svg.append("path")
-                .datum(lowExprPlotData)
+            highLine.exit().remove(); // Remove old lines if necessary
+
+            const lowLine = svg.selectAll(".lowLine")
+                .data([lowExprPlotData]);
+
+            lowLine.enter()
+                .append("path")
+                .attr("class", "lowLine")
                 .attr("fill", "none")
                 .attr("stroke", "#00BFC4")
                 .attr("stroke-width", 2)
-                .attr("d", lowLine);
+                .merge(lowLine) // Merge enter and update selections
+                .transition()
+                .duration(1000)
+                .attr("d", lineGenerator);
 
-            // Add crosshairs
-            const crosshairGroup = svg.append("g")
-                .attr("class", "crosshair")
-                .style("display", "none");
+            lowLine.exit().remove(); // Remove old lines if necessary
 
-            // Vertical line
-            crosshairGroup.append("line")
-                .attr("class", "crosshair-line vertical")
-                .attr("stroke", "gray")
-                .attr("stroke-width", 1)
-                .attr("stroke-dasharray", "4 4") // Dashed line
-                .attr("y1", 0)
-                .attr("y2", height);
+            // Check if the crosshair group already exists
+            let crosshairGroup = svg.select(".crosshair");
 
-            // Horizontal line
-            crosshairGroup.append("line")
-                .attr("class", "crosshair-line horizontal")
-                .attr("stroke", "gray")
-                .attr("stroke-width", 1)
-                .attr("stroke-dasharray", "4 4") // Dashed line
-                .attr("x1", 0)
-                .attr("x2", width);
+            if (crosshairGroup.empty()) {
+                // Add crosshairs
+                crosshairGroup = svg.append("g")
+                    .attr("class", "crosshair")
+                    .style("display", "none");
 
-            // Intersection circle
-            crosshairGroup.append("circle")
-                .attr("class", "crosshair-circle")
-                .attr("r", 4)
-                .attr("stroke", "gray")
-                .attr("fill", "white");
+                // Vertical line
+                crosshairGroup.append("line")
+                    .attr("class", "crosshair-line vertical")
+                    .attr("stroke", "gray")
+                    .attr("stroke-width", 1)
+                    .attr("stroke-dasharray", "4 4") // Dashed line
+                    .attr("y1", 0)
+                    .attr("y2", height);
 
-            // Tooltip for showing data
-            const tooltip = d3.select("#survival")
-                .append("div")
-                .attr("class", "tooltip")
-                .style("opacity", 0)
-                .style("position", "absolute")
-                .style("background-color", "black")
-                .style("padding", "5px")
-                .style("border-radius", "5px")
-                .style("border", "1px solid gray");
+                // Horizontal line
+                crosshairGroup.append("line")
+                    .attr("class", "crosshair-line horizontal")
+                    .attr("stroke", "gray")
+                    .attr("stroke-width", 1)
+                    .attr("stroke-dasharray", "4 4") // Dashed line
+                    .attr("x1", 0)
+                    .attr("x2", width);
 
+                // Intersection circle
+                crosshairGroup.append("circle")
+                    .attr("class", "crosshair-circle")
+                    .attr("r", 4)
+                    .attr("stroke", "gray")
+                    .attr("fill", "white");
+            }
 
+            // Check if the tooltip already exists
+            let tooltip = d3.select("#survival").select(".tooltip");
+
+            if (tooltip.empty()) {
+                // Tooltip for showing data
+                tooltip = d3.select("#survival")
+                    .append("div")
+                    .attr("class", "tooltip")
+                    .style("opacity", 0)
+                    .style("position", "absolute")
+                    .style("background-color", "black")
+                    .style("padding", "5px")
+                    .style("border-radius", "5px")
+                    .style("border", "1px solid gray");
+            }
 
             // Capture mouse events
             const mouseCapture = svg.append("rect")
@@ -695,15 +853,51 @@
 
                     // Show tooltip
                     tooltip.transition().duration(200).style("opacity", 0.9);
-                    tooltip.html(`Time: ${time.toFixed(2)}<br>Survival: ${survivalProb.toFixed(2)}`)
+                    tooltip.html(`Time: ${time.toFixed(2)} ${selectedUnit}<br>Survival: ${survivalProb.toFixed(2)}`)
                         .style("left", (d3.event.pageX + 10) + "px")
                         .style("top", (d3.event.pageY - 28) + "px");
                 })
                 .on("mouseleave", function () {
                     crosshairGroup.style("display", "none");
                     tooltip.transition().duration(500).style("opacity", 0);
-
                 });
+
+
+
+            if (selectedUnit != "days") {
+                let updatedTimeData;
+
+                switch (selectedUnit) {
+                    case "months":
+                        updatedTimeData = data[0].time.map(d => d / 30.417); // Convert to months
+                        break;
+                    case "years":
+                        updatedTimeData = data[0].time.map(d => d / 365); // Convert to years
+                        break;
+                    default: // days
+                        updatedTimeData = data[0].time;
+                }
+
+                var xSa = d3.scaleLinear()
+                    .domain([0, d3.max(updatedTimeData)])
+                    .range([0, width]);
+
+                xAxisEnter.merge(xAxis)
+                    .transition()
+                    .duration(0)
+                    .call(d3.axisBottom(xSa));
+
+                // Style the x-axis lines and ticks AFTER merging
+                xAxisUpdate.selectAll("line, path") // Select lines and paths within xAxis
+                    .style("stroke", "white");
+                xAxisUpdate.selectAll("text") // Select text within xAxis
+                    .style("fill", "white");
+
+                // Update x-axis label with capitalized unit
+                const capitalizedUni = selectedUnit.charAt(0).toUpperCase() + selectedUnit.slice(1);
+                xAxisTitleUpdate.text("Time (in " + capitalizedUni + ")");
+
+            }
 
         }
 
