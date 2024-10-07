@@ -1,6 +1,6 @@
 # GEVIS - Gene Expression VIS
 
-GEVIS is a web-based visual analytics platform for conducting differential gene expression analysis, designed to facilitate interactive visualization and in-depth exploration of gene expression data. This tool supports multiple analysis methods and visualization techniques, providing researchers with a versatile platform for understanding gene expression patterns and identifying key biomarkers across biological conditions.
+GEVIS is a web-based visual analytics platform for conducting differential gene expression analysis, designed to facilitate interactive visualization and in-depth exploration of gene expression data. The system supports multiple analysis methods and visualization techniques, providing researchers with a versatile platform for understanding gene expression patterns and identifying key biomarkers across biological conditions.
 
 # Table of Contents
 
