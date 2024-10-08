@@ -1071,33 +1071,47 @@
             <div id="style_scatter">
                 <div>
                     <div id="pca"></div>
-                    <!-- Dropdown for X-axis selection -->
-                    <label for="x-axis-select" style="color: white; margin-left: 20px;">Select X-axis:</label>
-                    <select id="x-axis-select" class="btn btn-secondary dropdown-toggle"
-                        style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">
-                        <option value="pc1">PC1</option>
-                        <option value="pc2">PC2</option>
-                        <option value="pc3">PC3</option>
-                        <option value="pc4">PC4</option>
-                        <option value="pc5">PC5</option>
-                        <option value="pc6">PC6</option>
-                    </select>
 
-                    <!-- Dropdown for Y-axis selection -->
-                    <label for="y-axis-select" style="color: white;">Select Y-axis:</label>
-                    <select id="y-axis-select" class="btn btn-secondary dropdown-toggle"
-                        style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">
-                        <option value="pc2">PC2</option>
-                        <option value="pc1">PC1</option>
-                        <option value="pc3">PC3</option>
-                        <option value="pc4">PC4</option>
-                        <option value="pc5">PC5</option>
-                        <option value="pc6">PC6</option>
-                    </select>
+                    <div style="display: flex; align-items: center; margin-bottom: 0px;"> <!-- Flex container -->
+                        <!-- Dropdown for X-axis selection -->
+                        <label for="x-axis-select" style="color: white; margin-right: 10px;">Select X-axis:</label>
+                        <select id="x-axis-select" class="btn btn-secondary dropdown-toggle"
+                            style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">
+                            <option value="pc1">PC1</option>
+                            <option value="pc2">PC2</option>
+                            <option value="pc3">PC3</option>
+                            <option value="pc4">PC4</option>
+                            <option value="pc5">PC5</option>
+                            <option value="pc6">PC6</option>
+                        </select>
 
-                    <button id="update-plot" class="btn btn-secondary"
-                        style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">Update Plot</button>
+                        <!-- Dropdown for Y-axis selection -->
+                        <label for="y-axis-select" style="color: white; margin: 0 10px;">Select Y-axis:</label>
+                        <select id="y-axis-select" class="btn btn-secondary dropdown-toggle"
+                            style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">
+                            <option value="pc2">PC2</option>
+                            <option value="pc1">PC1</option>
+                            <option value="pc3">PC3</option>
+                            <option value="pc4">PC4</option>
+                            <option value="pc5">PC5</option>
+                            <option value="pc6">PC6</option>
+                        </select>
 
+                        <!-- Update plot button -->
+                        <button id="update-plot" class="btn btn-secondary"
+                            style="padding: 0.25rem 0.5rem; font-size: 0.875rem; margin-left: 10px;">Update
+                            Plot</button>
+
+                        <!-- Placeholder with +/- buttons -->
+                        <div style="display: flex; align-items: center; margin-left: 20px;">
+                            <button id="decrease" class="btn btn-secondary"
+                                style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">-</button>
+                            <span id="value-placeholder" style="margin: 0 10px; color: white;">6</span>
+                            <!-- Placeholder value -->
+                            <button id="increase" class="btn btn-secondary"
+                                style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">+</button>
+                        </div>
+                    </div>
                 </div>
                 <div id="heatmap"></div>
 
@@ -1152,7 +1166,8 @@
             <span class="close1"
                 style="position: absolute; top: 10px; right: 20px; font-size: 24px; font-weight: bold; cursor: pointer;">&times;</span>
 
-            <h2 style="margin-bottom: 20px; text-align: center; color: #333;">Select Clinical Data for Survival Analysis
+            <h2 style="margin-bottom: 20px; text-align: center; color: #333;">Select Clinical Data for Survival
+                Analysis
             </h2>
 
             <form id="dropdownForm" style="margin-bottom: 20px;">
@@ -1195,7 +1210,7 @@
 
         // This is for storing COLORS CHOSEN BY USER
         let colorScaleValues = {};
-
+        let displayed_rows = 6;
         let case_number
         let normal_number
         let genes
@@ -1563,6 +1578,78 @@
                 survivalContainer.innerHTML = "";
             }
         }
+
+        let interval; // Variable to hold the interval ID
+
+        // Function to increase the number of displayed rows
+        function increaseRows() {
+            if (displayed_rows < heatmap_data.length) {
+                if (displayed_rows < 10 && displayed_rows >= 6) {
+                    displayed_rows = 10; // Increase the index
+                    document.getElementById("value-placeholder").textContent = displayed_rows;
+                    heatmap(heatmap_data); // Re-render the heatmap with the new gene added
+                } else if (displayed_rows < 10 && displayed_rows < 6) {
+                    displayed_rows++; // Increase the index
+                    document.getElementById("value-placeholder").textContent = displayed_rows;
+                    heatmap(heatmap_data); // Re-render the heatmap with the new gene added
+                }
+                else if (displayed_rows >= 10) {
+                    displayed_rows += 5; // Increase the index
+                    document.getElementById("value-placeholder").textContent = displayed_rows;
+                    heatmap(heatmap_data); // Re-render the heatmap with the new gene added
+                }
+            }
+        }
+
+        // Function to decrease the number of displayed rows
+        function decreaseRows() {
+            if (displayed_rows > 2) {
+                if (displayed_rows < 10 && displayed_rows >= 6) {
+                    displayed_rows--; // Increase the index
+                    document.getElementById("value-placeholder").textContent = displayed_rows;
+                    heatmap(heatmap_data); // Re-render the heatmap with the new gene added
+                } else if (displayed_rows < 10 && displayed_rows <= 6) {
+                    displayed_rows--; // Increase the index
+                    document.getElementById("value-placeholder").textContent = displayed_rows;
+                    heatmap(heatmap_data); // Re-render the heatmap with the new gene added
+                }
+                else if (displayed_rows >= 10) {
+                    displayed_rows -= 5; // Increase the index
+                    document.getElementById("value-placeholder").textContent = displayed_rows;
+                    heatmap(heatmap_data); // Re-render the heatmap with the new gene added
+                }
+            }
+        }
+
+        // Add event listener for the "+" button to increase rows
+        document.getElementById("increase").addEventListener("mousedown", function () {
+            increaseRows(); // Call the increase function once
+            interval = setInterval(increaseRows, 500); // Set interval to continuously increase
+        });
+
+        document.getElementById("increase").addEventListener("mouseup", function () {
+            clearInterval(interval); // Clear the interval when the mouse is released
+        });
+
+        document.getElementById("increase").addEventListener("mouseleave", function () {
+            clearInterval(interval); // Clear the interval if the mouse leaves the button
+        });
+
+        // Add event listener for the "-" button to decrease rows
+        document.getElementById("decrease").addEventListener("mousedown", function () {
+            decreaseRows(); // Call the decrease function once
+            interval = setInterval(decreaseRows, 500); // Set interval to continuously decrease
+        });
+
+        document.getElementById("decrease").addEventListener("mouseup", function () {
+            clearInterval(interval); // Clear the interval when the mouse is released
+        });
+
+        document.getElementById("decrease").addEventListener("mouseleave", function () {
+            clearInterval(interval); // Clear the interval if the mouse leaves the button
+        });
+
+
 
         ///////////////////////////////////////////////////////////////////////////////////////////
 
@@ -4597,6 +4684,8 @@
                                         // Display the newData array
                                         console.log("PCA, first try ", pca_data);
                                         if (obj.PC2 !== undefined) pca(pca_data);
+                                        displayed_rows = Math.min(displayed_rows, heatmap_data.length);
+                                        document.getElementById("value-placeholder").textContent = displayed_rows;
                                         if (obj.PC2 !== undefined) heatmap(heatmap_data);
                                     })
 
@@ -5170,6 +5259,8 @@
                                                             // Display the newData array
                                                             console.log("PCA, first try ", pca_data);
                                                             if (obj.PC2 !== undefined) pca(pca_data);
+                                                            displayed_rows = Math.min(displayed_rows, heatmap_data.length);
+                                                            document.getElementById("value-placeholder").textContent = displayed_rows;
                                                             if (obj.PC2 !== undefined) heatmap(heatmap_data);
 
                                                         })
@@ -5627,6 +5718,8 @@
                                                             // Display the newData array
                                                             console.log("PCA, first try ", pca_data);
                                                             if (obj.PC2 !== undefined) pca(pca_data);
+                                                            displayed_rows = Math.min(displayed_rows, heatmap_data.length);
+                                                            document.getElementById("value-placeholder").textContent = displayed_rows;
                                                             if (obj.PC2 !== undefined) heatmap(heatmap_data);
 
                                                         })
@@ -5998,6 +6091,8 @@
                                         // Display the newData array
                                         console.log("PCA, first try ", pca_data);
                                         if (obj.PC2 !== undefined) pca(pca_data);
+                                        displayed_rows = Math.min(displayed_rows, heatmap_data.length);
+                                        document.getElementById("value-placeholder").textContent = displayed_rows;
                                         if (obj.PC2 !== undefined) heatmap(heatmap_data);
 
                                     })
@@ -6306,6 +6401,8 @@
                                             // Display the newData array
                                             console.log("PCA, first try ", pca_data);
                                             if (obj.PC2 !== undefined) pca(pca_data);
+                                            displayed_rows = Math.min(displayed_rows, heatmap_data.length);
+                                            document.getElementById("value-placeholder").textContent = displayed_rows;
                                             if (obj.PC2 !== undefined) heatmap(heatmap_data);
                                         })
 
@@ -6689,6 +6786,8 @@
                                             // Display the newData array
                                             console.log("PCA, first try ", pca_data);
                                             if (obj.PC2 !== undefined) pca(pca_data);
+                                            displayed_rows = Math.min(displayed_rows, heatmap_data.length);
+                                            document.getElementById("value-placeholder").textContent = displayed_rows;
                                             if (obj.PC2 !== undefined) heatmap(heatmap_data);
                                         })
 
@@ -6941,6 +7040,8 @@
                                         // Display the newData array
                                         console.log("PCA, first try ", pca_data);
                                         if (obj.PC2 !== undefined) pca(pca_data);
+                                        displayed_rows = Math.min(displayed_rows, heatmap_data.length);
+                                        document.getElementById("value-placeholder").textContent = displayed_rows;
                                         if (obj.PC2 !== undefined) heatmap(heatmap_data);
                                     })
 
@@ -7231,6 +7332,8 @@
                             // Display the newData array
                             console.log("PCA, first try ", pca_data);
                             if (obj.PC2 !== undefined) pca(pca_data);
+                            displayed_rows = Math.min(displayed_rows, heatmap_data.length);
+                            document.getElementById("value-placeholder").textContent = displayed_rows;
                             if (obj.PC2 !== undefined) heatmap(heatmap_data);
                         })
 
@@ -7448,6 +7551,8 @@
                             // Display the newData array
                             console.log("PCA, first try ", pca_data);
                             if (obj.PC2 !== undefined) pca(pca_data);
+                            displayed_rows = Math.min(displayed_rows, heatmap_data.length);
+                            document.getElementById("value-placeholder").textContent = displayed_rows;
                             if (obj.PC2 !== undefined) heatmap(heatmap_data);
                         })
 
@@ -8712,7 +8817,7 @@
                                 break; // Exit the loop once the option is removed
                             }
                         }
-                        heatmap(heatmap_data) 
+                        heatmap(heatmap_data)
 
                         dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
                     } else {
@@ -8751,7 +8856,7 @@
                         });
 
                         synchronizeAnimations(this);
-                        heatmap(heatmap_data) 
+                        heatmap(heatmap_data)
                         // Call a function to create parallel coordinates plot using selectedGeneData
                         dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
                     }
@@ -9004,7 +9109,7 @@
                                         break; // Exit the loop once the option is removed
                                     }
                                 }
-                                heatmap(heatmap_data) 
+                                heatmap(heatmap_data)
 
                                 dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
                             } else {
@@ -9041,7 +9146,7 @@
                                 });
 
                                 synchronizeAnimations(this);
-                                heatmap(heatmap_data) 
+                                heatmap(heatmap_data)
                                 // Call a function to create parallel coordinates plot using selectedGeneData
                                 dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
                             }
@@ -9299,7 +9404,7 @@
                                         break; // Exit the loop once the option is removed
                                     }
                                 }
-                                heatmap(heatmap_data) 
+                                heatmap(heatmap_data)
 
                                 dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
                             } else {
@@ -9328,7 +9433,7 @@
                                 });
 
                                 synchronizeAnimations(this);
-                                heatmap(heatmap_data) 
+                                heatmap(heatmap_data)
                                 // Call a function to create parallel coordinates plot using selectedGeneData
                                 dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
                             }
@@ -9910,7 +10015,7 @@
                                 break; // Exit the loop once the option is removed
                             }
                         }
-                        heatmap(heatmap_data) 
+                        heatmap(heatmap_data)
 
                         dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
                     } else {
@@ -9939,7 +10044,7 @@
                         });
 
                         synchronizeAnimations(this);
-                        heatmap(heatmap_data) 
+                        heatmap(heatmap_data)
                         // Call a function to create parallel coordinates plot using selectedGeneData
                         dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
                     }
@@ -10154,7 +10259,7 @@
                                         break; // Exit the loop once the option is removed
                                     }
                                 }
-                                heatmap(heatmap_data) 
+                                heatmap(heatmap_data)
 
                                 dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
                             } else {
@@ -10191,7 +10296,7 @@
                                 });
 
                                 synchronizeAnimations(this);
-                                heatmap(heatmap_data) 
+                                heatmap(heatmap_data)
                                 // Call a function to create parallel coordinates plot using selectedGeneData
                                 dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
                             }
@@ -10468,7 +10573,7 @@
                                         break; // Exit the loop once the option is removed
                                     }
                                 }
-                                heatmap(heatmap_data) 
+                                heatmap(heatmap_data)
 
                                 dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
                             } else {
@@ -10497,7 +10602,7 @@
                                 });
 
                                 synchronizeAnimations(this);
-                                heatmap(heatmap_data) 
+                                heatmap(heatmap_data)
                                 // Call a function to create parallel coordinates plot using selectedGeneData
                                 dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
                             }
@@ -11744,7 +11849,7 @@
                 pca(pca_data)
 
                 updateBoxPlot(last_box, parsedLogFC, dataN_copy, dataC_copy)
-                heatmap(heatmap_data) 
+                heatmap(heatmap_data)
 
 
             });
@@ -12011,13 +12116,13 @@
                         break; // Exit the loop once the option is removed
                     }
                 }
-                                heatmap(heatmap_data) 
+                heatmap(heatmap_data)
 
 
                 first_dims = metadataOrder
 
                 ordering = totalOrder
-                heatmap(heatmap_data) 
+                heatmap(heatmap_data)
 
                 // Update dimensions with new order
 
@@ -12343,7 +12448,7 @@
 
                 updateBoxPlot(last_box, parsedLogFC, dataN_copy, dataC_copy)
 
-                heatmap(heatmap_data) 
+                heatmap(heatmap_data)
 
                 console.log("GSM List:", gsmList);
             });
@@ -12764,9 +12869,10 @@
         }
 
         function heatmap(heatmap_data) {
+            console.log(heatmap_data)
             document.getElementById("loadingOverlay").style.display = "none";
 
-            var heatmap_data_subset = heatmap_data.slice(0, 6);
+            var heatmap_data_subset = heatmap_data.slice(0, displayed_rows);
             console.log(heatmap_data_subset)
             // Labels of row and columns -> unique identifier of the column called 'group' and 'variable'
             var myGroups = heatmap_data_subset.map(d => d.gene);
@@ -12791,6 +12897,7 @@
                 .range([0, width])
                 .domain(myVars)
                 .padding(0.05);
+
             svg.append("g")
                 .style("font-size", 15)
                 .attr("transform", "translate(0,0)")
@@ -12807,76 +12914,6 @@
                 .range([0, height])
                 .domain(myGroups)
                 .padding(0.05);
-
-            svg.append("g")
-                .style("font-size", 15)
-                .style("fill", "white")
-                .call(d3.axisLeft(y).tickSize(0))
-                .select(".domain").remove();
-
-            // Select and style the tick text for the Y axis
-            svg.selectAll(".tick text")
-                .style("fill", "white") // Set the default color to white
-                .classed("pulse", function (d) {
-                    // Check if d (the current tick value) exists in selectedGeneData
-                    return selectedGeneData.includes(d); // d should be the gene identifier
-                })
-                .style("cursor", "pointer") // Change cursor to pointer on hover
-                .on("mouseover", function () {
-                    d3.select(this).style("opacity", 0.7); // Optional: Change opacity on hover
-                })
-                .on("mouseout", function () {
-                    d3.select(this).style("opacity", 1); // Reset opacity when not hovering
-                })
-                .on("click", function (d) {
-                    // Toggle gene in selectedGeneData
-                    const index = selectedGeneData.indexOf(d);
-                    // Get the select element
-                    var select = document.getElementById("selectButton");
-
-                    if (index > -1) {
-                        // Gene is already selected, remove it
-                        selectedGeneData.splice(index, 1);
-                        d3.select(this).classed("pulse", false)
-                        var select = document.getElementById("selectButton");
-                        var options = select.options;
-
-                        for (var i = 0; i < options.length; i++) {
-                            if (!selectedGeneData.includes(options[i].value)) {
-                                select.removeChild(options[i]);
-                                break; // Exit the loop once the option is removed
-                            }
-                        }
-                    } else {
-                        // Gene is not selected, add it
-                        selectedGeneData.push(d);
-                        d3.select(this).classed("pulse", true)
-                        // Add new options for the genes in selectedGeneData that are not already in the select element
-                        selectedGeneData.forEach(function (gene) {
-                            if (!Array.from(select.options).some(option => option.value === gene)) {
-                                var option = document.createElement("option");
-                                option.value = gene;
-                                option.text = gene;
-                                select.appendChild(option);
-                            }
-                        });
-
-                    }
-                    console.log("Updated selectedGeneData:", selectedGeneData);
-
-                    synchronizeAnimations(this, true)
-
-                    dynamicParallel(selectedGeneData, data_copy_pval, dataC_copy_pval, dataN_copy, first_dims);
-                    updateBoxPlot(last_box, parsedLogFC, dataN_copy, dataC_copy);
-                    if (currentPlot === 'volcano') {
-                        updateVolcanoPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj);
-                    } else {
-                        updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj);
-                    }
-
-                    // Optionally, you can trigger an update or refresh of your visualization
-                    // updateVisualization();
-                });
 
             // Add title text
             svg.append("text")
@@ -13013,6 +13050,137 @@
                         console.log(correspondingCircle)
                         synchronizeAnimations(correspondingCircle.node(), false)
                     }
+                });
+
+            svg.append("g")
+                .style("font-size", 15)
+                .style("fill", "white")
+                .call(d3.axisLeft(y).tickSize(0))
+                .select(".domain").remove();
+
+            // Select and style the tick text for the Y axis
+            svg.selectAll(".tick text")
+                .filter(function (d) { return myGroups.includes(d); }) // Ensure we only target Y-axis ticks
+                .style("fill", "white") // Set the default color to white
+                .classed("pulse", function (d) {
+                    // Check if d (the current tick value) exists in selectedGeneData
+                    return selectedGeneData.includes(d); // d should be the gene identifier
+                })
+                .style("cursor", "pointer") // Change cursor to pointer on hover
+                .style("font-size", function () {
+                    // Dynamically set font size based on displayed_rows
+                    if (displayed_rows > 20) {
+                        return Math.max(6, 15 - (displayed_rows - 20) * 0.4) + "px"; // Reduce font size as displayed_rows increases
+                    }
+                    return "15px"; // Default font size
+                })
+                .on("mouseover", function () {
+                    if (displayed_rows > 15) {
+                        // Lower the opacity of all other text elements
+                        svg.selectAll(".tick text")
+                            .filter(function (d) { return myGroups.includes(d); }) // Ensure we only target Y-axis ticks
+                            .style("opacity", 0.2);
+
+                        // Zoom in and bring the hovered element to the front
+                        const hoveredText = d3.select(this)
+                            .style("font-size", "20px") // Increase font size
+                            .style("font-weight", "bold") // Make it bold
+                            .style("opacity", 1) // Ensure the hovered element remains fully visible
+                            .attr("dx", "10px") // Slightly shift right
+                            .attr("dy", "0px"); // Keep it aligned
+
+                        // Re-append the element to bring it to the front
+                        hoveredText.node().parentNode.appendChild(hoveredText.node());
+                    } else {
+                        d3.select(this)
+                            .filter(function (d) { return myGroups.includes(d); }) // Ensure we only target Y-axis ticks
+                            .style("opacity", 0.7); // Simple opacity change when fewer than 15 rows
+                    }
+                    synchronizeAnimations(this, true)
+
+                })
+                .on("mouseout", function () {
+                    if (displayed_rows > 15) {
+                        // Reset the opacity of all text elements to 1
+                        svg.selectAll(".tick text")
+                            .filter(function (d) { return myGroups.includes(d); }) // Ensure we only target Y-axis ticks
+                            .style("opacity", 1)
+                            .style("font-size", function () {
+                                // Dynamically set font size based on displayed_rows
+                                if (displayed_rows > 20) {
+                                    return Math.max(6, 15 - (displayed_rows - 20) * 0.4) + "px"; // Reduce font size as displayed_rows increases
+                                }
+                                return "15px"; // Default font size
+                            })
+
+                        // Reset the style of the hovered element
+                        d3.select(this)
+                            .style("font-size", function () {
+                                // Dynamically set font size based on displayed_rows
+                                if (displayed_rows > 20) {
+                                    return Math.max(6, 15 - (displayed_rows - 20) * 0.4) + "px"; // Reduce font size as displayed_rows increases
+                                }
+                                return "15px"; // Default font size
+                            }) // Revert font size
+                            .style("font-weight", "normal") // Revert to normal weight
+                            .style("opacity", 1) // Full opacity for all text elements
+                            .attr("dx", "0px"); // Revert to original position
+                    } else {
+                        d3.select(this)
+                            .filter(function (d) { return myGroups.includes(d); }) // Ensure we only target Y-axis ticks
+                            .style("opacity", 1) // Reset opacity for fewer than 15 rows
+                    }
+                    synchronizeAnimations(this, true)
+
+                })
+                .on("click", function (d) {
+                    // Toggle gene in selectedGeneData
+                    const index = selectedGeneData.indexOf(d);
+                    // Get the select element
+                    var select = document.getElementById("selectButton");
+
+                    if (index > -1) {
+                        // Gene is already selected, remove it
+                        selectedGeneData.splice(index, 1);
+                        d3.select(this).classed("pulse", false)
+                        var select = document.getElementById("selectButton");
+                        var options = select.options;
+
+                        for (var i = 0; i < options.length; i++) {
+                            if (!selectedGeneData.includes(options[i].value)) {
+                                select.removeChild(options[i]);
+                                break; // Exit the loop once the option is removed
+                            }
+                        }
+                    } else {
+                        // Gene is not selected, add it
+                        selectedGeneData.push(d);
+                        d3.select(this).classed("pulse", true)
+                        // Add new options for the genes in selectedGeneData that are not already in the select element
+                        selectedGeneData.forEach(function (gene) {
+                            if (!Array.from(select.options).some(option => option.value === gene)) {
+                                var option = document.createElement("option");
+                                option.value = gene;
+                                option.text = gene;
+                                select.appendChild(option);
+                            }
+                        });
+
+                    }
+                    console.log("Updated selectedGeneData:", selectedGeneData);
+
+                    synchronizeAnimations(this, true)
+
+                    dynamicParallel(selectedGeneData, data_copy_pval, dataC_copy_pval, dataN_copy, first_dims);
+                    updateBoxPlot(last_box, parsedLogFC, dataN_copy, dataC_copy);
+                    if (currentPlot === 'volcano') {
+                        updateVolcanoPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj);
+                    } else {
+                        updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj);
+                    }
+
+                    // Optionally, you can trigger an update or refresh of your visualization
+                    // updateVisualization();
                 });
 
             function synchronizeAnimations(targetElement, banana) {
@@ -13400,11 +13568,11 @@
             if (data_copy_pval.length > data_copy.length) {
                 // Update the content of the counter and apply margin-left to text
                 counterDiv.html(
-                    "<span style='display: inline-block; width: 228px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Total number of genes:</span>" +
+                    "<span style='display: inline-block; width: 235px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Total number of genes:</span>" +
                     "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_original.length + "</span><br>" +
-                    "<span style='display: inline-block; width: 228px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by IQR:</span>" +
+                    "<span style='display: inline-block; width: 235px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by IQR:</span>" +
                     "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy1.length + " (" + ((data_copy1.length / data_original.length) * 100).toFixed(1) + "%)" + "</span><br>" +
-                    "<span style='display: inline-block; width: 228px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by FC:</span>" +
+                    "<span style='display: inline-block; width: 235px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by FC:</span>" +
                     "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold;margin-left: 15px;'>" + data_copy.length + " (" + ((data_copy.length / data_original.length) * 100).toFixed(1) + "%)" + "</span><br>" +
                     "<span style='display: inline-block; width: 235px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by p-val:</span>" +
                     "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold;margin-left: 15px;'>" + data_copy.length + " (" + ((data_copy.length / data_original.length) * 100).toFixed(1) + "%)" + "</span>"
@@ -13413,11 +13581,11 @@
             else {
 
                 counterDiv.html(
-                    "<span style='display: inline-block; width: 228px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Total number of genes:</span>" +
+                    "<span style='display: inline-block; width: 235px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Total number of genes:</span>" +
                     "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_original.length + "</span><br>" +
-                    "<span style='display: inline-block; width: 228px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by IQR:</span>" +
+                    "<span style='display: inline-block; width: 235px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by IQR:</span>" +
                     "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy1.length + " (" + ((data_copy1.length / data_original.length) * 100).toFixed(1) + "%)" + "</span><br>" +
-                    "<span style='display: inline-block; width: 228px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by FC:</span>" +
+                    "<span style='display: inline-block; width: 235px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by FC:</span>" +
                     "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy.length + " (" + ((data_copy.length / data_original.length) * 100).toFixed(1) + "%)" + "</span><br>" +
                     "<span style='display: inline-block; width: 235px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by p-val:</span>" +
                     "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy_pval.length + " (" + ((data_copy_pval.length / data_original.length) * 100).toFixed(1) + "%)" + "</span>"
@@ -13427,11 +13595,11 @@
 
             // Update the content of the counter and apply margin-left to text
             counterDiv.html(
-                "<span style='display: inline-block; width: 228px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Total number of genes:</span>" +
+                "<span style='display: inline-block; width: 235px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Total number of genes:</span>" +
                 "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_original.length + "</span><br>" +
-                "<span style='display: inline-block; width: 228px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by IQR:</span>" +
+                "<span style='display: inline-block; width: 235px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by IQR:</span>" +
                 "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy1.length + " (" + ((data_copy1.length / data_original.length) * 100).toFixed(1) + "%)" + "</span><br>" +
-                "<span style='display: inline-block; width: 228px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by FC:</span>" +
+                "<span style='display: inline-block; width: 235px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by FC:</span>" +
                 "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy.length + " (" + ((data_copy.length / data_original.length) * 100).toFixed(1) + "%)" + "</span><br>" +
                 "<span style='display: inline-block; width: 235px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by p-val:</span>" +
                 "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy_pval.length + " (" + ((data_copy_pval.length / data_original.length) * 100).toFixed(1) + "%)" + "</span>"
