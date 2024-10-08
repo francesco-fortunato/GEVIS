@@ -1046,7 +1046,7 @@
                 <div class="flex"
                     style="display: flex; justify-content: center; align-items: center; height: 100%; width: 100%;">
                     <div id="counter"
-                        style="color: white; border: 0.01px solid #ddd; border-bottom: none; border-right: none; border-left: none; width: 50%; height: 100%; box-sizing: border-box; text-align: left; justify-content: space-evenly;">
+                        style="color: white; border: 0.01px solid #ddd; border-bottom: none; border-right: none; border-left: none; width: 65%; height: 100%; box-sizing: border-box; text-align: left; justify-content: space-evenly;">
                     </div>
                     <div id="counter1"
                         style="color: white; border: 0.01px solid #ddd; border-bottom: none; border-right: none; width: 50%; height: 100%; box-sizing: border-box; text-align: left; justify-content: space-evenly;">
@@ -13159,61 +13159,61 @@
             if (data_copy_pval.length > data_copy.length) {
                 // Update the content of the counter and apply margin-left to text
                 counterDiv.html(
-                    "<span style='display: inline-block; width: 235px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Total number of genes:</span>" +
-                    "<span style='display: inline-block; width: 70px; text-align: center; font-weight: bold;'>" + data_original.length + "</span><br>" +
-                    "<span style='display: inline-block; width: 235px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by IQR:</span>" +
-                    "<span style='display: inline-block; width: 70px; text-align: center; font-weight: bold;'>" + data_copy1.length + "</span><br>" +
-                    "<span style='display: inline-block; width: 235px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by FC:</span>" +
-                    "<span style='display: inline-block; width: 70px; text-align: center; font-weight: bold;'>" + data_copy.length + "</span><br>" +
+                    "<span style='display: inline-block; width: 228px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Total number of genes:</span>" +
+                    "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_original.length + "</span><br>" +
+                    "<span style='display: inline-block; width: 228px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by IQR:</span>" +
+                    "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy1.length + " (" + ((data_copy1.length/data_original.length)*100).toFixed(1) + "%)" + "</span><br>" +
+                    "<span style='display: inline-block; width: 228px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by FC:</span>" +
+                    "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold;margin-left: 15px;'>" + data_copy.length + " (" + ((data_copy.length/data_original.length)*100).toFixed(1)  + "%)" + "</span><br>" +
                     "<span style='display: inline-block; width: 235px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by p-val:</span>" +
-                    "<span style='display: inline-block; width: 70px; text-align: center; font-weight: bold;'>" + data_copy.length + "</span>"
+                    "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold;margin-left: 15px;'>" + data_copy.length + " (" + ((data_copy.length/data_original.length)*100).toFixed(1)  + "%)" + "</span>"
                 );
             }
             else {
 
                 counterDiv.html(
-                    "<span style='display: inline-block; width: 235px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Total number of genes:</span>" +
-                    "<span style='display: inline-block; width: 70px; text-align: center; font-weight: bold;'>" + data_original.length + "</span><br>" +
-                    "<span style='display: inline-block; width: 235px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by IQR:</span>" +
-                    "<span style='display: inline-block; width: 70px; text-align: center; font-weight: bold;'>" + data_copy1.length + "</span><br>" +
-                    "<span style='display: inline-block; width: 235px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by FC:</span>" +
-                    "<span style='display: inline-block; width: 70px; text-align: center; font-weight: bold;'>" + data_copy.length + "</span><br>" +
+                    "<span style='display: inline-block; width: 228px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Total number of genes:</span>" +
+                    "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_original.length + "</span><br>" +
+                    "<span style='display: inline-block; width: 228px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by IQR:</span>" +
+                    "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy1.length + " (" + ((data_copy1.length/data_original.length)*100).toFixed(1) + "%)" + "</span><br>" +
+                    "<span style='display: inline-block; width: 228px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by FC:</span>" +
+                    "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy.length + " (" + ((data_copy.length/data_original.length)*100).toFixed(1) + "%)" + "</span><br>" +
                     "<span style='display: inline-block; width: 235px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by p-val:</span>" +
-                    "<span style='display: inline-block; width: 70px; text-align: center; font-weight: bold;'>" + data_copy_pval.length + "</span>"
+                    "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy_pval.length + " (" + ((data_copy_pval.length/data_original.length)*100).toFixed(1) + "%)" + "</span>"
                 );
 
             }
 
             // Update the content of the counter and apply margin-left to text
             counterDiv.html(
-                "<span style='display: inline-block; width: 235px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Total number of genes:</span>" +
-                "<span style='display: inline-block; width: 70px; text-align: center; font-weight: bold;'>" + data_original.length + "</span><br>" +
-                "<span style='display: inline-block; width: 235px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by IQR:</span>" +
-                "<span style='display: inline-block; width: 70px; text-align: center; font-weight: bold;'>" + data_copy1.length + "</span><br>" +
-                "<span style='display: inline-block; width: 235px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by FC:</span>" +
-                "<span style='display: inline-block; width: 70px; text-align: center; font-weight: bold;'>" + data_copy.length + "</span><br>" +
+                "<span style='display: inline-block; width: 228px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Total number of genes:</span>" +
+                "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_original.length + "</span><br>" +
+                "<span style='display: inline-block; width: 228px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by IQR:</span>" +
+                "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy1.length + " (" + ((data_copy1.length/data_original.length)*100).toFixed(1) + "%)" + "</span><br>" +
+                "<span style='display: inline-block; width: 228px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by FC:</span>" +
+                "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy.length + " (" + ((data_copy.length/data_original.length)*100).toFixed(1) + "%)" + "</span><br>" +
                 "<span style='display: inline-block; width: 235px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by p-val:</span>" +
-                "<span style='display: inline-block; width: 70px; text-align: center; font-weight: bold;'>" + data_copy_pval.length + "</span>"
+                "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy_pval.length + " (" + ((data_copy_pval.length/data_original.length)*100).toFixed(1) + "%)" + "</span>"
             );
 
             if (chosen_statistic != "deseq2") {
                 counterDiv1.html(
-                    "<span style='display: inline-block; width: 200px; margin-left: 20px; font-weight: bold;'>Parameters:</span>" +
+                    "<span style='display: inline-block; width: 175px; margin-left: 10px; font-weight: bold;'>Parameters:</span>" +
                     "<span style='display: inline-block; width: 100px; text-align: center; font-weight: bold;'> </span><br>" +
-                    "<span style='display: inline-block; width: 200px; margin-left: 20px; font-weight: bold;'>IQR threshold:</span>" +
+                    "<span style='display: inline-block; width: 175px; margin-left: 10px; font-weight: bold;'>IQR threshold:</span>" +
                     "<span style='display: inline-block; width: 100px; text-align: center; font-weight: bold;'>" + thr_prc.toFixed(3) + "</span><br>" +
-                    "<span style='display: inline-block; width: 200px; margin-left: 20px; font-weight: bold;'>Log FC threshold:</span>" +
+                    "<span style='display: inline-block; width: 175px; margin-left: 10px; font-weight: bold;'>Log FC threshold:</span>" +
                     "<span style='display: inline-block; width: 100px; text-align: center; font-weight: bold;'>" + log_thr_fc.toFixed(3) + "</span><br>" +
-                    "<span style='display: inline-block; width: 200px; margin-left: 20px; font-weight: bold;'>Significance level:</span>" +
+                    "<span style='display: inline-block; width: 175px; margin-left: 10px; font-weight: bold;'>Significance level:</span>" +
                     "<span style='display: inline-block; width: 100px; text-align: center; font-weight: bold;'>" + threshold + "</span>"
                 );
             } else {
                 counterDiv1.html(
-                    "<span style='display: inline-block; width: 200px; margin-left: 20px; font-weight: bold;'>Parameters:</span>" +
+                    "<span style='display: inline-block; width: 175px; margin-left: 10px; font-weight: bold;'>Parameters:</span>" +
                     "<span style='display: inline-block; width: 100px; text-align: center; font-weight: bold;'> </span><br>" +
-                    "<span style='display: inline-block; width: 200px; margin-left: 20px; font-weight: bold;'>Log FC threshold:</span>" +
+                    "<span style='display: inline-block; width: 175px; margin-left: 10px; font-weight: bold;'>Log FC threshold:</span>" +
                     "<span style='display: inline-block; width: 100px; text-align: center; font-weight: bold;'>" + log_thr_fc.toFixed(3) + "</span><br>" +
-                    "<span style='display: inline-block; width: 200px; margin-left: 20px; font-weight: bold;'>Significance level:</span>" +
+                    "<span style='display: inline-block; width: 175px; margin-left: 10px; font-weight: bold;'>Significance level:</span>" +
                     "<span style='display: inline-block; width: 100px; text-align: center; font-weight: bold;'>" + threshold + "</span>"
                 );
 
