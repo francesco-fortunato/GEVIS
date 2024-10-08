@@ -7572,10 +7572,12 @@
                 .extent([[0, 0], [width, height]])
                 .on("end", brushended);
 
-            // Append brush to SVG
-            svg.append("g")
-                .attr("class", "brush")
-                .call(brush);
+                        // Append brush to SVG
+var brushGroup = svg.append("g")
+    .attr("class", "brush")
+    .call(brush);
+
+
 
             // Function to handle brushend event
             function brushended() {
@@ -7614,6 +7616,9 @@
                             .attr("stroke-width", null)
                             .raise(); // Bring the selected circle to the front
                     });
+
+                    brushGroup.raise();
+
                 }
 
                 // Update the opacity for all circles after brushing
@@ -7623,9 +7628,9 @@
                     })
                     .each(function (d) {
                         // Bring selected circles to the front
-                        if (gsmList.includes(d.GSM)) {
-                            d3.select(this).raise();
-                        }
+                        // if (gsmList.includes(d.GSM)) {
+                        //     d3.select(this).raise();
+                        // }
                     });
 
                 // Update parallel plot or any other function with the updated GSM list
@@ -7635,6 +7640,7 @@
                 updateBoxPlot(last_box, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
 
             }
+
             // Define maximum length for legend labels before truncating
             var maxLabelLength = 18; // You can adjust this value as needed
 
