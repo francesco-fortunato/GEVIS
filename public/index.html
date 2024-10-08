@@ -7494,27 +7494,27 @@
                     // If gsmList is not empty, reduce opacity for unselected circles
                     return gsmList.length > 0 && !gsmList.includes(d.GSM) ? 0.2 : 1;
                 })
-                // .on("click", function (d) {
-                //     // On click, select the circle and add the GSM value to the list
-                //     d3.select(this).attr("stroke", "black").attr("stroke-width", 2);
-                //     var selectedGSM = d.GSM; // Assuming GSM is a property in the object
-                //     // console.log("Selected GSM:", selectedGSM);
-                //     gsmList.push(selectedGSM);
-                //     // console.log("GSM List:", gsmList)
+            // .on("click", function (d) {
+            //     // On click, select the circle and add the GSM value to the list
+            //     d3.select(this).attr("stroke", "black").attr("stroke-width", 2);
+            //     var selectedGSM = d.GSM; // Assuming GSM is a property in the object
+            //     // console.log("Selected GSM:", selectedGSM);
+            //     gsmList.push(selectedGSM);
+            //     // console.log("GSM List:", gsmList)
 
-                //     // Update the circles' opacity based on the new gsmList
-                //     svg.selectAll(".data-circle")
-                //         .style("opacity", function (d) {
-                //             return gsmList.length > 0 && !gsmList.includes(d.GSM) ? 0.2 : 1;
-                //         });
-                //     ;
+            //     // Update the circles' opacity based on the new gsmList
+            //     svg.selectAll(".data-circle")
+            //         .style("opacity", function (d) {
+            //             return gsmList.length > 0 && !gsmList.includes(d.GSM) ? 0.2 : 1;
+            //         });
+            //     ;
 
-                //     // Check if the selected GSM is in the transposedData list
-                //     var selectedData = transposedData.find(function (data) {
-                //         return data.GSM === selectedGSM;
-                //     });
+            //     // Check if the selected GSM is in the transposedData list
+            //     var selectedData = transposedData.find(function (data) {
+            //         return data.GSM === selectedGSM;
+            //     });
 
-                // });
+            // });
 
 
             // Add x-axis
@@ -7572,10 +7572,10 @@
                 .extent([[0, 0], [width, height]])
                 .on("end", brushended);
 
-                        // Append brush to SVG
-var brushGroup = svg.append("g")
-    .attr("class", "brush")
-    .call(brush);
+            // Append brush to SVG
+            var brushGroup = svg.append("g")
+                .attr("class", "brush")
+                .call(brush);
 
 
 
@@ -10822,6 +10822,105 @@ var brushGroup = svg.append("g")
 
 
                     });
+
+
+                // Determine the X positions for each group (left and right rectangles)
+                const leftBoxX = x(chosen_meta2) - boxWidth / 2;
+                const rightBoxX = x(chosen_meta1) - boxWidth / 2;
+
+                // Set the extent of the brush for the left box (chosen_meta2)
+                const brushLeft = d3.brush()
+                    .extent([[leftBoxX, 0], [leftBoxX + boxWidth, height]]) // Constrain to the left box
+                    .on("end", brushended);
+
+                // Set the extent of the brush for the right box (chosen_meta1)
+                const brushRight = d3.brush()
+                    .extent([[rightBoxX, 0], [rightBoxX + boxWidth, height]]) // Constrain to the right box
+                    .on("end", brushended);
+
+                // Function to handle brushing for both sides
+                function brushended() {
+                    var selection = d3.event.selection; // Get the brush selection
+                    var isLeftBrush = d3.select(this).attr("class").includes("brush-left"); // Check if it's the left brush
+                    var isRightBrush = d3.select(this).attr("class").includes("brush-right"); // Check if it's the right brush
+
+                    // Define brush regions (left or right)
+                    const leftBoxX = x(chosen_meta2) - boxWidth / 2;
+                    const rightBoxX = x(chosen_meta1) - boxWidth / 2;
+
+                    // Handle deselection when no selection is made
+                    if (!selection) {
+                        svg.selectAll(".indPoints")
+                            .filter(function (d) {
+                                const cx = d3.select(this).attr("cx");
+
+                                // Filter only for the left or right points depending on the brush
+                                if (isLeftBrush) {
+                                    return cx >= leftBoxX && cx <= leftBoxX + boxWidth;
+                                } else if (isRightBrush) {
+                                    return cx >= rightBoxX && cx <= rightBoxX + boxWidth;
+                                }
+                            })
+                            .each(function (d) {
+                                // Clear selection for these points
+                                d3.select(this)
+                                    .classed("pulse-red", false)
+                                    .attr("stroke", "black")
+                                    .attr("stroke-width", 1);
+
+                                // Clear GSM list for this region
+                                gsmList = gsmList.filter(gsm => gsm !== d.GSM);
+                            });
+                    } else {
+                        // Handle the case when there is a selection
+                        svg.selectAll(".indPoints")
+                            .filter(function (d) {
+                                const cx = d3.select(this).attr("cx");
+                                const cy = d3.select(this).attr("cy");
+
+                                // Apply filtering for the respective region
+                                if (isLeftBrush) {
+                                    return cx >= leftBoxX && cx <= leftBoxX + boxWidth &&
+                                        selection[0][0] <= cx && cx <= selection[1][0] &&
+                                        selection[0][1] <= cy && cy <= selection[1][1];
+                                } else if (isRightBrush) {
+                                    return cx >= rightBoxX && cx <= rightBoxX + boxWidth &&
+                                        selection[0][0] <= cx && cx <= selection[1][0] &&
+                                        selection[0][1] <= cy && cy <= selection[1][1];
+                                }
+                            })
+                            .each(function (d) {
+                                // On click, select the circle and add the GSM value to the list
+                                var selectedGSM = d.GSM;
+                                var isSelected = gsmList.includes(selectedGSM);
+
+                                if (!isSelected) {
+                                    gsmList.push(selectedGSM);
+                                }
+
+                                // Update class, stroke, and stroke-width
+                                d3.select(this)
+                                    .classed("pulse-red", gsmList.includes(selectedGSM))
+                                    .attr("stroke", isSelected ? "black" : "black")
+                                    .attr("stroke-width", !gsmList.includes(selectedGSM) ? 1 : 2);
+                            });
+                    }
+
+                    // Call necessary update functions
+                    synchronizeAnimations();
+                    dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims, ordering);
+                    pca(pca_data);
+                }
+
+                // Append the left brush (for left rectangle)
+                svg.append("g")
+                    .attr("class", "brush-left")
+                    .call(brushLeft);
+
+                // Append the right brush (for right rectangle)
+                svg.append("g")
+                    .attr("class", "brush-right")
+                    .call(brushRight);
 
 
             } else {
