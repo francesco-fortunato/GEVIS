@@ -577,6 +577,41 @@
             transition: opacity 0.3s;
             /* Smooth transition */
         }
+
+        .tab {
+            overflow: hidden;
+            background-color: #f1f1f1;
+        }
+
+        .tab button {
+            background-color: inherit;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 14px 16px;
+            transition: 0.3s;
+            color: #000;
+            /* Default text color */
+        }
+
+        .tab button:hover {
+            background-color: #ddd;
+            /* Light gray background on hover */
+            color: #000;
+            /* Text color remains black on hover */
+        }
+
+        .tab button.active {
+            background-color: #ccc;
+            /* Active tab background color */
+            color: #000;
+            /* Active tab text color */
+        }
+
+        .tabcontent {
+            display: none;
+            padding: 20px;
+        }
     </style>
 </head>
 
@@ -792,16 +827,43 @@
         style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); z-index: 1000;">
         <div
             style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); width: 80%; max-width: 800px;">
-            <h2 style="margin: 0 0 20px; text-align: center;">Selected Genes</h2>
-            <table id="geneTable" class="display" style="width: 100%;"></table>
-            <div style="display: flex; justify-content: center; gap: 20px;">
-                <button id="confirmDownloadButton"
-                    style="margin-top: 20px; padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; display: none;">Download
-                    CSV</button>
-                <button id="closeOverlayButton"
-                    style="margin-top: 20px; padding: 10px 20px; background-color: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">Close</button>
+
+            <!-- Tabs -->
+            <div class="tab">
+                <button class="tablinks active" id="diffExpressedTab">Differential Expressed Genes</button>
+                <button class="tablinks" id="selectedGenesTab">Selected Genes</button>
+                <button class="tablinks" id="selectedGSMTab">Selected GSM Genes</button>
             </div>
 
+            <!-- Scrollable container for tables -->
+            <div style="overflow-x: auto; max-width: 100%; margin-top: 20px;">
+                <!-- Table for Differential Expressed Genes -->
+                <div id="diffExpressedGenes" class="tabcontent" style="display: block;">
+                    <h2 style="margin: 0 0 20px; text-align: center;">Differential Expressed Genes</h2>
+                    <table id="diffExpressedTable" class="display" style="width: 100%;"></table>
+                </div>
+
+                <!-- Table for Selected Genes -->
+                <div id="selectedGenes" class="tabcontent" style="display: none;">
+                    <h2 style="margin: 0 0 20px; text-align: center;">Selected Genes</h2>
+                    <table id="selectedGenesTable" class="display" style="width: 100%;"></table>
+                </div>
+
+                <!-- Table for Selected GSM Genes -->
+                <div id="selectedGSM" class="tabcontent" style="display: none;">
+                    <h2 style="margin: 0 0 20px; text-align: center;">Selected Samples with Selected Genes</h2>
+                    <table id="selectedGSMTable" class="display" style="width: 100%;"></table>
+                </div>
+            </div>
+
+            <!-- Buttons for download and close -->
+            <div style="display: flex; justify-content: center; gap: 20px; margin-top: 20px;">
+                <button id="confirmDownloadButton"
+                    style="padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; display: none;">Download
+                    CSV</button>
+                <button id="closeOverlayButton"
+                    style="padding: 10px 20px; background-color: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">Close</button>
+            </div>
         </div>
     </div>
 
@@ -8650,6 +8712,7 @@
                                 break; // Exit the loop once the option is removed
                             }
                         }
+                        heatmap(heatmap_data) 
 
                         dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
                     } else {
@@ -8688,7 +8751,7 @@
                         });
 
                         synchronizeAnimations(this);
-
+                        heatmap(heatmap_data) 
                         // Call a function to create parallel coordinates plot using selectedGeneData
                         dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
                     }
@@ -8941,6 +9004,7 @@
                                         break; // Exit the loop once the option is removed
                                     }
                                 }
+                                heatmap(heatmap_data) 
 
                                 dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
                             } else {
@@ -8977,7 +9041,7 @@
                                 });
 
                                 synchronizeAnimations(this);
-
+                                heatmap(heatmap_data) 
                                 // Call a function to create parallel coordinates plot using selectedGeneData
                                 dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
                             }
@@ -9235,6 +9299,7 @@
                                         break; // Exit the loop once the option is removed
                                     }
                                 }
+                                heatmap(heatmap_data) 
 
                                 dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
                             } else {
@@ -9263,7 +9328,7 @@
                                 });
 
                                 synchronizeAnimations(this);
-
+                                heatmap(heatmap_data) 
                                 // Call a function to create parallel coordinates plot using selectedGeneData
                                 dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
                             }
@@ -9845,6 +9910,7 @@
                                 break; // Exit the loop once the option is removed
                             }
                         }
+                        heatmap(heatmap_data) 
 
                         dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
                     } else {
@@ -9873,7 +9939,7 @@
                         });
 
                         synchronizeAnimations(this);
-
+                        heatmap(heatmap_data) 
                         // Call a function to create parallel coordinates plot using selectedGeneData
                         dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
                     }
@@ -10088,6 +10154,7 @@
                                         break; // Exit the loop once the option is removed
                                     }
                                 }
+                                heatmap(heatmap_data) 
 
                                 dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
                             } else {
@@ -10124,7 +10191,7 @@
                                 });
 
                                 synchronizeAnimations(this);
-
+                                heatmap(heatmap_data) 
                                 // Call a function to create parallel coordinates plot using selectedGeneData
                                 dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
                             }
@@ -10401,6 +10468,7 @@
                                         break; // Exit the loop once the option is removed
                                     }
                                 }
+                                heatmap(heatmap_data) 
 
                                 dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
                             } else {
@@ -10429,7 +10497,7 @@
                                 });
 
                                 synchronizeAnimations(this);
-
+                                heatmap(heatmap_data) 
                                 // Call a function to create parallel coordinates plot using selectedGeneData
                                 dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
                             }
@@ -11676,7 +11744,7 @@
                 pca(pca_data)
 
                 updateBoxPlot(last_box, parsedLogFC, dataN_copy, dataC_copy)
-
+                heatmap(heatmap_data) 
 
 
             });
@@ -11943,11 +12011,13 @@
                         break; // Exit the loop once the option is removed
                     }
                 }
+                                heatmap(heatmap_data) 
 
 
                 first_dims = metadataOrder
 
                 ordering = totalOrder
+                heatmap(heatmap_data) 
 
                 // Update dimensions with new order
 
@@ -12273,7 +12343,7 @@
 
                 updateBoxPlot(last_box, parsedLogFC, dataN_copy, dataC_copy)
 
-
+                heatmap(heatmap_data) 
 
                 console.log("GSM List:", gsmList);
             });
@@ -12737,6 +12807,7 @@
                 .range([0, height])
                 .domain(myGroups)
                 .padding(0.05);
+
             svg.append("g")
                 .style("font-size", 15)
                 .style("fill", "white")
@@ -12744,7 +12815,68 @@
                 .select(".domain").remove();
 
             // Select and style the tick text for the Y axis
-            svg.selectAll(".tick text").style("fill", "white");
+            svg.selectAll(".tick text")
+                .style("fill", "white") // Set the default color to white
+                .classed("pulse", function (d) {
+                    // Check if d (the current tick value) exists in selectedGeneData
+                    return selectedGeneData.includes(d); // d should be the gene identifier
+                })
+                .style("cursor", "pointer") // Change cursor to pointer on hover
+                .on("mouseover", function () {
+                    d3.select(this).style("opacity", 0.7); // Optional: Change opacity on hover
+                })
+                .on("mouseout", function () {
+                    d3.select(this).style("opacity", 1); // Reset opacity when not hovering
+                })
+                .on("click", function (d) {
+                    // Toggle gene in selectedGeneData
+                    const index = selectedGeneData.indexOf(d);
+                    // Get the select element
+                    var select = document.getElementById("selectButton");
+
+                    if (index > -1) {
+                        // Gene is already selected, remove it
+                        selectedGeneData.splice(index, 1);
+                        d3.select(this).classed("pulse", false)
+                        var select = document.getElementById("selectButton");
+                        var options = select.options;
+
+                        for (var i = 0; i < options.length; i++) {
+                            if (!selectedGeneData.includes(options[i].value)) {
+                                select.removeChild(options[i]);
+                                break; // Exit the loop once the option is removed
+                            }
+                        }
+                    } else {
+                        // Gene is not selected, add it
+                        selectedGeneData.push(d);
+                        d3.select(this).classed("pulse", true)
+                        // Add new options for the genes in selectedGeneData that are not already in the select element
+                        selectedGeneData.forEach(function (gene) {
+                            if (!Array.from(select.options).some(option => option.value === gene)) {
+                                var option = document.createElement("option");
+                                option.value = gene;
+                                option.text = gene;
+                                select.appendChild(option);
+                            }
+                        });
+
+                    }
+                    console.log("Updated selectedGeneData:", selectedGeneData);
+
+                    synchronizeAnimations(this, true)
+
+                    dynamicParallel(selectedGeneData, data_copy_pval, dataC_copy_pval, dataN_copy, first_dims);
+                    updateBoxPlot(last_box, parsedLogFC, dataN_copy, dataC_copy);
+                    if (currentPlot === 'volcano') {
+                        updateVolcanoPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj);
+                    } else {
+                        updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj);
+                    }
+
+                    // Optionally, you can trigger an update or refresh of your visualization
+                    // updateVisualization();
+                });
 
             // Add title text
             svg.append("text")
@@ -13333,18 +13465,16 @@
         document.getElementById("exportGenesButton").addEventListener("click", exportGenes);
 
         function exportGenes() {
-            // Create a map for quick lookup of logFC based on gene names
             const logFCMap = parsedLogFC_origin1.reduce((map, gene) => {
                 map[gene.Gene] = gene.logFC;
                 return map;
             }, {});
 
-            // Sort old_p_adj by pval_adj (lowest first)
             const sortedOldPAdj = old_p_adj.sort((a, b) => a.pval_adj - b.pval_adj);
 
-            // Prepare data for DataTables
+            // Prepare data for Differential Expressed Genes
             const geneData = sortedOldPAdj.map(gene => {
-                const logFC = logFCMap[gene.Gene] !== undefined ? logFCMap[gene.Gene] : ""; // Handle cases where logFC is missing
+                const logFC = logFCMap[gene.Gene] !== undefined ? logFCMap[gene.Gene] : "";
                 return {
                     Gene: gene.Gene,
                     AdjPVal: gene.pval_adj,
@@ -13352,21 +13482,112 @@
                 };
             });
 
-            // Initialize DataTable
-            const geneTable = $('#geneTable').DataTable({
+            // Initialize DataTable for Differential Expressed Genes
+            const diffExpressedTable = $('#diffExpressedTable').DataTable({
                 data: geneData,
                 columns: [
                     { title: "Gene", data: "Gene" },
                     { title: "AdjPVal", data: "AdjPVal" },
                     { title: "LogFC", data: "LogFC" }
                 ],
-                destroy: true, // Allow re-initialization
-                paging: true, // Enable pagination
-                pageLength: 5, // Number of rows per page
+                destroy: true,
+                paging: true,
+                pageLength: 5,
                 ordering: true,
                 searching: false,
                 lengthChange: false
             });
+
+            // Prepare data for Selected Genes
+            const selectedGenesData = geneData.filter(gene => selectedGeneData.includes(gene.Gene)).map(gene => {
+                return {
+                    Gene: gene.Gene,
+                    AdjPVal: gene.AdjPVal,
+                    LogFC: gene.LogFC
+                };
+            });
+
+            // Initialize DataTable for Selected Genes
+            const selectedGenesTable = $('#selectedGenesTable').DataTable({
+                data: selectedGenesData,
+                columns: [
+                    { title: "Gene", data: "Gene" },
+                    { title: "AdjPVal", data: "AdjPVal" },
+                    { title: "LogFC", data: "LogFC" }
+                ],
+                destroy: true,
+                paging: true,
+                pageLength: 5,
+                ordering: true,
+                searching: false,
+                lengthChange: false
+            });
+
+            console.log(data_original)
+            console.log(gsmList)
+
+            // Prepare data for Selected GSM Genes from original data
+            const selectedGSMData = {};
+
+            // Collect GSM values for each gene in gsmList
+            data_original.forEach(entry => {
+                // Check if the gene is in the selectedGeneData
+                if (selectedGeneData.includes(entry.gene)) {
+                    // Initialize the gene entry if it doesn't exist
+                    if (!selectedGSMData[entry.gene]) {
+                        selectedGSMData[entry.gene] = {};
+                    }
+
+                    // Iterate over the keys of entry to collect GSM values
+                    for (const gsm in entry) {
+                        if (gsmList.includes(gsm)) {
+                            // If the GSM is in gsmList, store the GSM key with its corresponding value
+                            selectedGSMData[entry.gene][gsm] = entry[gsm]; // Use the GSM key and its value from entry
+                        }
+                    }
+                }
+            });
+            console.log(selectedGSMData)
+
+            // Format data for the selectedGSMTable
+            const selectedGSMTableData = Object.entries(selectedGSMData).map(([gene, gsms]) => {
+                const geneObject = { Gene: gene };
+
+                // Assign the GSM values to keys based on the actual GSM values in gsmList
+                gsmList.forEach((gsm) => {
+                    // Check if the current GSM is in the list for the gene
+                    geneObject[gsm] = gsms[gsm] !== undefined ? gsms[gsm] : ""; // If the GSM is included, use the value; otherwise, leave it blank
+                });
+
+                return geneObject;
+            });
+
+            console.log(selectedGSMTableData)
+            $('#selectedGSMTable').html(''); // Set message
+            $('#selectedGSMTable').DataTable().destroy(); // Destroy any existing instance
+
+            // Check if gsmList is empty
+            if (gsmList.length === 0) {
+                // Display message instead of table
+                $('#selectedGSMTable').html('<tr><td colspan="100%" style="text-align: center;">No sample selected</td></tr>'); // Set message
+            } else {
+                // Initialize DataTable for Selected GSM Genes
+
+                const selectedGSMTable = $('#selectedGSMTable').DataTable({
+                    data: selectedGSMTableData,
+                    columns: [
+                        { title: "Gene", data: "Gene" },
+                        ...gsmList.map(gsm => ({ title: gsm, data: gsm })) // Use the actual GSM values as column titles and data keys
+                    ],
+                    destroy: true,
+                    paging: true,
+                    pageLength: 5,
+                    ordering: true,
+                    searching: false,
+                    lengthChange: false
+                });
+            }
+
 
             // Show the overlay
             document.getElementById("geneOverlay").style.display = "block";
@@ -13376,13 +13597,41 @@
 
             // Set up the download button action
             document.getElementById("confirmDownloadButton").onclick = function () {
-                downloadCSV(geneTable);
+                const activeTab = document.querySelector('.tabcontent[style*="display: block"]');
+                const activeTable = activeTab.id === "diffExpressedGenes" ? diffExpressedTable :
+                    (activeTab.id === "selectedGenes" ? selectedGenesTable : selectedGSMTable);
+                downloadCSV(activeTable);
             };
 
             // Close button functionality
             document.getElementById("closeOverlayButton").onclick = function () {
+                $('#selectedGSMTable').DataTable().destroy(); // Destroy any existing instance
+                $('#selectedGenesTable').DataTable().destroy(); // Destroy any existing instance
+                $('#diffExpressedTable').DataTable().destroy(); // Destroy any existing instance
+
                 document.getElementById("geneOverlay").style.display = "none";
             };
+
+            // Handle tab switching
+            document.getElementById("diffExpressedTab").addEventListener("click", function () {
+                switchTab("diffExpressedGenes", "selectedGenes", "selectedGSM");
+            });
+
+            document.getElementById("selectedGenesTab").addEventListener("click", function () {
+                switchTab("selectedGenes", "diffExpressedGenes", "selectedGSM");
+            });
+
+            document.getElementById("selectedGSMTab").addEventListener("click", function () {
+                switchTab("selectedGSM", "diffExpressedGenes", "selectedGenes");
+            });
+
+            function switchTab(showId, hideId1, hideId2) {
+                document.getElementById(showId).style.display = "block";
+                document.getElementById(hideId1).style.display = "none";
+                document.getElementById(hideId2).style.display = "none";
+                document.querySelectorAll('.tablinks').forEach(btn => btn.classList.remove('active'));
+                document.getElementById(`${showId === 'diffExpressedGenes' ? 'diffExpressedTab' : (showId === 'selectedGenes' ? 'selectedGenesTab' : 'selectedGSMTab')}`).classList.add('active');
+            }
         }
 
         function downloadCSV(geneTable) {
