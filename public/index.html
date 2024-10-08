@@ -7488,22 +7488,33 @@
                 })
                 .attr("stroke-width", function (d) {
                     // Set stroke width based on presence in gsmList
-                    return gsmList.includes(d.GSM) ? 4 : null;
+                    return gsmList.includes(d.GSM) ? null : null;
                 })
-                .on("click", function (d) {
-                    // On click, select the circle and add the GSM value to the list
-                    d3.select(this).attr("stroke", "black").attr("stroke-width", 2);
-                    var selectedGSM = d.GSM; // Assuming GSM is a property in the object
-                    // console.log("Selected GSM:", selectedGSM);
-                    gsmList.push(selectedGSM);
-                    // console.log("GSM List:", gsmList);
+                .style("opacity", function (d) {
+                    // If gsmList is not empty, reduce opacity for unselected circles
+                    return gsmList.length > 0 && !gsmList.includes(d.GSM) ? 0.2 : 1;
+                })
+                // .on("click", function (d) {
+                //     // On click, select the circle and add the GSM value to the list
+                //     d3.select(this).attr("stroke", "black").attr("stroke-width", 2);
+                //     var selectedGSM = d.GSM; // Assuming GSM is a property in the object
+                //     // console.log("Selected GSM:", selectedGSM);
+                //     gsmList.push(selectedGSM);
+                //     // console.log("GSM List:", gsmList)
 
-                    // Check if the selected GSM is in the transposedData list
-                    var selectedData = transposedData.find(function (data) {
-                        return data.GSM === selectedGSM;
-                    });
+                //     // Update the circles' opacity based on the new gsmList
+                //     svg.selectAll(".data-circle")
+                //         .style("opacity", function (d) {
+                //             return gsmList.length > 0 && !gsmList.includes(d.GSM) ? 0.2 : 1;
+                //         });
+                //     ;
 
-                });
+                //     // Check if the selected GSM is in the transposedData list
+                //     var selectedData = transposedData.find(function (data) {
+                //         return data.GSM === selectedGSM;
+                //     });
+
+                // });
 
 
             // Add x-axis
@@ -7581,7 +7592,7 @@
                     });
                     gsmList = []; // Clear GSM list
                 } else {
-                    // If there's a selection, proceed as before to handle selected circles
+                    // If there's a selection, filter selected circles
                     selectedCircles = d3.selectAll(".data-circle").filter(function () {
                         var cx = d3.select(this).attr("cx"); // Get the x-coordinate of the circle
                         var cy = d3.select(this).attr("cy"); // Get the y-coordinate of the circle
@@ -7594,16 +7605,28 @@
                         var circleGSM = circle.datum().GSM; // Get the GSM value associated with the circle
 
                         // Add circle's GSM to the list
-                        gsmList.push(circleGSM);
-                        console.log("Selected GSM:", circleGSM);
+                        if (!gsmList.includes(circleGSM)) {
+                            gsmList.push(circleGSM);
+                        }
 
                         // Select the circle visually
                         circle.attr("stroke", "black")
-                            .attr("stroke-width", 4);
-
+                            .attr("stroke-width", null)
+                            .raise(); // Bring the selected circle to the front
                     });
                 }
-                // Define legend items
+
+                // Update the opacity for all circles after brushing
+                svg.selectAll(".data-circle")
+                    .style("opacity", function (d) {
+                        return gsmList.length > 0 && !gsmList.includes(d.GSM) ? 0.2 : 1;
+                    })
+                    .each(function (d) {
+                        // Bring selected circles to the front
+                        if (gsmList.includes(d.GSM)) {
+                            d3.select(this).raise();
+                        }
+                    });
 
                 // Update parallel plot or any other function with the updated GSM list
                 dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims, ordering);
@@ -7612,7 +7635,6 @@
                 updateBoxPlot(last_box, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
 
             }
-
             // Define maximum length for legend labels before truncating
             var maxLabelLength = 18; // You can adjust this value as needed
 
@@ -7698,24 +7720,6 @@
                 .attr("r", 4) // Adjust the radius as needed
                 .style("fill", function (d) { return d.color; });
 
-            // legend.selectAll("text.legend-item")
-            //     .data(legendItems)
-            //     .enter().append("text")
-            //     .attr("class", "legend-item")
-            //     .attr("x", 15)
-            //     .attr("y", function (d, i) { return i * 20 + 10; })
-            //     .text(function (d) {
-            //         // Truncate the label if it exceeds the maximum length
-            //         var text = d.label;
-            //         if (text.length > maxLabelLength) {
-            //             return text.slice(0, maxLabelLength) + '...'; // Truncate and add ellipsis
-            //         }
-            //         return text;
-            //     })
-            //     .style("font-size", "12px")
-            //     .style("fill", "white")
-            //     .append("title") // Add tooltip with the full text
-            //     .text(function (d) { return d.label; }); // Full text for tooltip
 
             // Store previous axis selections globally
             var prevXAxisSelect = d3.select("#x-axis-select").property("value");
@@ -9120,7 +9124,7 @@
                         .attr("text-anchor", "middle")
                         .style("font-size", "14px")
                         .style("fill", "white")
-                        .html("log<tspan dy='5'>10</tspan> <tspan dy ='-5'>(Expression (Normal))</tspan>");
+                        .html("log<tspan dy='5'>10</tspan> <tspan dy ='-5'>(Expression (" + chosen_meta2 + "))</tspan>");
 
                     // Add Y axis label
                     ylab = svg.append("text")
@@ -9129,7 +9133,7 @@
                         .attr("y", -margin.left + 20)
                         .attr("text-anchor", "middle")
                         .style("font-size", "14px")
-                        .html("log<tspan dy='5'>10</tspan> <tspan dy ='-5'>(Expression (Case))</tspan>")
+                        .html("log<tspan dy='5'>10</tspan> <tspan dy ='-5'>(Expression (" + chosen_meta1 + "))</tspan>")
                         .style("fill", "white");
 
                     //svg.select("#scatter").selectAll("*").remove();
@@ -9170,7 +9174,7 @@
                             // Use the first part as the gene name
                             const geneName = parts[0];
 
-                            tooltip.html(`<strong>Gene:</strong> ${geneName}<br><strong>Normal:</strong> ${d.Normal.toFixed(2)}<br><strong>Case:</strong> ${d.Case.toFixed(2)}<br><strong>LogFC:</strong> ${d.logFC.toFixed(2)}<br><strong>pval-adj:</strong> ${d.pval_adj !== null ? formatPValue(d.pval_adj) : 'NA'}`)
+                            tooltip.html(`<strong>Gene:</strong> ${geneName}<br><strong>${chosen_meta2}:</strong> ${d.Normal.toFixed(2)}<br><strong>${chosen_meta1}:</strong> ${d.Case.toFixed(2)}<br><strong>LogFC:</strong> ${d.logFC.toFixed(2)}<br><strong>pval-adj:</strong> ${d.pval_adj !== null ? formatPValue(d.pval_adj) : 'NA'}`)
                                 .style("left", (d3.event.pageX + 15) + "px")
                                 .style("top", (d3.event.pageY - 28) + "px");
                         })
@@ -9489,7 +9493,7 @@
                 .attr("text-anchor", "middle")
                 .style("font-size", "14px")
                 .style("fill", "white")
-                .html("log<tspan dy='5'>10</tspan> <tspan dy ='-5'>(Expression (Normal))</tspan>");
+                .html("log<tspan dy='5'>10</tspan> <tspan dy ='-5'>(Expression (" + chosen_meta2 + "))</tspan>");
 
             // Add Y axis label
             ylab = svg.append("text")
@@ -9498,7 +9502,7 @@
                 .attr("y", -margin.left + 20)
                 .attr("text-anchor", "middle")
                 .style("font-size", "14px")
-                .html("log<tspan dy='5'>10</tspan> <tspan dy ='-5'>(Expression (Case))</tspan>")
+                .html("log<tspan dy='5'>10</tspan> <tspan dy ='-5'>(Expression (" + chosen_meta1 + "))</tspan>")
                 .style("fill", "white");
 
             // Add title
@@ -9780,7 +9784,7 @@
                     // Use the first part as the gene name
                     const geneName = parts[0];
 
-                    tooltip.html(`<strong>Gene:</strong> ${geneName}<br><strong>Normal:</strong> ${d.Normal.toFixed(2)}<br><strong>Case:</strong> ${d.Case.toFixed(2)}<br><strong>LogFC:</strong> ${d.logFC.toFixed(2)}<br><strong>pval-adj:</strong> ${d.pval_adj !== null ? formatPValue(d.pval_adj) : 'NA'}`)
+                    tooltip.html(`<strong>Gene:</strong> ${geneName}<br><strong>${chosen_meta2}:</strong> ${d.Normal.toFixed(2)}<br><strong>${chosen_meta1}:</strong> ${d.Case.toFixed(2)}<br><strong>LogFC:</strong> ${d.logFC.toFixed(2)}<br><strong>pval-adj:</strong> ${d.pval_adj !== null ? formatPValue(d.pval_adj) : 'NA'}`)
                         .style("left", (d3.event.pageX + 15) + "px")
                         .style("top", (d3.event.pageY - 28) + "px");
                 })
@@ -10281,7 +10285,7 @@
                         .attr("text-anchor", "middle")
                         .style("font-size", "14px")
                         .style("fill", "white")
-                        .html("log<tspan dy='5'>10</tspan> <tspan dy ='-5'>(Expression (Normal))</tspan>");
+                        .html("log<tspan dy='5'>10</tspan> <tspan dy ='-5'>(Expression (" + chosen_meta2 + "))</tspan>");
 
                     // Add Y axis label
                     ylab = svg.append("text")
@@ -10290,7 +10294,7 @@
                         .attr("y", -margin.left + 20)
                         .attr("text-anchor", "middle")
                         .style("font-size", "14px")
-                        .html("log<tspan dy='5'>10</tspan> <tspan dy ='-5'>(Expression (Case))</tspan>")
+                        .html("log<tspan dy='5'>10</tspan> <tspan dy ='-5'>(Expression (" + chosen_meta1 + "))</tspan>")
                         .style("fill", "white");
 
                     //svg.select("#scatter").selectAll("*").remove();
@@ -10336,7 +10340,7 @@
                             // Use the first part as the gene name
                             const geneName = parts[0];
 
-                            tooltip.html(`<strong>Gene:</strong> ${geneName}<br><strong>Normal:</strong> ${d.Normal.toFixed(2)}<br><strong>Case:</strong> ${d.Case.toFixed(2)}<br><strong>LogFC:</strong> ${d.logFC.toFixed(2)}<br><strong>pval-adj:</strong> ${d.pval_adj !== null ? formatPValue(d.pval_adj) : 'NA'}`)
+                            tooltip.html(`<strong>Gene:</strong> ${geneName}<br><strong>${chosen_meta2}:</strong> ${d.Normal.toFixed(2)}<br><strong>${chosen_meta1}:</strong> ${d.Case.toFixed(2)}<br><strong>LogFC:</strong> ${d.logFC.toFixed(2)}<br><strong>pval-adj:</strong> ${d.pval_adj !== null ? formatPValue(d.pval_adj) : 'NA'}`)
                                 .style("left", (d3.event.pageX + 15) + "px")
                                 .style("top", (d3.event.pageY - 28) + "px");
                         })
@@ -10600,12 +10604,12 @@
 
                 // Iterate over expressionValuesC and add objects to combinedData with type 'case'
                 expressionValuesC.forEach((expression, i) => {
-                    combinedData.push({ GSM: gsmValuesC[i], expression: expression, type: 'Case' });
+                    combinedData.push({ GSM: gsmValuesC[i], expression: expression, type: chosen_meta1 });
                 });
 
                 // Iterate over expressionValuesN and add objects to combinedData with type 'normal'
                 expressionValuesN.forEach((expression, i) => {
-                    combinedData.push({ GSM: gsmValuesN[i], expression: expression, type: 'Normal' });
+                    combinedData.push({ GSM: gsmValuesN[i], expression: expression, type: chosen_meta2 });
                 });
 
                 console.log(combinedData)
@@ -10643,7 +10647,7 @@
 
                 var x = d3.scaleBand()
                     .range([0, width])
-                    .domain(["Normal", "Case"])
+                    .domain([chosen_meta2, chosen_meta1])
                     .paddingInner(1)
                     .paddingOuter(.5)
 
@@ -10740,7 +10744,7 @@
                     .attr("width", boxWidth)
                     .attr("stroke", "black")
                     .style("fill", function (d) {
-                        if (d.key === "Case") {
+                        if (d.key === chosen_meta1) {
                             return "#a05853"
                         }
                         else {
@@ -10881,12 +10885,12 @@
 
                     // Iterate over expressionValuesC and add objects to combinedData with type 'case'
                     expressionValuesC.forEach((expression, i) => {
-                        combinedData.push({ GSM: gsmValuesC[i], expression: expression, type: 'Case' });
+                        combinedData.push({ GSM: gsmValuesC[i], expression: expression, type: chosen_meta1 });
                     });
 
                     // Iterate over expressionValuesN and add objects to combinedData with type 'normal'
                     expressionValuesN.forEach((expression, i) => {
-                        combinedData.push({ GSM: gsmValuesN[i], expression: expression, type: 'Normal' });
+                        combinedData.push({ GSM: gsmValuesN[i], expression: expression, type: chosen_meta2 });
                     });
 
                     console.log(combinedData)
@@ -10917,7 +10921,7 @@
 
                     var x = d3.scaleBand()
                         .range([0, width])
-                        .domain(["Normal", "Case"])
+                        .domain([chosen_meta2, chosen_meta1])
                         .paddingInner(1)
                         .paddingOuter(.5)
 
@@ -11014,7 +11018,7 @@
                         })
                         .attr("width", boxWidth) // Keep width constant
                         .style("fill", function (d) {
-                            return d.key === "Case" ? "#a05853" : "#118e91";
+                            return d.key === chosen_meta1 ? "#a05853" : "#118e91";
                         });
 
                     // Append new boxes and smoothly transition them to their new positions
@@ -11023,7 +11027,7 @@
                         .attr("class", "boxes")
                         .attr("stroke", "black")
                         .style("fill", function (d) {
-                            return d.key === "Case" ? "#a05853" : "#118e91";
+                            return d.key === chosen_meta1 ? "#a05853" : "#118e91";
                         })
                         .attr("x", function (d) { return x(d.key) - boxWidth / 2; }) // Set initial position
                         .attr("y", function (d) { return y(d.value.q3); }) // Set initial position
@@ -13162,11 +13166,11 @@
                     "<span style='display: inline-block; width: 228px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Total number of genes:</span>" +
                     "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_original.length + "</span><br>" +
                     "<span style='display: inline-block; width: 228px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by IQR:</span>" +
-                    "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy1.length + " (" + ((data_copy1.length/data_original.length)*100).toFixed(1) + "%)" + "</span><br>" +
+                    "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy1.length + " (" + ((data_copy1.length / data_original.length) * 100).toFixed(1) + "%)" + "</span><br>" +
                     "<span style='display: inline-block; width: 228px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by FC:</span>" +
-                    "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold;margin-left: 15px;'>" + data_copy.length + " (" + ((data_copy.length/data_original.length)*100).toFixed(1)  + "%)" + "</span><br>" +
+                    "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold;margin-left: 15px;'>" + data_copy.length + " (" + ((data_copy.length / data_original.length) * 100).toFixed(1) + "%)" + "</span><br>" +
                     "<span style='display: inline-block; width: 235px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by p-val:</span>" +
-                    "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold;margin-left: 15px;'>" + data_copy.length + " (" + ((data_copy.length/data_original.length)*100).toFixed(1)  + "%)" + "</span>"
+                    "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold;margin-left: 15px;'>" + data_copy.length + " (" + ((data_copy.length / data_original.length) * 100).toFixed(1) + "%)" + "</span>"
                 );
             }
             else {
@@ -13175,11 +13179,11 @@
                     "<span style='display: inline-block; width: 228px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Total number of genes:</span>" +
                     "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_original.length + "</span><br>" +
                     "<span style='display: inline-block; width: 228px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by IQR:</span>" +
-                    "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy1.length + " (" + ((data_copy1.length/data_original.length)*100).toFixed(1) + "%)" + "</span><br>" +
+                    "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy1.length + " (" + ((data_copy1.length / data_original.length) * 100).toFixed(1) + "%)" + "</span><br>" +
                     "<span style='display: inline-block; width: 228px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by FC:</span>" +
-                    "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy.length + " (" + ((data_copy.length/data_original.length)*100).toFixed(1) + "%)" + "</span><br>" +
+                    "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy.length + " (" + ((data_copy.length / data_original.length) * 100).toFixed(1) + "%)" + "</span><br>" +
                     "<span style='display: inline-block; width: 235px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by p-val:</span>" +
-                    "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy_pval.length + " (" + ((data_copy_pval.length/data_original.length)*100).toFixed(1) + "%)" + "</span>"
+                    "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy_pval.length + " (" + ((data_copy_pval.length / data_original.length) * 100).toFixed(1) + "%)" + "</span>"
                 );
 
             }
@@ -13189,11 +13193,11 @@
                 "<span style='display: inline-block; width: 228px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Total number of genes:</span>" +
                 "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_original.length + "</span><br>" +
                 "<span style='display: inline-block; width: 228px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by IQR:</span>" +
-                "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy1.length + " (" + ((data_copy1.length/data_original.length)*100).toFixed(1) + "%)" + "</span><br>" +
+                "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy1.length + " (" + ((data_copy1.length / data_original.length) * 100).toFixed(1) + "%)" + "</span><br>" +
                 "<span style='display: inline-block; width: 228px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by FC:</span>" +
-                "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy.length + " (" + ((data_copy.length/data_original.length)*100).toFixed(1) + "%)" + "</span><br>" +
+                "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy.length + " (" + ((data_copy.length / data_original.length) * 100).toFixed(1) + "%)" + "</span><br>" +
                 "<span style='display: inline-block; width: 235px; margin-left: 10px; font-weight: bold; font-size : 13px;'>Genes retained after filtering by p-val:</span>" +
-                "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy_pval.length + " (" + ((data_copy_pval.length/data_original.length)*100).toFixed(1) + "%)" + "</span>"
+                "<span style='display: inline-block; width: 110px; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy_pval.length + " (" + ((data_copy_pval.length / data_original.length) * 100).toFixed(1) + "%)" + "</span>"
             );
 
             if (chosen_statistic != "deseq2") {
