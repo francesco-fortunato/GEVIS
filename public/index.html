@@ -840,12 +840,26 @@
                 <!-- Table for Differential Expressed Genes -->
                 <div id="diffExpressedGenes" class="tabcontent" style="display: block;">
                     <h2 style="margin: 0 0 20px; text-align: center;">Differential Expressed Genes</h2>
+
+                    <!-- Checkbox for PCA information -->
+                    <div style="text-align: center; margin-bottom: 10px;">
+                        <input type="checkbox" id="includePCA" />
+                        <label for="includePCA" style="color: black;">Include PCA Information</label>
+                    </div>
+
                     <table id="diffExpressedTable" class="display" style="width: 100%;"></table>
                 </div>
 
                 <!-- Table for Selected Genes -->
                 <div id="selectedGenes" class="tabcontent" style="display: none;">
                     <h2 style="margin: 0 0 20px; text-align: center;">Selected Genes</h2>
+
+                    <!-- Checkbox for PCA information -->
+                    <div style="text-align: center; margin-bottom: 10px;">
+                        <input type="checkbox" id="includePCA2" />
+                        <label for="includePCA2" style="color: black;">Include PCA Information</label>
+                    </div>
+
                     <table id="selectedGenesTable" class="display" style="width: 100%;"></table>
                 </div>
 
@@ -13631,7 +13645,9 @@
         }
 
         document.getElementById("exportGenesButton").addEventListener("click", exportGenes);
-
+        let diffExpressedTable; // Declare the DataTable reference globally
+        let selectedGenesTable; // Declare the DataTable reference globally
+        let selectedGSMTable;
         function exportGenes() {
             const logFCMap = parsedLogFC_origin1.reduce((map, gene) => {
                 map[gene.Gene] = gene.logFC;
@@ -13650,21 +13666,95 @@
                 };
             });
 
-            // Initialize DataTable for Differential Expressed Genes
-            const diffExpressedTable = $('#diffExpressedTable').DataTable({
-                data: geneData,
-                columns: [
+            // Initialize the DataTable for Differential Expressed Genes
+            initializeDiffExpressedTable(geneData);
+
+            // Add checkbox event listener
+            document.getElementById("includePCA").addEventListener("change", function () {
+                diffExpressedTable.clear().destroy();
+                $('#diffExpressedTable' + " tbody").empty();
+                $('#diffExpressedTable' + " thead").empty();
+
+                const includePCA = this.checked;
+                updateDiffExpressedTable(includePCA, geneData);
+            });
+
+            // Function to initialize the DataTable
+            function initializeDiffExpressedTable(data) {
+                diffExpressedTable = $('#diffExpressedTable').DataTable({
+                    data: data,
+                    columns: [
+                        { title: "Gene", data: "Gene" },
+                        { title: "AdjPVal", data: "AdjPVal" },
+                        { title: "LogFC", data: "LogFC" }
+                    ],
+                    destroy: true,
+                    paging: true,
+                    pageLength: 5,
+                    ordering: true,
+                    searching: false,
+                    lengthChange: false
+                });
+            }
+
+            // Function to update the Differential Expressed Genes table
+            function updateDiffExpressedTable(includePCA, data) {
+                // Prepare data for Differential Expressed Genes
+                var updatedData = data.map(gene => {
+                    const logFC = logFCMap[gene.Gene] !== undefined ? logFCMap[gene.Gene] : "";
+                    const pc1Contribution = includePCA ? getPC1Contribution(gene.Gene) : ""; // Get PC1 Contribution if checkbox is checked
+
+                    const entry = {
+                        Gene: gene.Gene,
+                        AdjPVal: gene.AdjPVal,
+                        LogFC: logFC
+                    };
+
+                    // Add PC1 Contribution only if PCA is included
+                    if (includePCA) {
+                        entry.PC1_Contribution = pc1Contribution;
+                    }
+
+                    return entry;
+                });
+
+                // Destroy the existing DataTable if it exists
+                if ($.fn.DataTable.isDataTable('#diffExpressedTable')) {
+                    $('#diffExpressedTable').DataTable().clear().destroy();
+                    $('#diffExpressedTable' + " tbody").empty();
+                    $('#diffExpressedTable' + " thead").empty();
+                }
+
+                // Define columns based on whether PCA is included
+                const columns = [
                     { title: "Gene", data: "Gene" },
                     { title: "AdjPVal", data: "AdjPVal" },
                     { title: "LogFC", data: "LogFC" }
-                ],
-                destroy: true,
-                paging: true,
-                pageLength: 5,
-                ordering: true,
-                searching: false,
-                lengthChange: false
-            });
+                ];
+
+                if (includePCA) {
+                    columns.push({ title: "PC1 Contribution", data: "PC1_Contribution" }); // Add column for PC1 Contribution
+                }
+
+                console.log(updatedData)
+                // $('#tblRemittanceList tbody').empty();
+                // Initialize the DataTable with the updated data and columns
+                diffExpressedTable = $('#diffExpressedTable').DataTable({
+                    data: updatedData,
+                    columns: columns,
+                    paging: true,
+                    pageLength: 5,
+                    ordering: true,
+                    searching: false,
+                    lengthChange: false
+                });
+            }
+
+            // Function to get PC1 Contribution for a given gene
+            function getPC1Contribution(gene) {
+                const geneDataEntry = heatmap_data.find(entry => entry.gene === gene);
+                return geneDataEntry ? geneDataEntry.pc1 : ""; // Return PC1 value or empty string if not found
+            }
 
             // Prepare data for Selected Genes
             const selectedGenesData = geneData.filter(gene => selectedGeneData.includes(gene.Gene)).map(gene => {
@@ -13675,22 +13765,83 @@
                 };
             });
 
+            // Add checkbox event listener for Selected Genes
+            document.getElementById("includePCA2").addEventListener("change", function () {
+                selectedGenesTable.clear().destroy();
+                $('#selectedGenesTable' + " tbody").empty();
+                $('#selectedGenesTable' + " thead").empty();
+
+                const includePCA = this.checked;
+                updateSelectedGenesTable(includePCA, geneData); // Call update for selected genes
+            });
+
+
             // Initialize DataTable for Selected Genes
-            const selectedGenesTable = $('#selectedGenesTable').DataTable({
-                data: selectedGenesData,
-                columns: [
+            initializeSelectedGenesTable(selectedGenesData);
+
+
+            // Function to initialize the DataTable for Selected Genes
+            function initializeSelectedGenesTable(data) {
+                selectedGenesTable = $('#selectedGenesTable').DataTable({
+                    data: data,
+                    columns: [
+                        { title: "Gene", data: "Gene" },
+                        { title: "AdjPVal", data: "AdjPVal" },
+                        { title: "LogFC", data: "LogFC" }
+                    ],
+                    destroy: true,
+                    paging: true,
+                    pageLength: 5,
+                    ordering: true,
+                    searching: false,
+                    lengthChange: false
+                });
+            }
+
+            // Function to update the Selected Genes table
+            function updateSelectedGenesTable(includePCA, data) {
+                // Prepare data for Selected Genes
+                const updatedData = data.filter(gene => selectedGeneData.includes(gene.Gene)).map(gene => {
+                    const logFC = logFCMap[gene.Gene] !== undefined ? logFCMap[gene.Gene] : "";
+                    const pc1Contribution = includePCA ? getPC1Contribution(gene.Gene) : ""; // Get PC1 Contribution if checkbox is checked
+
+                    return {
+                        Gene: gene.Gene,
+                        AdjPVal: gene.AdjPVal,
+                        LogFC: logFC,
+                        PC1_Contribution: pc1Contribution // Include PC1 Contribution if checkbox is checked
+                    };
+                });
+
+                // Destroy the existing DataTable if it exists
+                if ($.fn.DataTable.isDataTable('#selectedGenesTable')) {
+                    $('#selectedGenesTable').DataTable().clear().destroy();
+                    $('#selectedGenesTable' + " tbody").empty();
+                    $('#selectedGenesTable' + " thead").empty();
+                }
+
+                // Define columns for Selected Genes based on whether PCA is included
+                const columns = [
                     { title: "Gene", data: "Gene" },
                     { title: "AdjPVal", data: "AdjPVal" },
                     { title: "LogFC", data: "LogFC" }
-                ],
-                destroy: true,
-                paging: true,
-                pageLength: 5,
-                ordering: true,
-                searching: false,
-                lengthChange: false
-            });
+                ];
 
+                if (includePCA) {
+                    columns.push({ title: "PC1 Contribution", data: "PC1_Contribution" }); // Add column for PC1 Contribution
+                }
+
+                // Initialize the DataTable with the updated data and columns
+                selectedGenesTable = $('#selectedGenesTable').DataTable({
+                    data: updatedData,
+                    columns: columns,
+                    paging: true,
+                    pageLength: 5,
+                    ordering: true,
+                    searching: false,
+                    lengthChange: false
+                });
+            }
             console.log(data_original)
             console.log(gsmList)
 
@@ -13741,13 +13892,12 @@
             } else {
                 // Initialize DataTable for Selected GSM Genes
 
-                const selectedGSMTable = $('#selectedGSMTable').DataTable({
+                selectedGSMTable = $('#selectedGSMTable').DataTable({
                     data: selectedGSMTableData,
                     columns: [
                         { title: "Gene", data: "Gene" },
                         ...gsmList.map(gsm => ({ title: gsm, data: gsm })) // Use the actual GSM values as column titles and data keys
                     ],
-                    destroy: true,
                     paging: true,
                     pageLength: 5,
                     ordering: true,
@@ -13768,14 +13918,27 @@
                 const activeTab = document.querySelector('.tabcontent[style*="display: block"]');
                 const activeTable = activeTab.id === "diffExpressedGenes" ? diffExpressedTable :
                     (activeTab.id === "selectedGenes" ? selectedGenesTable : selectedGSMTable);
+
+                console.log(activeTab.id)
                 downloadCSV(activeTable);
             };
 
             // Close button functionality
             document.getElementById("closeOverlayButton").onclick = function () {
                 $('#selectedGSMTable').DataTable().destroy(); // Destroy any existing instance
+                $('#selectedGSMTable' + " tbody").empty();
+                $('#selectedGSMTable' + " thead").empty();
+
                 $('#selectedGenesTable').DataTable().destroy(); // Destroy any existing instance
+                $('#selectedGenesTable' + " tbody").empty();
+                $('#selectedGenesTable' + " thead").empty();
+
                 $('#diffExpressedTable').DataTable().destroy(); // Destroy any existing instance
+                $('#diffExpressedTable' + " tbody").empty();
+                $('#diffExpressedTable' + " thead").empty();
+
+                document.getElementById("includePCA").checked = false;
+                document.getElementById("includePCA2").checked = false;
 
                 document.getElementById("geneOverlay").style.display = "none";
             };
@@ -13806,13 +13969,46 @@
             // Get data from the DataTable in the current order
             const data = geneTable.rows({ order: 'current' }).data().toArray();
 
-            // Convert the data to CSV format
-            const csvContent = "data:text/csv;charset=utf-8,Gene,AdjPVal,LogFC\n" +
+            // Initialize the headers for CSV
+            let headers = ["Gene", "AdjPVal", "LogFC"]; // Base headers
+
+            // Check if the checkbox for PCA is checked
+            if (document.getElementById("includePCA").checked || document.getElementById("includePCA2").checked) {
+                headers.push("PC1_Contribution"); // Add header for PC1_Contribution
+            }
+
+            // Collect GSM columns dynamically
+            const gsmColumns = Object.keys(data[0]).filter(key => key !== "Gene" && key !== "AdjPVal" && key !== "LogFC" && key !== "PC1_Contribution");
+            if (gsmColumns.length>=1) headers = ["Gene"].concat(gsmColumns); // Add GSM columns to the headers
+
+            // Create CSV content with the specified headers
+            const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" +
                 data.map(gene => {
-                    return `${gene.Gene},${gene.AdjPVal},${gene.LogFC}`;
+                    // Start building the row with the basic fields
+                    let row = [
+                        gene.Gene,
+                        gene.AdjPVal,
+                        gene.LogFC
+                    ];
+
+                    if (gsmColumns.length>=1){
+                        row = [gene.Gene]
+                    }
+
+                    // Include PC1_Contribution if applicable
+                    if (document.getElementById("includePCA").checked || document.getElementById("includePCA2").checked) {
+                        row.push(gene.PC1_Contribution !== undefined ? gene.PC1_Contribution : ""); // Add PC1_Contribution
+                    }
+
+                    // Append GSM values dynamically
+                    gsmColumns.forEach(gsm => {
+                        row.push(gene[gsm] !== undefined ? gene[gsm] : ""); // Add GSM values or empty string if undefined
+                    });
+
+                    return row.join(","); // Join the row values with commas
                 }).join("\n");
 
-            // Create a link element
+            // Create a link element for downloading the CSV
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
@@ -13827,6 +14023,18 @@
 
             // Close the overlay after download
             document.getElementById("geneOverlay").style.display = "none";
+            $('#selectedGSMTable').DataTable().destroy(); // Destroy any existing instance
+            $('#selectedGSMTable' + " tbody").empty();
+            $('#selectedGSMTable' + " thead").empty();
+
+            $('#selectedGenesTable').DataTable().destroy(); // Destroy any existing instance
+            $('#selectedGenesTable' + " tbody").empty();
+            $('#selectedGenesTable' + " thead").empty();
+
+            $('#diffExpressedTable').DataTable().destroy(); // Destroy any existing instance
+            $('#diffExpressedTable' + " tbody").empty();
+            $('#diffExpressedTable' + " thead").empty();
+
         }
 
 
