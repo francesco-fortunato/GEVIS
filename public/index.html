@@ -1004,6 +1004,10 @@
                             </div>
                             <!-- <button id="searchButton" class="btn btn-primary">Search</button> -->
                         </div>
+                        <button id="toggleZoomButton" class="btn btn-secondary"
+                            style="padding: 0.25rem 0.5rem; font-size: 0.875rem; margin-left:20px">Toggle Zoom/Brush
+                            Mode</button>
+
                     </div>
                 </div>
                 <div id="style_scatter">
@@ -8494,7 +8498,7 @@
                 ])
                 .range([0, width]);
 
-            yScale = d3.scaleLinear()
+            var yScale = d3.scaleLinear()
                 .domain([0, d3.max(data.filter(d => !isNaN(d.pval_adj) && d.pval_adj !== null), d => -Math.log10(d.pval_adj.toExponential(20)))])
                 .range([height, 0])
                 .nice();
@@ -8533,28 +8537,6 @@
             scatter = svg.append('g')
                 .attr("id", "scatter")
                 .attr("clip-path", "url(#clip)");
-
-            // Set the zoom and Pan features
-            var zoom = d3.zoom()
-                .scaleExtent([0.05, 20])
-                .extent([[0, 0], [width, height]])
-                .on("zoom", updateChart);
-
-            // Add an invisible rect on top of the chart area
-            svg.append("rect")
-                .attr("width", width)
-                .attr("height", height)
-                .style("fill", "none")
-                .style("pointer-events", "all")  // Set pointer-events to "all" here
-                .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
-                .lower();
-
-            // Attach zoom behavior to the SVG
-            svg.call(zoom);
-
-            // Attach click event to the reset button
-            d3.select("#resetButton")
-                .on("click", resetZoom);
 
             // Add X axis label with logarithmic notation
             xlab = svg.append("text")
@@ -8930,6 +8912,384 @@
                 .attr("r", 0)
                 .remove();
 
+            // Variables to store the brush extents in the original data space
+            let leftBrushExtent = null; // [ [logFC, -log10(pval_adj)], [logFC, -log10(pval_adj)] ]
+            let rightBrushExtent = null; // [ [logFC, -log10(pval_adj)], [logFC, -log10(pval_adj)] ]
+
+            let zoomEnabled = true; // Flag to control zoom functionality
+
+            let brushedGenesLeft = [];
+            let brushedGenesRight = [];
+
+            // Define brush for the left side (x < 0)
+            var brushLeft = d3.brush()
+                .extent([[0, 0], [xScale(0), height]])  // Constrain the brush to the left side
+                .on("end", updateBrushLeft);
+
+            // Define brush for the right side (x > 0)
+            var brushRight = d3.brush()
+                .extent([[xScale(0), 0], [width, height]])  // Constrain the brush to the right side
+                .on("end", updateBrushRight);
+
+            var brushLeftG
+            var brushRightG
+            // To get the current scale
+            var currentXScale = xScale; // This will give you the reference to the xScale
+            var currentYScale = yScale
+
+            // Functions to handle brush events
+            function updateBrushLeft() {
+                const selection = d3.event.selection;  // Access event via d3.event in v4
+                if (selection) {
+                    var [x0, y0] = selection[0]; // Get coordinates for left brush
+                    var [x1, y1] = selection[1];
+
+                    // Store the selection in data space, including y extents
+                    leftBrushExtent = [
+                        [currentXScale.invert(x0), currentYScale.invert(y0)], // [logFC, -log10(pval_adj)]
+                        [currentXScale.invert(x1), currentYScale.invert(y1)]
+                    ];
+
+                    // Filter selected points based on the stored extents
+                    var selectedPoints = data.filter(d => {
+                        return (
+                            d.logFC >= leftBrushExtent[0][0] && d.logFC <= leftBrushExtent[1][0] &&
+                            -Math.log10(d.pval_adj) <= leftBrushExtent[0][1] && -Math.log10(d.pval_adj) >= leftBrushExtent[1][1] && d.pval_adj< threshold && Math.abs(d.logFC)>(log_thr_fc)
+                        );
+                    });
+                    // Add genes to brushedGenes if they are not already present
+                    selectedPoints.forEach(point => {
+                        if (!brushedGenesLeft.includes(point.gene) && !selectedGeneData.includes(point.gene)) {
+                            brushedGenesLeft.push(point.gene);
+                        }
+                    });
+                    console.log("Brushed genes left", brushedGenesLeft)
+                    highlightSelectedGenes(selectedPoints);
+                } else {
+                    console.log("Brushed genes left", brushedGenesLeft)
+                    // Remove the 'pulse' class from the brushed genes
+                    scatter.selectAll("circle").filter(d => brushedGenesLeft.some(p => p === d.gene))
+                        .each(function (d) {
+                            console.log(d)
+                            var selectedElement = d3.select(this);
+                            var currentFill = selectedElement.style("fill");
+
+                            // Check if the element is already filled with grey
+                            if (currentFill === "grey") {
+                                return; // If grey, do nothing
+                            }
+
+                            // Check if the element is already highlighted
+                            var isHighlighted = selectedElement.classed('pulse');
+
+                            if (isHighlighted) {
+                                // If already highlighted, remove the highlighting
+                                selectedElement.style("fill", d => {
+                                    if (d.logFC >= log_thr_fc && d.pval_adj <= threshold) {
+                                        return "darkred";
+                                    } else if (d.logFC <= -log_thr_fc && d.pval_adj <= threshold) {
+                                        return "royalblue";
+                                    } else {
+                                        return "grey";
+                                    }
+                                })
+                                    .classed('pulse', false)
+                                    .classed("pulse1", false);
+
+                                selectedGeneData = selectedGeneData.filter(gene => gene !== d.gene);
+
+                                // Find and remove the corresponding option from the select element
+                                var select = document.getElementById("selectButton");
+                                var options = select.options;
+
+                                for (var i = 0; i < options.length; i++) {
+                                    if (!selectedGeneData.includes(options[i].value)) {
+                                        select.removeChild(options[i]);
+                                        break; // Exit the loop once the option is removed
+                                    }
+                                }
+
+                            }
+                        });
+
+                    heatmap(heatmap_data);
+                    dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
+
+                    brushedGenesLeft = []
+                    leftBrushExtent = null; // Reset if there's no selection
+                }
+            }
+
+            function updateBrushRight() {
+                const selection = d3.event.selection;  // Access event via d3.event in v4
+                if (selection) {
+                    var [x0, y0] = selection[0]; // Get coordinates for right brush
+                    var [x1, y1] = selection[1];
+
+                    // Store the selection in data space, including y extents
+                    rightBrushExtent = [
+                        [currentXScale.invert(x0), currentYScale.invert(y0)], // [logFC, -log10(pval_adj)]
+                        [currentXScale.invert(x1), currentYScale.invert(y1)]
+                    ];
+
+                    // Filter selected points based on the stored extents
+                    var selectedPoints = data.filter(d =>
+                        d.logFC >= rightBrushExtent[0][0] && d.logFC <= rightBrushExtent[1][0] &&
+                        -Math.log10(d.pval_adj) <= rightBrushExtent[0][1] && -Math.log10(d.pval_adj) >= rightBrushExtent[1][1]  && d.pval_adj< threshold && Math.abs(d.logFC)>(log_thr_fc)
+                    );
+                    // Add genes to brushedGenes if they are not already present
+                    selectedPoints.forEach(point => {
+                        if (!brushedGenesRight.includes(point.gene) && !selectedGeneData.includes(point.gene)) {
+                            brushedGenesRight.push(point.gene);
+                        }
+                    });
+                    highlightSelectedGenes(selectedPoints);
+                } else {
+                    // Remove the 'pulse' class from the brushed genes
+                    scatter.selectAll("circle").filter(d => brushedGenesRight.some(p => p === d.gene))
+                        .each(function (d) {
+                            console.log(d)
+                            var selectedElement = d3.select(this);
+                            var currentFill = selectedElement.style("fill");
+
+                            // Check if the element is already filled with grey
+                            if (currentFill === "grey") {
+                                return; // If grey, do nothing
+                            }
+
+                            // Check if the element is already highlighted
+                            var isHighlighted = selectedElement.classed('pulse');
+
+                            if (isHighlighted) {
+                                // If already highlighted, remove the highlighting
+                                selectedElement.style("fill", d => {
+                                    if (d.logFC >= log_thr_fc && d.pval_adj <= threshold) {
+                                        return "darkred";
+                                    } else if (d.logFC <= -log_thr_fc && d.pval_adj <= threshold) {
+                                        return "royalblue";
+                                    } else {
+                                        return "grey";
+                                    }
+                                })
+                                    .classed('pulse', false)
+                                    .classed("pulse1", false);
+
+                                selectedGeneData = selectedGeneData.filter(gene => gene !== d.gene);
+
+                                // Find and remove the corresponding option from the select element
+                                var select = document.getElementById("selectButton");
+                                var options = select.options;
+
+                                for (var i = 0; i < options.length; i++) {
+                                    if (!selectedGeneData.includes(options[i].value)) {
+                                        select.removeChild(options[i]);
+                                        break; // Exit the loop once the option is removed
+                                    }
+                                }
+
+                            }
+                        });
+
+                    heatmap(heatmap_data);
+                    dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
+
+                    brushedGenesRight = []
+                    rightBrushExtent = null; // Reset if there's no selection
+                }
+            }
+
+
+            // Function to highlight the selected genes based on the brush
+            function highlightSelectedGenes(selectedPoints) {
+
+                // Select all circles and filter only those that are in the selected points
+                scatter.selectAll("circle").filter(d => selectedPoints.some(p => p.gene === d.gene))
+                    .each(function (d) {
+                        var selectedElement = d3.select(this);
+                        var currentFill = selectedElement.style("fill");
+
+                        // Check if the element is already filled with grey
+                        if (currentFill === "grey") {
+                            return; // If grey, do nothing
+                        }
+
+                        // Check if the element is already highlighted
+                        var isHighlighted = selectedElement.classed('pulse');
+
+                        if (!isHighlighted) {
+                            // If not highlighted, apply the highlighting
+                            selectedElement
+                                .style("fill", "green")
+                                .style("stroke-width", 2)
+                                .classed('pulse', true)
+                                .classed('pulse1', false)
+                                .raise();  // Move this element to the top
+
+                            if (!selectedGeneData.includes(d.gene)) selectedGeneData.push(d.gene);
+
+                            // Get the select element
+                            var select = document.getElementById("selectButton");
+
+                            // Add new options for the genes in selectedGeneData that are not already in the select element
+                            selectedGeneData.forEach(function (gene) {
+                                if (!Array.from(select.options).some(option => option.value === gene)) {
+                                    var option = document.createElement("option");
+                                    option.value = gene;
+                                    option.text = gene;
+                                    select.appendChild(option);
+                                }
+                            });
+
+                            synchronizeAnimations(this);
+                        }
+                    });
+
+                if (selectedPoints.length >= 1) {
+                    heatmap(heatmap_data);
+                    dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
+                }
+
+            }
+
+            // Set the zoom and pan features
+            var zoom = d3.zoom()
+                .scaleExtent([0.05, 20])
+                .extent([[0, 0], [width, height]])
+                .on("zoom", updateChart)
+                .on("end", function () {
+                    // Reapply the brush selections with the correct y values
+                    // if (leftBrushExtent) {
+                    //     brushLeftG.call(brushLeft.move, [
+                    //         [currentXScale(leftBrushExtent[0][0]), currentYScale(leftBrushExtent[0][1])],  // Use stored y extents
+                    //         [currentXScale(leftBrushExtent[1][0]), currentYScale(leftBrushExtent[1][1])]
+                    //     ]);
+                    // }
+                    // if (rightBrushExtent) {
+                    //     brushRightG.call(brushRight.move, [
+                    //         [currentXScale(rightBrushExtent[0][0]), currentYScale(rightBrushExtent[0][1])],  // Use stored y extents
+                    //         [currentXScale(rightBrushExtent[1][0]), currentYScale(rightBrushExtent[1][1])]
+                    //     ]);
+                    // }
+                })
+
+            // Add an invisible rect on top of the chart area
+            svg.append("rect")
+                .attr("width", width)
+                .attr("height", height)
+                .style("fill", "none")
+                .style("pointer-events", "all")
+                .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
+                .lower();
+
+            // Attach click event to the reset button
+            d3.select("#resetButton").on("click", resetZoom);
+
+            // Attach click event to the toggle zoom button
+            d3.select("#toggleZoomButton").on("click", function () {
+                zoomEnabled = !zoomEnabled; // Toggle the zoomEnabled flag
+
+                if (zoomEnabled) {
+                    document.getElementById("toggleZoomButton").textContent = "Toggle Zoom/Brush Mode"
+                    svg.call(zoom); // Re-enable zooming
+
+                    brushLeftG.remove();
+                    brushRightG.remove();
+                    brushedGenesLeft = []
+                    brushedGenesRight = []
+
+                } else {
+                    document.getElementById("toggleZoomButton").textContent = "Toggle Zoom/Save Brushed Genes"
+                    svg.on(".zoom", null); // Disable zooming by removing the zoom event
+
+                    // Remove the brushes from the SVG
+
+                    // Optionally, you can update the brush extents
+                    brushLeft.extent([[0, 0], [currentXScale(0), height]]);
+                    brushRight.extent([[currentXScale(0), 0], [width, height]]);
+
+                    // Redraw brushes to reflect new zoom scale
+                    brushLeftG = svg.append("g")
+                        .attr("class", "brush-left")
+                        .call(brushLeft);
+
+                    brushRightG = svg.append("g")
+                        .attr("class", "brush-right")
+                        .call(brushRight);
+
+                    brushedGenesLeft = []
+                    brushedGenesRight = []
+
+                }
+            });
+            // Updating the chart after zooming
+            function updateChart() {
+                if (!zoomEnabled) return; // Prevent zoom updates if zoom is disabled
+
+                // Recover the new scale
+                var t = d3.event.transform;
+                newX = t.rescaleX(xScale);
+                newY = t.rescaleY(yScale);
+                currentXScale = newX; // Update the reference
+                currentYScale = newY; // Update the reference
+
+                // xScale = newX
+                // yScale = newY
+
+                // Update axes with these new boundaries
+                xAxis.call(d3.axisBottom(newX));
+                yAxis.call(d3.axisLeft(newY));
+
+                xAxis.selectAll("line, path").style("stroke", "white");
+                xAxis.selectAll("text").style("fill", "white");
+
+                yAxis.selectAll("line, path").style("stroke", "white");
+                yAxis.selectAll("text").style("fill", "white");
+
+                // Update circle position
+                scatter.selectAll("circle")
+                    .attr('cx', function (d) {
+                        if (d.pval_adj !== null) return newX(d.logFC);
+                    })
+                    .attr('cy', function (d) {
+                        if (d.pval_adj !== null) return newY(-Math.log10(d.pval_adj));
+                    });
+
+                // Update the brush extents
+                brushLeft.extent([[0, 0], [newX(0), height]]);
+                brushRight.extent([[newX(0), 0], [width, height]]);
+
+                if (!zoomEnabled) {
+                    // Redraw brushes to reflect new zoom scale
+                    brushLeftG.call(brushLeft);
+                    brushRightG.call(brushRight);
+                }
+
+            }
+
+            // Define the resetZoom function
+            function resetZoom() {
+                // Reset the zoom transformation
+                svg.transition()
+                    .duration(750)
+                    .call(zoom.transform, d3.zoomIdentity);
+
+                if (leftBrushExtent) {
+                    brushLeftG.call(brushLeft.move, [
+                        [xScale(leftBrushExtent[0][0]), yScale(leftBrushExtent[0][1])], // Use original x and y extents
+                        [xScale(leftBrushExtent[1][0]), yScale(leftBrushExtent[1][1])]
+                    ]);
+                }
+                if (rightBrushExtent) {
+                    brushRightG.call(brushRight.move, [
+                        [xScale(rightBrushExtent[0][0]), yScale(rightBrushExtent[0][1])], // Use original x and y extents
+                        [xScale(rightBrushExtent[1][0]), yScale(rightBrushExtent[1][1])]
+                    ]);
+                }
+            }
+
+            // Attach zoom behavior to the SVG
+            svg.call(zoom);
+
             function synchronizeAnimations(targetElement) {
                 // Retrieve all elements with the class 'pulse'
                 const elements = [
@@ -8965,41 +9325,16 @@
                 // Find the animation object for the 'pulse' animation
                 return animations.find(animation => animation.animationName === animationName);
             }
-            function updateChart() {
-                // recover the new scale
-                var newX = d3.event.transform.rescaleX(xScale);
-                var newY = d3.event.transform.rescaleY(yScale);
+            let brushScatterG
+            let brushedGenesScatter = [];
 
-                // update axes with these new boundaries
-                xAxis.call(d3.axisBottom(newX));
-                yAxis.call(d3.axisLeft(newY));
+            // Variables to store the brush extents in the original data space
+            let brushScatterExtent = null; // [ [logFC, -log10(pval_adj)], [logFC, -log10(pval_adj)] ]
 
-                xAxis.selectAll("line, path")
-                    .style("stroke", "white");
+            // Define brush for the left side (x < 0)
+            var brushScatter
 
-                xAxis.selectAll("text")
-                    .style("fill", "white");
 
-                yAxis.selectAll("line, path")
-                    .style("stroke", "white");
-
-                yAxis.selectAll("text")
-                    .style("fill", "white");
-
-                // update circle position
-                scatter
-                    .selectAll("circle")
-                    .attr('cx', function (d) { if (d.pval_adj !== null) { return newX(d.logFC); } })
-                    .attr('cy', function (d) { if (d.pval_adj !== null) { return newY(-Math.log10(d.pval_adj.toExponential(20))); } });
-            }
-
-            // Define the resetZoom function
-            function resetZoom() {
-                // Reset the zoom transformation
-                svg.transition()
-                    .duration(750)
-                    .call(zoom.transform, d3.zoomIdentity);
-            }
 
             function SwitchingPlot(structure, choice) {
 
@@ -9012,8 +9347,22 @@
 
                     yScale.domain([0, d3.max(data.filter(d => !isNaN(d.pval_adj) && d.pval_adj !== null), d => -Math.log10(d.pval_adj.toExponential(20)))]);
 
-                    // Reset zoom (assuming resetZoom is a function you have defined elsewhere)
-                    resetZoom();
+                    svg.transition()
+                        .duration(750)
+                        .call(zoom.transform, d3.zoomIdentity);
+
+                    if (leftBrushExtent) {
+                        brushLeftG.call(brushLeft.move, [
+                            [xScale(leftBrushExtent[0][0]), yScale(leftBrushExtent[0][1])], // Use original x and y extents
+                            [xScale(leftBrushExtent[1][0]), yScale(leftBrushExtent[1][1])]
+                        ]);
+                    }
+                    if (rightBrushExtent) {
+                        brushRightG.call(brushRight.move, [
+                            [xScale(rightBrushExtent[0][0]), yScale(rightBrushExtent[0][1])], // Use original x and y extents
+                            [xScale(rightBrushExtent[1][0]), yScale(rightBrushExtent[1][1])]
+                        ]);
+                    }
 
                     // Update the zoom behavior to call updateChart1 (assuming updateChart1 is a function you have defined elsewhere)
                     zoom.on("zoom", updateChart);
@@ -9263,12 +9612,18 @@
                 }
 
                 else {
-
+                    if (brushLeftG) brushLeftG.remove()
+                    if (brushRightG) brushRightG.remove()
+                    brushedGenesLeft = []
+                    brushedGenesRight = []
                     xScale = d3.scaleLinear()
                         .domain(d3.extent(Object.values(averageExpressionsN)))
                         .range([0, width]);
                     //console.log("Domain:", xScale.domain());
 
+                    brushScatter = d3.brush()
+                        .extent([[0, 0], [width, height]])  // Constrain the brush to the left side
+                        .on("end", updateBrushScatter);
 
                     //console.log(averageExpressionsN);
                     //console.log(averageExpressionsC);
@@ -9278,9 +9633,34 @@
                         .nice()
                     //console.log(yScale);
 
-                    resetZoom()
+                    var currentXScale = xScale
+                    var currentYScale = yScale
+                    svg.transition()
+                        .duration(750)
+                        .call(zoom.transform, d3.zoomIdentity);
+
+                    if (leftBrushExtent) {
+                        brushLeftG.call(brushLeft.move, [
+                            [xScale(leftBrushExtent[0][0]), yScale(leftBrushExtent[0][1])], // Use original x and y extents
+                            [xScale(leftBrushExtent[1][0]), yScale(leftBrushExtent[1][1])]
+                        ]);
+                    }
+                    if (rightBrushExtent) {
+                        brushRightG.call(brushRight.move, [
+                            [xScale(rightBrushExtent[0][0]), yScale(rightBrushExtent[0][1])], // Use original x and y extents
+                            [xScale(rightBrushExtent[1][0]), yScale(rightBrushExtent[1][1])]
+                        ]);
+                    }
                     zoom.on("zoom", updateChart1);
                     svg.call(zoom)
+
+                    if (brushScatterExtent) {
+                        brushScatterG.call(brushScatter.move, [
+                            [xScale(brushScatterExtent[0][0]), yScale(brushScatterExtent[0][1])], // Use original x and y extents
+                            [xScale(brushScatterExtent[1][0]), yScale(brushScatterExtent[1][1])]
+                        ]);
+                    }
+
 
                     // Transition the axes
                     xAxis.transition().duration(1000)
@@ -9527,10 +9907,203 @@
                             }
                         })
 
+                    brushScatter = d3.brush()
+                        .extent([[0, 0], [width, height]])  // Constrain the brush to the left side
+                        .on("end", updateBrushScatter);
+
+                    // Attach click event to the reset button
+                    d3.select("#resetButton").on("click", resetZoom);
+
+                    // Functions to handle brush events
+                    function updateBrushScatter() {
+                        const selection = d3.event.selection;  // Access event via d3.event in v4
+                        if (selection) {
+                            var [x0, y0] = selection[0]; // Get coordinates for left brush
+                            var [x1, y1] = selection[1];
+
+                            // Store the selection in data space, including y extents
+                            brushScatterExtent = [
+                                [currentXScale.invert(x0), currentYScale.invert(y0)], // [logFC, -log10(pval_adj)]
+                                [currentXScale.invert(x1), currentYScale.invert(y1)]
+                            ];
+
+                            // Filter selected points based on the stored extents
+                            var selectedPoints = data.filter(d => {
+                                return (
+                                    d.Normal >= brushScatterExtent[0][0] && d.Normal <= brushScatterExtent[1][0] &&
+                                    d.Case <= brushScatterExtent[0][1] && d.Case >= brushScatterExtent[1][1]  && d.pval_adj< threshold && Math.abs(d.logFC)>(log_thr_fc)
+                                );
+                            });
+                            // Add genes to brushedGenes if they are not already present
+                            selectedPoints.forEach(point => {
+                                if (!brushedGenesScatter.includes(point.gene) && !selectedGeneData.includes(point.gene)) {
+                                    brushedGenesScatter.push(point.gene);
+                                }
+                            });
+                            console.log("Brushed genes scatter", brushedGenesScatter)
+                            highlightSelectedGenes(selectedPoints);
+                        } else {
+                            console.log("Brushed genes scatter", brushedGenesScatter)
+                            // Remove the 'pulse' class from the brushed genes
+                            scatter.selectAll("circle").filter(d => brushedGenesScatter.some(p => p === d.gene))
+                                .each(function (d) {
+                                    console.log(d)
+                                    var selectedElement = d3.select(this);
+                                    var currentFill = selectedElement.style("fill");
+
+                                    // Check if the element is already filled with grey
+                                    if (currentFill === "grey") {
+                                        return; // If grey, do nothing
+                                    }
+
+                                    // Check if the element is already highlighted
+                                    var isHighlighted = selectedElement.classed('pulse');
+
+                                    if (isHighlighted) {
+                                        // If already highlighted, remove the highlighting
+                                        selectedElement.style("fill", d => {
+                                            if (d.logFC >= log_thr_fc && d.pval_adj <= threshold) {
+                                                return "darkred";
+                                            } else if (d.logFC <= -log_thr_fc && d.pval_adj <= threshold) {
+                                                return "royalblue";
+                                            } else {
+                                                return "grey";
+                                            }
+                                        })
+                                            .classed('pulse', false)
+                                            .classed("pulse1", false);
+
+                                        selectedGeneData = selectedGeneData.filter(gene => gene !== d.gene);
+
+                                        // Find and remove the corresponding option from the select element
+                                        var select = document.getElementById("selectButton");
+                                        var options = select.options;
+
+                                        for (var i = 0; i < options.length; i++) {
+                                            if (!selectedGeneData.includes(options[i].value)) {
+                                                select.removeChild(options[i]);
+                                                break; // Exit the loop once the option is removed
+                                            }
+                                        }
+
+                                    }
+                                });
+
+                            heatmap(heatmap_data);
+                            dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
+
+                            brushedGenesScatter = []
+                            brushScatterExtent = null; // Reset if there's no selection
+                        }
+                    }
+
+                    // Function to highlight the selected genes based on the brush
+                    function highlightSelectedGenes(selectedPoints) {
+                        console.log("ciao")
+
+                        // Select all circles and filter only those that are in the selected points
+                        scatter.selectAll("circle").filter(d => selectedPoints.some(p => p.gene === d.gene))
+                            .each(function (d) {
+                                var selectedElement = d3.select(this);
+                                var currentFill = selectedElement.style("fill");
+
+                                // Check if the element is already filled with grey
+                                if (currentFill === "grey") {
+                                    return; // If grey, do nothing
+                                }
+
+                                // Check if the element is already highlighted
+                                var isHighlighted = selectedElement.classed('pulse');
+
+                                if (!isHighlighted) {
+                                    // If not highlighted, apply the highlighting
+                                    selectedElement
+                                        .style("fill", "green")
+                                        .style("stroke-width", 2)
+                                        .classed('pulse', true)
+                                        .classed('pulse1', false)
+                                        .raise();  // Move this element to the top
+
+                                    if (!selectedGeneData.includes(d.gene)) selectedGeneData.push(d.gene);
+
+                                    // Get the select element
+                                    var select = document.getElementById("selectButton");
+
+                                    // Add new options for the genes in selectedGeneData that are not already in the select element
+                                    selectedGeneData.forEach(function (gene) {
+                                        if (!Array.from(select.options).some(option => option.value === gene)) {
+                                            var option = document.createElement("option");
+                                            option.value = gene;
+                                            option.text = gene;
+                                            select.appendChild(option);
+                                        }
+                                    });
+
+                                    synchronizeAnimations(this);
+                                }
+                            });
+
+                        if (selectedPoints.length >= 1) {
+                            heatmap(heatmap_data);
+                            dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
+                        }
+
+                    }
+
+                    // Attach click event to the toggle zoom button
+                    d3.select("#toggleZoomButton").on("click", function () {
+                        zoomEnabled = !zoomEnabled; // Toggle the zoomEnabled flag
+
+                        if (zoomEnabled) {
+                            document.getElementById("toggleZoomButton").textContent = "Toggle Zoom/Brush Mode"
+                            svg.call(zoom); // Re-enable zooming
+
+                            brushScatterG.remove();
+                            brushedGenesScatter = []
+
+                        } else {
+                            document.getElementById("toggleZoomButton").textContent = "Toggle Zoom/Save Brushed Genes"
+                            svg.on(".zoom", null); // Disable zooming by removing the zoom event
+
+                            // Remove the brushes from the SVG
+
+                            // Optionally, you can update the brush extents
+                            brushScatter.extent([[0, 0], [width, height]]);
+
+                            // Redraw brushes to reflect new zoom scale
+                            brushScatterG = svg.append("g")
+                                .attr("class", "brush-scatter")
+                                .call(brushScatter);
+
+
+                            brushedGenesScatter = []
+
+                        }
+                    });
+
+                    // Define the resetZoom function
+                    function resetZoom() {
+                        // Reset the zoom transformation
+                        svg.transition()
+                            .duration(750)
+                            .call(zoom.transform, d3.zoomIdentity);
+
+                        if (brushScatterExtent) {
+                            brushScatterG.call(brushScatter.move, [
+                                [xScale(brushScatterExtent[0][0]), yScale(brushScatterExtent[0][1])], // Use original x and y extents
+                                [xScale(brushScatterExtent[1][0]), yScale(brushScatterExtent[1][1])]
+                            ]);
+                        }
+                    }
+
                     function updateChart1() {
+                        if (!zoomEnabled) return; // Prevent zoom updates if zoom is disabled
                         // recover the new scale
                         var newX = d3.event.transform.rescaleX(xScale);
                         var newY = d3.event.transform.rescaleY(yScale);
+
+                        currentXScale = newX
+                        currentYScale = newY
 
                         // update axes with these new boundaries
                         xAxis.call(d3.axisBottom(newX));
@@ -9553,11 +10126,20 @@
                             .selectAll("circle")
                             .attr('cx', function (d) { return newX(d.Normal); })
                             .attr('cy', function (d) { return newY(d.Case); });
+
+                        brushScatter.extent([[0, 0], [width, height]]);
+
+                        if (!zoomEnabled) {
+                            // Redraw brushes to reflect new zoom scale
+                            brushScatterG.call(brushScatter);
+                        }
+
                     }
 
 
 
                 }
+
 
             }
 
@@ -10069,6 +10651,268 @@
                     }
                 })
 
+            // Variables to store the brush extents in the original data space
+            let brushScatterExtent = null; // [ [logFC, -log10(pval_adj)], [logFC, -log10(pval_adj)] ]
+
+            let zoomEnabled = true; // Flag to control zoom functionality
+
+            let brushedGenesScatter = [];
+
+            // Define brush for the left side (x < 0)
+            var brushScatter = d3.brush()
+                .extent([[0, 0], [width, height]])  // Constrain the brush to the left side
+                .on("end", updateBrushScatter);
+
+            var brushScatterG
+
+            // To get the current scale
+            var currentXScale = xScale; // This will give you the reference to the xScale
+            var currentYScale = yScale
+
+            // Functions to handle brush events
+            function updateBrushScatter() {
+                const selection = d3.event.selection;  // Access event via d3.event in v4
+                if (selection) {
+                    var [x0, y0] = selection[0]; // Get coordinates for left brush
+                    var [x1, y1] = selection[1];
+
+                    // Store the selection in data space, including y extents
+                    brushScatterExtent = [
+                        [currentXScale.invert(x0), currentYScale.invert(y0)], // [logFC, -log10(pval_adj)]
+                        [currentXScale.invert(x1), currentYScale.invert(y1)]
+                    ];
+
+                    // Filter selected points based on the stored extents
+                    var selectedPoints = data.filter(d => {
+                        return (
+                            d.Normal >= brushScatterExtent[0][0] && d.Normal <= brushScatterExtent[1][0] &&
+                            d.Case <= brushScatterExtent[0][1] && d.Case >= brushScatterExtent[1][1]   && d.pval_adj< threshold && Math.abs(d.logFC)>(log_thr_fc)
+                        );
+                    });
+                    // Add genes to brushedGenes if they are not already present
+                    selectedPoints.forEach(point => {
+                        if (!brushedGenesScatter.includes(point.gene) && !selectedGeneData.includes(point.gene)) {
+                            brushedGenesScatter.push(point.gene);
+                        }
+                    });
+                    console.log("Brushed genes scatter", brushedGenesScatter)
+                    highlightSelectedGenes(selectedPoints);
+                } else {
+                    console.log("Brushed genes scatter", brushedGenesScatter)
+                    // Remove the 'pulse' class from the brushed genes
+                    scatter.selectAll("circle").filter(d => brushedGenesScatter.some(p => p === d.gene))
+                        .each(function (d) {
+                            console.log(d)
+                            var selectedElement = d3.select(this);
+                            var currentFill = selectedElement.style("fill");
+
+                            // Check if the element is already filled with grey
+                            if (currentFill === "grey") {
+                                return; // If grey, do nothing
+                            }
+
+                            // Check if the element is already highlighted
+                            var isHighlighted = selectedElement.classed('pulse');
+
+                            if (isHighlighted) {
+                                // If already highlighted, remove the highlighting
+                                selectedElement.style("fill", d => {
+                                    if (d.logFC >= log_thr_fc && d.pval_adj <= threshold) {
+                                        return "darkred";
+                                    } else if (d.logFC <= -log_thr_fc && d.pval_adj <= threshold) {
+                                        return "royalblue";
+                                    } else {
+                                        return "grey";
+                                    }
+                                })
+                                    .classed('pulse', false)
+                                    .classed("pulse1", false);
+
+                                selectedGeneData = selectedGeneData.filter(gene => gene !== d.gene);
+
+                                // Find and remove the corresponding option from the select element
+                                var select = document.getElementById("selectButton");
+                                var options = select.options;
+
+                                for (var i = 0; i < options.length; i++) {
+                                    if (!selectedGeneData.includes(options[i].value)) {
+                                        select.removeChild(options[i]);
+                                        break; // Exit the loop once the option is removed
+                                    }
+                                }
+
+                            }
+                        });
+
+                    heatmap(heatmap_data);
+                    dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
+
+                    brushedGenesScatter = []
+                    brushScatterExtent = null; // Reset if there's no selection
+                }
+            }
+
+            // Function to highlight the selected genes based on the brush
+            function highlightSelectedGenes(selectedPoints) {
+
+                // Select all circles and filter only those that are in the selected points
+                scatter.selectAll("circle").filter(d => selectedPoints.some(p => p.gene === d.gene))
+                    .each(function (d) {
+                        var selectedElement = d3.select(this);
+                        var currentFill = selectedElement.style("fill");
+
+                        // Check if the element is already filled with grey
+                        if (currentFill === "grey") {
+                            return; // If grey, do nothing
+                        }
+
+                        // Check if the element is already highlighted
+                        var isHighlighted = selectedElement.classed('pulse');
+
+                        if (!isHighlighted) {
+                            // If not highlighted, apply the highlighting
+                            selectedElement
+                                .style("fill", "green")
+                                .style("stroke-width", 2)
+                                .classed('pulse', true)
+                                .classed('pulse1', false)
+                                .raise();  // Move this element to the top
+
+                            if (!selectedGeneData.includes(d.gene)) selectedGeneData.push(d.gene);
+
+                            // Get the select element
+                            var select = document.getElementById("selectButton");
+
+                            // Add new options for the genes in selectedGeneData that are not already in the select element
+                            selectedGeneData.forEach(function (gene) {
+                                if (!Array.from(select.options).some(option => option.value === gene)) {
+                                    var option = document.createElement("option");
+                                    option.value = gene;
+                                    option.text = gene;
+                                    select.appendChild(option);
+                                }
+                            });
+
+                            synchronizeAnimations(this);
+                        }
+                    });
+
+                if (selectedPoints.length >= 1) {
+                    heatmap(heatmap_data);
+                    dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
+                }
+
+            }
+
+            // Set the zoom and pan features
+            var zoom = d3.zoom()
+                .scaleExtent([0.05, 20])
+                .extent([[0, 0], [width, height]])
+                .on("zoom", updateChart)
+                .on("end", function () {
+                })
+
+            // Add an invisible rect on top of the chart area
+            svg.append("rect")
+                .attr("width", width)
+                .attr("height", height)
+                .style("fill", "none")
+                .style("pointer-events", "all")
+                .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
+                .lower();
+
+            // Attach click event to the reset button
+            d3.select("#resetButton").on("click", resetZoom);
+
+            // Attach click event to the toggle zoom button
+            d3.select("#toggleZoomButton").on("click", function () {
+                zoomEnabled = !zoomEnabled; // Toggle the zoomEnabled flag
+
+                if (zoomEnabled) {
+                    document.getElementById("toggleZoomButton").textContent = "Toggle Zoom/Brush Mode"
+                    svg.call(zoom); // Re-enable zooming
+
+                    brushScatterG.remove();
+                    brushedGenesScatter = []
+
+                } else {
+                    document.getElementById("toggleZoomButton").textContent = "Toggle Zoom/Save Brushed Genes"
+                    svg.on(".zoom", null); // Disable zooming by removing the zoom event
+
+                    // Remove the brushes from the SVG
+
+                    // Optionally, you can update the brush extents
+                    brushScatter.extent([[0, 0], [width, height]]);
+
+                    // Redraw brushes to reflect new zoom scale
+                    brushScatterG = svg.append("g")
+                        .attr("class", "brush-scatter")
+                        .call(brushScatter);
+
+
+                    brushedGenesScatter = []
+
+                }
+            });
+
+            // Define the resetZoom function
+            function resetZoom() {
+                // Reset the zoom transformation
+                svg.transition()
+                    .duration(750)
+                    .call(zoom.transform, d3.zoomIdentity);
+
+                if (brushScatterExtent) {
+                    brushScatterG.call(brushScatter.move, [
+                        [xScale(brushScatterExtent[0][0]), yScale(brushScatterExtent[0][1])], // Use original x and y extents
+                        [xScale(brushScatterExtent[1][0]), yScale(brushScatterExtent[1][1])]
+                    ]);
+                }
+            }
+
+            // Attach zoom behavior to the SVG
+            svg.call(zoom);
+
+            function updateChart() {
+                if (!zoomEnabled) return; // Prevent zoom updates if zoom is disabled
+                // recover the new scale
+                var newX = d3.event.transform.rescaleX(xScale);
+                var newY = d3.event.transform.rescaleY(yScale);
+
+                currentXScale = newX
+                currentYScale = newY
+
+                // update axes with these new boundaries
+                xAxis.call(d3.axisBottom(newX));
+                yAxis.call(d3.axisLeft(newY));
+
+                xAxis.selectAll("line, path")
+                    .style("stroke", "white");
+
+                xAxis.selectAll("text")
+                    .style("fill", "white");
+
+                yAxis.selectAll("line, path")
+                    .style("stroke", "white");
+
+                yAxis.selectAll("text")
+                    .style("fill", "white");
+
+                // update circle position
+                scatter
+                    .selectAll("circle")
+                    .attr('cx', function (d) { return newX(d.Normal); })
+                    .attr('cy', function (d) { return newY(d.Case); });
+
+                brushScatter.extent([[0, 0], [width, height]]);
+
+                if (!zoomEnabled) {
+                    // Redraw brushes to reflect new zoom scale
+                    brushScatterG.call(brushScatter);
+                }
+
+            }
+
             function synchronizeAnimations(targetElement) {
                 // Retrieve all elements with the class 'pulse'
                 const elements = [
@@ -10109,47 +10953,17 @@
                 // Return the first one with the expected animationName
                 return anims.find((anim) => anim.animationName === name);
             }
-
-            function updateChart() {
-                // recover the new scale
-                var newX = d3.event.transform.rescaleX(xScale);
-                var newY = d3.event.transform.rescaleY(yScale);
-
-                // update axes with these new boundaries
-                xAxis.call(d3.axisBottom(newX));
-                yAxis.call(d3.axisLeft(newY));
-
-                xAxis.selectAll("line, path")
-                    .style("stroke", "white");
-
-                xAxis.selectAll("text")
-                    .style("fill", "white");
-
-                yAxis.selectAll("line, path")
-                    .style("stroke", "white");
-
-                yAxis.selectAll("text")
-                    .style("fill", "white");
-
-                // update circle position
-                scatter
-                    .selectAll("circle")
-                    .attr('cx', function (d) { return newX(d.Normal); })
-                    .attr('cy', function (d) { return newY(d.Case); });
-            }
-
-            // Define the resetZoom function
-            function resetZoom() {
-                // Reset the zoom transformation
-                svg.transition()
-                    .duration(750)
-                    .call(zoom.transform, d3.zoomIdentity);
-            }
-
+            let brushLeftG
+            let brushRightG
+            let brushedGenesLeft = [];
+            let brushedGenesRight = [];
 
             function SwitchingPlot(structure, choice) {
 
                 if (choice == "volcano") {
+                    if (brushScatterG) brushScatterG.remove();
+                    brushedGenesScatter = []
+
                     // Create x and y scales
                     xScale.domain([
                         d3.min(data, d => d.logFC) - 0.5,
@@ -10158,8 +10972,63 @@
 
                     yScale.domain([0, d3.max(data.filter(d => !isNaN(d.pval_adj) && d.pval_adj !== null), d => -Math.log10(d.pval_adj.toExponential(20))) + 1]);
 
+                    // Set the zoom and pan features
+                    zoom = d3.zoom()
+                        .scaleExtent([0.05, 20])
+                        .extent([[0, 0], [width, height]])
+                        .on("zoom", updateChart)
+                        .on("end", function () {
+                        })
+
                     // Reset zoom (assuming resetZoom is a function you have defined elsewhere)
-                    resetZoom();
+                    svg.transition()
+                        .duration(750)
+                        .call(zoom.transform, d3.zoomIdentity);
+
+                    // Variables to store the brush extents in the original data space
+                    let leftBrushExtent = null; // [ [logFC, -log10(pval_adj)], [logFC, -log10(pval_adj)] ]
+                    let rightBrushExtent = null; // [ [logFC, -log10(pval_adj)], [logFC, -log10(pval_adj)] ]
+
+                    let zoomEnabled = true; // Flag to control zoom functionality
+
+
+                    if (leftBrushExtent) {
+                        brushLeftG.call(brushLeft.move, [
+                            [xScale(leftBrushExtent[0][0]), yScale(leftBrushExtent[0][1])], // Use original x and y extents
+                            [xScale(leftBrushExtent[1][0]), yScale(leftBrushExtent[1][1])]
+                        ]);
+                    }
+                    if (rightBrushExtent) {
+                        brushRightG.call(brushRight.move, [
+                            [xScale(rightBrushExtent[0][0]), yScale(rightBrushExtent[0][1])], // Use original x and y extents
+                            [xScale(rightBrushExtent[1][0]), yScale(rightBrushExtent[1][1])]
+                        ]);
+                    }
+
+                    // Attach click event to the reset button
+                    d3.select("#resetButton")
+                        .on("click", function () {
+                            // Reset zoom (assuming resetZoom is a function you have defined elsewhere)
+                            svg.transition()
+                                .duration(750)
+                                .call(zoom.transform, d3.zoomIdentity);
+
+                            if (leftBrushExtent) {
+                                brushLeftG.call(brushLeft.move, [
+                                    [xScale(leftBrushExtent[0][0]), yScale(leftBrushExtent[0][1])], // Use original x and y extents
+                                    [xScale(leftBrushExtent[1][0]), yScale(leftBrushExtent[1][1])]
+                                ]);
+                            }
+                            if (rightBrushExtent) {
+                                brushRightG.call(brushRight.move, [
+                                    [xScale(rightBrushExtent[0][0]), yScale(rightBrushExtent[0][1])], // Use original x and y extents
+                                    [xScale(rightBrushExtent[1][0]), yScale(rightBrushExtent[1][1])]
+                                ]);
+                            }
+
+                        });
+
+
 
                     // Update the zoom behavior to call updateChart1 (assuming updateChart1 is a function you have defined elsewhere)
                     zoom.on("zoom", updateChart1);
@@ -10361,11 +11230,289 @@
                         })
 
 
+                    // To get the current scale
+                    var currentXScale = xScale; // This will give you the reference to the xScale
+                    var currentYScale = yScale
+
+                    // Define brush for the left side (x < 0)
+                    var brushLeft = d3.brush()
+                        .extent([[0, 0], [xScale(0), height]])  // Constrain the brush to the left side
+                        .on("end", updateBrushLeft);
+
+                    // Define brush for the right side (x > 0)
+                    var brushRight = d3.brush()
+                        .extent([[xScale(0), 0], [width, height]])  // Constrain the brush to the right side
+                        .on("end", updateBrushRight);
+
+
+                    // Functions to handle brush events
+                    function updateBrushLeft() {
+                        const selection = d3.event.selection;  // Access event via d3.event in v4
+                        if (selection) {
+                            var [x0, y0] = selection[0]; // Get coordinates for left brush
+                            var [x1, y1] = selection[1];
+
+                            // Store the selection in data space, including y extents
+                            leftBrushExtent = [
+                                [currentXScale.invert(x0), currentYScale.invert(y0)], // [logFC, -log10(pval_adj)]
+                                [currentXScale.invert(x1), currentYScale.invert(y1)]
+                            ];
+
+                            // Filter selected points based on the stored extents
+                            var selectedPoints = data.filter(d => {
+                                console.log(d.logFC)
+                                console.log("X0>=log", leftBrushExtent[0][0], "X1<=log", leftBrushExtent[1][0])
+                                console.log(-Math.log10(d.pval_adj))
+                                console.log("Y0<=pval", leftBrushExtent[0][1], "Y0<=pval", leftBrushExtent[1][1])
+                                return (
+                                    d.logFC >= leftBrushExtent[0][0] && d.logFC <= leftBrushExtent[1][0] &&
+                                    -Math.log10(d.pval_adj) <= leftBrushExtent[0][1] && -Math.log10(d.pval_adj) >= leftBrushExtent[1][1] && d.pval_adj< threshold && Math.abs(d.logFC)>(log_thr_fc)
+                                );
+                            });
+                            // Add genes to brushedGenes if they are not already present
+                            selectedPoints.forEach(point => {
+                                if (!brushedGenesLeft.includes(point.gene) && !selectedGeneData.includes(point.gene)) {
+                                    brushedGenesLeft.push(point.gene);
+                                }
+                            });
+                            console.log("Brushed genes left", brushedGenesLeft)
+                            highlightSelectedGenes(selectedPoints);
+                        } else {
+                            console.log("Brushed genes left", brushedGenesLeft)
+                            // Remove the 'pulse' class from the brushed genes
+                            scatter.selectAll("circle").filter(d => brushedGenesLeft.some(p => p === d.gene))
+                                .each(function (d) {
+                                    console.log(d)
+                                    var selectedElement = d3.select(this);
+                                    var currentFill = selectedElement.style("fill");
+
+                                    // Check if the element is already filled with grey
+                                    if (currentFill === "grey") {
+                                        return; // If grey, do nothing
+                                    }
+
+                                    // Check if the element is already highlighted
+                                    var isHighlighted = selectedElement.classed('pulse');
+
+                                    if (isHighlighted) {
+                                        // If already highlighted, remove the highlighting
+                                        selectedElement.style("fill", d => {
+                                            if (d.logFC >= log_thr_fc && d.pval_adj <= threshold) {
+                                                return "darkred";
+                                            } else if (d.logFC <= -log_thr_fc && d.pval_adj <= threshold) {
+                                                return "royalblue";
+                                            } else {
+                                                return "grey";
+                                            }
+                                        })
+                                            .classed('pulse', false)
+                                            .classed("pulse1", false);
+
+                                        selectedGeneData = selectedGeneData.filter(gene => gene !== d.gene);
+
+                                        // Find and remove the corresponding option from the select element
+                                        var select = document.getElementById("selectButton");
+                                        var options = select.options;
+
+                                        for (var i = 0; i < options.length; i++) {
+                                            if (!selectedGeneData.includes(options[i].value)) {
+                                                select.removeChild(options[i]);
+                                                break; // Exit the loop once the option is removed
+                                            }
+                                        }
+
+                                    }
+                                });
+
+                            heatmap(heatmap_data);
+                            dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
+
+                            brushedGenesLeft = []
+                            leftBrushExtent = null; // Reset if there's no selection
+                        }
+                    }
+
+                    function updateBrushRight() {
+                        const selection = d3.event.selection;  // Access event via d3.event in v4
+                        if (selection) {
+                            var [x0, y0] = selection[0]; // Get coordinates for right brush
+                            var [x1, y1] = selection[1];
+
+                            // Store the selection in data space, including y extents
+                            rightBrushExtent = [
+                                [currentXScale.invert(x0), currentYScale.invert(y0)], // [logFC, -log10(pval_adj)]
+                                [currentXScale.invert(x1), currentYScale.invert(y1)]
+                            ];
+
+                            // Filter selected points based on the stored extents
+                            var selectedPoints = data.filter(d =>
+                                d.logFC >= rightBrushExtent[0][0] && d.logFC <= rightBrushExtent[1][0] &&
+                                -Math.log10(d.pval_adj) <= rightBrushExtent[0][1] && -Math.log10(d.pval_adj) >= rightBrushExtent[1][1]  && d.pval_adj< threshold && Math.abs(d.logFC)>(log_thr_fc)
+                            );
+                            // Add genes to brushedGenes if they are not already present
+                            selectedPoints.forEach(point => {
+                                if (!brushedGenesRight.includes(point.gene) && !selectedGeneData.includes(point.gene)) {
+                                    brushedGenesRight.push(point.gene);
+                                }
+                            });
+                            highlightSelectedGenes(selectedPoints);
+                        } else {
+                            // Remove the 'pulse' class from the brushed genes
+                            scatter.selectAll("circle").filter(d => brushedGenesRight.some(p => p === d.gene))
+                                .each(function (d) {
+                                    console.log(d)
+                                    var selectedElement = d3.select(this);
+                                    var currentFill = selectedElement.style("fill");
+
+                                    // Check if the element is already filled with grey
+                                    if (currentFill === "grey") {
+                                        return; // If grey, do nothing
+                                    }
+
+                                    // Check if the element is already highlighted
+                                    var isHighlighted = selectedElement.classed('pulse');
+
+                                    if (isHighlighted) {
+                                        // If already highlighted, remove the highlighting
+                                        selectedElement.style("fill", d => {
+                                            if (d.logFC >= log_thr_fc && d.pval_adj <= threshold) {
+                                                return "darkred";
+                                            } else if (d.logFC <= -log_thr_fc && d.pval_adj <= threshold) {
+                                                return "royalblue";
+                                            } else {
+                                                return "grey";
+                                            }
+                                        })
+                                            .classed('pulse', false)
+                                            .classed("pulse1", false);
+
+                                        selectedGeneData = selectedGeneData.filter(gene => gene !== d.gene);
+
+                                        // Find and remove the corresponding option from the select element
+                                        var select = document.getElementById("selectButton");
+                                        var options = select.options;
+
+                                        for (var i = 0; i < options.length; i++) {
+                                            if (!selectedGeneData.includes(options[i].value)) {
+                                                select.removeChild(options[i]);
+                                                break; // Exit the loop once the option is removed
+                                            }
+                                        }
+
+                                    }
+                                });
+
+                            heatmap(heatmap_data);
+                            dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
+
+                            brushedGenesRight = []
+                            rightBrushExtent = null; // Reset if there's no selection
+                        }
+                    }
+
+
+                    // Function to highlight the selected genes based on the brush
+                    function highlightSelectedGenes(selectedPoints) {
+
+                        // Select all circles and filter only those that are in the selected points
+                        scatter.selectAll("circle").filter(d => selectedPoints.some(p => p.gene === d.gene))
+                            .each(function (d) {
+                                var selectedElement = d3.select(this);
+                                var currentFill = selectedElement.style("fill");
+
+                                // Check if the element is already filled with grey
+                                if (currentFill === "grey") {
+                                    return; // If grey, do nothing
+                                }
+
+                                // Check if the element is already highlighted
+                                var isHighlighted = selectedElement.classed('pulse');
+
+                                if (!isHighlighted) {
+                                    // If not highlighted, apply the highlighting
+                                    selectedElement
+                                        .style("fill", "green")
+                                        .style("stroke-width", 2)
+                                        .classed('pulse', true)
+                                        .classed('pulse1', false)
+                                        .raise();  // Move this element to the top
+
+                                    if (!selectedGeneData.includes(d.gene)) selectedGeneData.push(d.gene);
+
+                                    // Get the select element
+                                    var select = document.getElementById("selectButton");
+
+                                    // Add new options for the genes in selectedGeneData that are not already in the select element
+                                    selectedGeneData.forEach(function (gene) {
+                                        if (!Array.from(select.options).some(option => option.value === gene)) {
+                                            var option = document.createElement("option");
+                                            option.value = gene;
+                                            option.text = gene;
+                                            select.appendChild(option);
+                                        }
+                                    });
+
+                                    synchronizeAnimations(this);
+                                }
+                            });
+
+                        if (selectedPoints.length >= 1) {
+                            heatmap(heatmap_data);
+                            dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
+                        }
+
+                    }
+
+
+                    // Attach click event to the toggle zoom button
+                    d3.select("#toggleZoomButton").on("click", function () {
+
+                        zoomEnabled = !zoomEnabled; // Toggle the zoomEnabled flag
+
+                        if (zoomEnabled) {
+                            document.getElementById("toggleZoomButton").textContent = "Toggle Zoom/Brush Mode"
+                            svg.call(zoom); // Re-enable zooming
+
+                            brushLeftG.remove();
+                            brushRightG.remove();
+                            brushedGenesLeft = []
+                            brushedGenesRight = []
+                        } else {
+                            document.getElementById("toggleZoomButton").textContent = "Toggle Zoom/Save Brushed Genes"
+                            svg.on(".zoom", null); // Disable zooming by removing the zoom event
+
+                            // Remove the brushes from the SVG
+
+                            // Optionally, you can update the brush extents
+                            brushLeft.extent([[0, 0], [currentXScale(0), height]]);
+                            brushRight.extent([[currentXScale(0), 0], [width, height]]);
+
+                            // Redraw brushes to reflect new zoom scale
+                            brushLeftG = svg.append("g")
+                                .attr("class", "brush-left")
+                                .call(brushLeft);
+
+                            brushRightG = svg.append("g")
+                                .attr("class", "brush-right")
+                                .call(brushRight);
+
+                            brushedGenesLeft = []
+                            brushedGenesRight = []
+
+                        }
+                    });
+
 
                     function updateChart1() {
+
+                        if (!zoomEnabled) return; // Prevent zoom updates if zoom is disabled
+
                         // recover the new scale
                         var newX = d3.event.transform.rescaleX(xScale);
                         var newY = d3.event.transform.rescaleY(yScale);
+
+                        currentXScale = newX
+                        currentYScale = newY
 
                         // update axes with these new boundaries
                         xAxis.call(d3.axisBottom(newX));
@@ -10402,6 +11549,17 @@
                                 }
                                 return null;
                             });
+
+                        // Update the brush extents
+                        brushLeft.extent([[0, 0], [newX(0), height]]);
+                        brushRight.extent([[newX(0), 0], [width, height]]);
+
+                        if (!zoomEnabled) {
+                            // Redraw brushes to reflect new zoom scale
+                            brushLeftG.call(brushLeft);
+                            brushRightG.call(brushRight);
+                        }
+
                     }
                     xlab.html("")
                     ylab.html("")
@@ -10427,7 +11585,10 @@
                 }
 
                 else {
-
+                    if (brushLeftG) brushLeftG.remove();
+                    if (brushRightG) brushRightG.remove();
+                    brushedGenesLeft = []
+                    brushedGenesRight = []
                     xScale = d3.scaleLinear()
                         .domain(d3.extent(Object.values(averageExpressionsN)))
                         .range([0, width]);
@@ -10440,9 +11601,31 @@
                         .domain(d3.extent(Object.values(averageExpressionsC)))
                         .range([height, 0])
                         .nice()
+
+                    var currentXScale = xScale; // This will give you the reference to the xScale
+                    var currentYScale = yScale
+
                     //console.log(yScale);
 
-                    resetZoom()
+                    // Set the zoom and pan features
+                    zoom = d3.zoom()
+                        .scaleExtent([0.05, 20])
+                        .extent([[0, 0], [width, height]])
+                        .on("zoom", updateChart)
+                        .on("end", function () {
+                        })
+
+
+                    svg.transition()
+                        .duration(750)
+                        .call(zoom.transform, d3.zoomIdentity);
+
+                    if (brushScatterExtent) {
+                        brushScatterG.call(brushScatter.move, [
+                            [xScale(brushScatterExtent[0][0]), yScale(brushScatterExtent[0][1])], // Use original x and y extents
+                            [xScale(brushScatterExtent[1][0]), yScale(brushScatterExtent[1][1])]
+                        ]);
+                    }
                     zoom.on("zoom", updateChart);
                     svg.call(zoom)
 
@@ -10693,6 +11876,236 @@
                                 d3.select(this).raise();
                             }
                         })
+
+                    brushScatter = d3.brush()
+                        .extent([[0, 0], [width, height]])  // Constrain the brush to the left side
+                        .on("end", updateBrushScatter);
+
+                    // Attach click event to the reset button
+                    d3.select("#resetButton").on("click", resetZoom);
+
+                    // Functions to handle brush events
+                    function updateBrushScatter() {
+                        const selection = d3.event.selection;  // Access event via d3.event in v4
+                        if (selection) {
+                            var [x0, y0] = selection[0]; // Get coordinates for left brush
+                            var [x1, y1] = selection[1];
+
+                            // Store the selection in data space, including y extents
+                            brushScatterExtent = [
+                                [currentXScale.invert(x0), currentYScale.invert(y0)], // [logFC, -log10(pval_adj)]
+                                [currentXScale.invert(x1), currentYScale.invert(y1)]
+                            ];
+
+                            // Filter selected points based on the stored extents
+                            var selectedPoints = data.filter(d => {
+                                return (
+                                    d.Normal >= brushScatterExtent[0][0] && d.Normal <= brushScatterExtent[1][0] &&
+                                    d.Case <= brushScatterExtent[0][1] && d.Case >= brushScatterExtent[1][1]  && d.pval_adj< threshold && Math.abs(d.logFC)>(log_thr_fc) && Math.abs(d.logFC)<Math.log2(log_thr_fc)
+                                );
+                            });
+                            // Add genes to brushedGenes if they are not already present
+                            selectedPoints.forEach(point => {
+                                if (!brushedGenesScatter.includes(point.gene) && !selectedGeneData.includes(point.gene)) {
+                                    brushedGenesScatter.push(point.gene);
+                                }
+                            });
+                            console.log("Brushed genes scatter", brushedGenesScatter)
+                            highlightSelectedGenes(selectedPoints);
+                        } else {
+                            console.log("Brushed genes scatter", brushedGenesScatter)
+                            // Remove the 'pulse' class from the brushed genes
+                            scatter.selectAll("circle").filter(d => brushedGenesScatter.some(p => p === d.gene))
+                                .each(function (d) {
+                                    console.log(d)
+                                    var selectedElement = d3.select(this);
+                                    var currentFill = selectedElement.style("fill");
+
+                                    // Check if the element is already filled with grey
+                                    if (currentFill === "grey") {
+                                        return; // If grey, do nothing
+                                    }
+
+                                    // Check if the element is already highlighted
+                                    var isHighlighted = selectedElement.classed('pulse');
+
+                                    if (isHighlighted) {
+                                        // If already highlighted, remove the highlighting
+                                        selectedElement.style("fill", d => {
+                                            if (d.logFC >= log_thr_fc && d.pval_adj <= threshold) {
+                                                return "darkred";
+                                            } else if (d.logFC <= -log_thr_fc && d.pval_adj <= threshold) {
+                                                return "royalblue";
+                                            } else {
+                                                return "grey";
+                                            }
+                                        })
+                                            .classed('pulse', false)
+                                            .classed("pulse1", false);
+
+                                        selectedGeneData = selectedGeneData.filter(gene => gene !== d.gene);
+
+                                        // Find and remove the corresponding option from the select element
+                                        var select = document.getElementById("selectButton");
+                                        var options = select.options;
+
+                                        for (var i = 0; i < options.length; i++) {
+                                            if (!selectedGeneData.includes(options[i].value)) {
+                                                select.removeChild(options[i]);
+                                                break; // Exit the loop once the option is removed
+                                            }
+                                        }
+
+                                    }
+                                });
+
+                            heatmap(heatmap_data);
+                            dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
+
+                            brushedGenesScatter = []
+                            brushScatterExtent = null; // Reset if there's no selection
+                        }
+                    }
+
+                    // Function to highlight the selected genes based on the brush
+                    function highlightSelectedGenes(selectedPoints) {
+                        console.log("ciao")
+
+                        // Select all circles and filter only those that are in the selected points
+                        scatter.selectAll("circle").filter(d => selectedPoints.some(p => p.gene === d.gene))
+                            .each(function (d) {
+                                var selectedElement = d3.select(this);
+                                var currentFill = selectedElement.style("fill");
+
+                                // Check if the element is already filled with grey
+                                if (currentFill === "grey") {
+                                    return; // If grey, do nothing
+                                }
+
+                                // Check if the element is already highlighted
+                                var isHighlighted = selectedElement.classed('pulse');
+
+                                if (!isHighlighted) {
+                                    // If not highlighted, apply the highlighting
+                                    selectedElement
+                                        .style("fill", "green")
+                                        .style("stroke-width", 2)
+                                        .classed('pulse', true)
+                                        .classed('pulse1', false)
+                                        .raise();  // Move this element to the top
+
+                                    if (!selectedGeneData.includes(d.gene)) selectedGeneData.push(d.gene);
+
+                                    // Get the select element
+                                    var select = document.getElementById("selectButton");
+
+                                    // Add new options for the genes in selectedGeneData that are not already in the select element
+                                    selectedGeneData.forEach(function (gene) {
+                                        if (!Array.from(select.options).some(option => option.value === gene)) {
+                                            var option = document.createElement("option");
+                                            option.value = gene;
+                                            option.text = gene;
+                                            select.appendChild(option);
+                                        }
+                                    });
+
+                                    synchronizeAnimations(this);
+                                }
+                            });
+
+                        if (selectedPoints.length >= 1) {
+                            heatmap(heatmap_data);
+                            dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
+                        }
+
+                    }
+
+                    // Attach click event to the toggle zoom button
+                    d3.select("#toggleZoomButton").on("click", function () {
+                        zoomEnabled = !zoomEnabled; // Toggle the zoomEnabled flag
+
+                        if (zoomEnabled) {
+                            document.getElementById("toggleZoomButton").textContent = "Toggle Zoom/Brush Mode"
+                            svg.call(zoom); // Re-enable zooming
+
+                            brushScatterG.remove();
+                            brushedGenesScatter = []
+
+                        } else {
+                            document.getElementById("toggleZoomButton").textContent = "Toggle Zoom/Save Brushed Genes"
+                            svg.on(".zoom", null); // Disable zooming by removing the zoom event
+
+                            // Remove the brushes from the SVG
+
+                            // Optionally, you can update the brush extents
+                            brushScatter.extent([[0, 0], [width, height]]);
+
+                            // Redraw brushes to reflect new zoom scale
+                            brushScatterG = svg.append("g")
+                                .attr("class", "brush-scatter")
+                                .call(brushScatter);
+
+
+                            brushedGenesScatter = []
+
+                        }
+                    });
+
+                    // Define the resetZoom function
+                    function resetZoom() {
+                        // Reset the zoom transformation
+                        svg.transition()
+                            .duration(750)
+                            .call(zoom.transform, d3.zoomIdentity);
+
+                        if (brushScatterExtent) {
+                            brushScatterG.call(brushScatter.move, [
+                                [xScale(brushScatterExtent[0][0]), yScale(brushScatterExtent[0][1])], // Use original x and y extents
+                                [xScale(brushScatterExtent[1][0]), yScale(brushScatterExtent[1][1])]
+                            ]);
+                        }
+                    }
+
+                    function updateChart() {
+                        if (!zoomEnabled) return; // Prevent zoom updates if zoom is disabled
+                        // recover the new scale
+                        var newX = d3.event.transform.rescaleX(xScale);
+                        var newY = d3.event.transform.rescaleY(yScale);
+
+                        currentXScale = newX
+                        currentYScale = newY
+
+                        // update axes with these new boundaries
+                        xAxis.call(d3.axisBottom(newX));
+                        yAxis.call(d3.axisLeft(newY));
+
+                        xAxis.selectAll("line, path")
+                            .style("stroke", "white");
+
+                        xAxis.selectAll("text")
+                            .style("fill", "white");
+
+                        yAxis.selectAll("line, path")
+                            .style("stroke", "white");
+
+                        yAxis.selectAll("text")
+                            .style("fill", "white");
+
+                        // update circle position
+                        scatter
+                            .selectAll("circle")
+                            .attr('cx', function (d) { return newX(d.Normal); })
+                            .attr('cy', function (d) { return newY(d.Case); });
+
+                        brushScatter.extent([[0, 0], [width, height]]);
+
+                        if (!zoomEnabled) {
+                            // Redraw brushes to reflect new zoom scale
+                            brushScatterG.call(brushScatter);
+                        }
+
+                    }
+
 
 
                 }
@@ -12998,6 +14411,18 @@
 
                 }
 
+                // Highlight the corresponding heatmap squares
+                square
+                    .filter(function (heatmapData) {
+                        console.log(heatmapData)
+
+                        return selectedGeneData.includes(heatmapData.gene);
+                    })
+                    .style("opacity", 1) // Change opacity to highlight
+                    .style("stroke", "yellow") // Change stroke color to highlight (optional)
+                    .style("stroke-width", 2); // Increase stroke width (optional)
+
+
 
             };
 
@@ -13066,6 +14491,22 @@
                     }
                 });
 
+
+            if (displayed_rows > 15) {
+                // Highlight the corresponding heatmap squares
+                square
+                    .filter(function (heatmapData) {
+                        console.log(heatmapData)
+
+                        return selectedGeneData.includes(heatmapData.gene);
+                    })
+                    .style("opacity", 1) // Change opacity to highlight
+                    .style("stroke", "yellow") // Change stroke color to highlight (optional)
+                    .style("stroke-width", 2); // Increase stroke width (optional)
+
+            }
+
+
             svg.append("g")
                 .style("font-size", 15)
                 .style("fill", "white")
@@ -13088,7 +14529,7 @@
                     }
                     return "15px"; // Default font size
                 })
-                .on("mouseover", function () {
+                .on("mouseover", function (d) {
                     if (displayed_rows > 15) {
                         // Lower the opacity of all other text elements
                         svg.selectAll(".tick text")
@@ -13105,15 +14546,29 @@
 
                         // Re-append the element to bring it to the front
                         hoveredText.node().parentNode.appendChild(hoveredText.node());
+
+                        // Highlight the corresponding heatmap squares
+                        square
+                            .filter(function (heatmapData) {
+                                console.log(heatmapData)
+                                console.log(d)
+
+                                return heatmapData.gene === d; // Match the hovered tick text with the heatmap gene
+                            })
+                            .style("opacity", 1) // Change opacity to highlight
+                            .style("stroke", "yellow") // Change stroke color to highlight (optional)
+                            .style("stroke-width", 2); // Increase stroke width (optional)
+
                     } else {
                         d3.select(this)
                             .filter(function (d) { return myGroups.includes(d); }) // Ensure we only target Y-axis ticks
                             .style("opacity", 0.7); // Simple opacity change when fewer than 15 rows
+
                     }
                     synchronizeAnimations(this, true)
 
                 })
-                .on("mouseout", function () {
+                .on("mouseout", function (d) {
                     if (displayed_rows > 15) {
                         // Reset the opacity of all text elements to 1
                         svg.selectAll(".tick text")
@@ -13139,6 +14594,24 @@
                             .style("font-weight", "normal") // Revert to normal weight
                             .style("opacity", 1) // Full opacity for all text elements
                             .attr("dx", "0px"); // Revert to original position
+
+                        square
+                            .style("opacity", 1) // Reset opacity
+                            .style("stroke", "none"); // Reset stroke (optional)
+
+                        // Highlight the corresponding heatmap squares
+                        square
+                            .filter(function (heatmapData) {
+                                console.log(heatmapData)
+                                console.log(selectedGeneData)
+
+                                return selectedGeneData.includes(heatmapData.gene); // Match the hovered tick text with the heatmap gene
+                            })
+                            .style("opacity", 1) // Change opacity to highlight
+                            .style("stroke", "yellow") // Change stroke color to highlight (optional)
+                            .style("stroke-width", 2); // Increase stroke width (optional)
+
+
                     } else {
                         d3.select(this)
                             .filter(function (d) { return myGroups.includes(d); }) // Ensure we only target Y-axis ticks
@@ -13884,14 +15357,15 @@
             console.log(selectedGSMTableData)
             $('#selectedGSMTable').html(''); // Set message
             $('#selectedGSMTable').DataTable().destroy(); // Destroy any existing instance
-
+            let ok_gsm = false
             // Check if gsmList is empty
             if (gsmList.length === 0) {
+                ok_gsm = false
                 // Display message instead of table
                 $('#selectedGSMTable').html('<tr><td colspan="100%" style="text-align: center;">No sample selected</td></tr>'); // Set message
             } else {
                 // Initialize DataTable for Selected GSM Genes
-
+                ok_gsm = true
                 selectedGSMTable = $('#selectedGSMTable').DataTable({
                     data: selectedGSMTableData,
                     columns: [
@@ -13919,9 +15393,11 @@
                 const activeTable = activeTab.id === "diffExpressedGenes" ? diffExpressedTable :
                     (activeTab.id === "selectedGenes" ? selectedGenesTable : selectedGSMTable);
 
-                console.log(activeTab.id)
                 downloadCSV(activeTable);
             };
+
+
+
 
             // Close button functionality
             document.getElementById("closeOverlayButton").onclick = function () {
@@ -13962,6 +15438,22 @@
                 document.getElementById(hideId2).style.display = "none";
                 document.querySelectorAll('.tablinks').forEach(btn => btn.classList.remove('active'));
                 document.getElementById(`${showId === 'diffExpressedGenes' ? 'diffExpressedTab' : (showId === 'selectedGenes' ? 'selectedGenesTab' : 'selectedGSMTab')}`).classList.add('active');
+                const activeTab = document.querySelector('.tabcontent[style*="display: block"]');
+                const activeTable = activeTab.id === "diffExpressedGenes" ? diffExpressedTable :
+                    (activeTab.id === "selectedGenes" ? selectedGenesTable : selectedGSMTable);
+
+                console.log(activeTab.id)
+                if (!ok_gsm && activeTable === selectedGSMTable) {
+                    document.getElementById("confirmDownloadButton").style.cursor = "not-allowed"
+                    document.getElementById("confirmDownloadButton").style.opacity = 0.6
+                    document.getElementById("confirmDownloadButton").disabled = true
+                }
+                else {
+                    document.getElementById("confirmDownloadButton").style.cursor = "pointer"
+                    document.getElementById("confirmDownloadButton").style.opacity = 1
+                    document.getElementById("confirmDownloadButton").disabled = false
+                }
+
             }
         }
 
@@ -13979,7 +15471,7 @@
 
             // Collect GSM columns dynamically
             const gsmColumns = Object.keys(data[0]).filter(key => key !== "Gene" && key !== "AdjPVal" && key !== "LogFC" && key !== "PC1_Contribution");
-            if (gsmColumns.length>=1) headers = ["Gene"].concat(gsmColumns); // Add GSM columns to the headers
+            if (gsmColumns.length >= 1) headers = ["Gene"].concat(gsmColumns); // Add GSM columns to the headers
 
             // Create CSV content with the specified headers
             const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" +
@@ -13991,7 +15483,7 @@
                         gene.LogFC
                     ];
 
-                    if (gsmColumns.length>=1){
+                    if (gsmColumns.length >= 1) {
                         row = [gene.Gene]
                     }
 
