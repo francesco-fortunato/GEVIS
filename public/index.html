@@ -1310,6 +1310,8 @@
         // Flag to track the current plot
         let currentPlot = 'volcano';
 
+        let zoomEnabled = true; // Flag to control zoom functionality
+
         showOverlay()
 
         // Get the modal element
@@ -8916,8 +8918,6 @@
             let leftBrushExtent = null; // [ [logFC, -log10(pval_adj)], [logFC, -log10(pval_adj)] ]
             let rightBrushExtent = null; // [ [logFC, -log10(pval_adj)], [logFC, -log10(pval_adj)] ]
 
-            let zoomEnabled = true; // Flag to control zoom functionality
-
             let brushedGenesLeft = [];
             let brushedGenesRight = [];
 
@@ -8954,7 +8954,7 @@
                     var selectedPoints = data.filter(d => {
                         return (
                             d.logFC >= leftBrushExtent[0][0] && d.logFC <= leftBrushExtent[1][0] &&
-                            -Math.log10(d.pval_adj) <= leftBrushExtent[0][1] && -Math.log10(d.pval_adj) >= leftBrushExtent[1][1] && d.pval_adj< threshold && Math.abs(d.logFC)>(log_thr_fc)
+                            -Math.log10(d.pval_adj) <= leftBrushExtent[0][1] && -Math.log10(d.pval_adj) >= leftBrushExtent[1][1] && d.pval_adj < threshold && Math.abs(d.logFC) > (log_thr_fc)
                         );
                     });
                     // Add genes to brushedGenes if they are not already present
@@ -9035,7 +9035,7 @@
                     // Filter selected points based on the stored extents
                     var selectedPoints = data.filter(d =>
                         d.logFC >= rightBrushExtent[0][0] && d.logFC <= rightBrushExtent[1][0] &&
-                        -Math.log10(d.pval_adj) <= rightBrushExtent[0][1] && -Math.log10(d.pval_adj) >= rightBrushExtent[1][1]  && d.pval_adj< threshold && Math.abs(d.logFC)>(log_thr_fc)
+                        -Math.log10(d.pval_adj) <= rightBrushExtent[0][1] && -Math.log10(d.pval_adj) >= rightBrushExtent[1][1] && d.pval_adj < threshold && Math.abs(d.logFC) > (log_thr_fc)
                     );
                     // Add genes to brushedGenes if they are not already present
                     selectedPoints.forEach(point => {
@@ -9189,6 +9189,12 @@
                 zoomEnabled = !zoomEnabled; // Toggle the zoomEnabled flag
 
                 if (zoomEnabled) {
+                    document.getElementById("resetButton").style.cursor = "pointer"
+                    document.getElementById("resetButton").style.opacity = 1
+                    document.getElementById("resetButton").disabled = false
+                    document.getElementById("switchButton").style.cursor = "pointer"
+                    document.getElementById("switchButton").style.opacity = 1
+                    document.getElementById("switchButton").disabled = false
                     document.getElementById("toggleZoomButton").textContent = "Toggle Zoom/Brush Mode"
                     svg.call(zoom); // Re-enable zooming
 
@@ -9198,6 +9204,13 @@
                     brushedGenesRight = []
 
                 } else {
+                    document.getElementById("resetButton").style.cursor = "not-allowed"
+                    document.getElementById("resetButton").style.opacity = 0.6
+                    document.getElementById("resetButton").disabled = true
+                    document.getElementById("switchButton").style.cursor = "not-allowed"
+                    document.getElementById("switchButton").style.opacity = 0.6
+                    document.getElementById("switchButton").disabled = true
+
                     document.getElementById("toggleZoomButton").textContent = "Toggle Zoom/Save Brushed Genes"
                     svg.on(".zoom", null); // Disable zooming by removing the zoom event
 
@@ -9339,6 +9352,7 @@
             function SwitchingPlot(structure, choice) {
 
                 if (choice == "volcano") {
+                    if (brushScatterG) brushScatterG.remove()
                     // Create x and y scales
                     xScale.domain([
                         d3.min(data, d => d.logFC) - 0.5,
@@ -9351,21 +9365,19 @@
                         .duration(750)
                         .call(zoom.transform, d3.zoomIdentity);
 
-                    if (leftBrushExtent) {
-                        brushLeftG.call(brushLeft.move, [
-                            [xScale(leftBrushExtent[0][0]), yScale(leftBrushExtent[0][1])], // Use original x and y extents
-                            [xScale(leftBrushExtent[1][0]), yScale(leftBrushExtent[1][1])]
-                        ]);
-                    }
-                    if (rightBrushExtent) {
-                        brushRightG.call(brushRight.move, [
-                            [xScale(rightBrushExtent[0][0]), yScale(rightBrushExtent[0][1])], // Use original x and y extents
-                            [xScale(rightBrushExtent[1][0]), yScale(rightBrushExtent[1][1])]
-                        ]);
-                    }
+                    brushLeft = d3.brush()
+                        .extent([[0, 0], [xScale(0), height]])  // Constrain the brush to the left side
+                        .on("end", updateBrushLeft);
+
+                    brushRight = d3.brush()
+                        .extent([[xScale(0), 0], [width, height]])  // Constrain the brush to the right side
+                        .on("end", updateBrushRight);
+
+                    var brushLeftG
+                    var brushRightG
 
                     // Update the zoom behavior to call updateChart1 (assuming updateChart1 is a function you have defined elsewhere)
-                    zoom.on("zoom", updateChart);
+                    zoom.on("zoom", updateChart1);
 
                     // Apply zoom behavior to the svg
                     svg.call(zoom);
@@ -9559,34 +9571,336 @@
                             }
                         })
 
+                    // Functions to handle brush events
+                    function updateBrushLeft() {
+                        const selection = d3.event.selection;  // Access event via d3.event in v4
+                        if (selection) {
+                            var [x0, y0] = selection[0]; // Get coordinates for left brush
+                            var [x1, y1] = selection[1];
+
+                            // Store the selection in data space, including y extents
+                            leftBrushExtent = [
+                                [currentXScale.invert(x0), currentYScale.invert(y0)], // [logFC, -log10(pval_adj)]
+                                [currentXScale.invert(x1), currentYScale.invert(y1)]
+                            ];
+
+                            // Filter selected points based on the stored extents
+                            var selectedPoints = data.filter(d => {
+                                return (
+                                    d.logFC >= leftBrushExtent[0][0] && d.logFC <= leftBrushExtent[1][0] &&
+                                    -Math.log10(d.pval_adj) <= leftBrushExtent[0][1] && -Math.log10(d.pval_adj) >= leftBrushExtent[1][1] && d.pval_adj < threshold && Math.abs(d.logFC) > (log_thr_fc)
+                                );
+                            });
+                            // Add genes to brushedGenes if they are not already present
+                            selectedPoints.forEach(point => {
+                                if (!brushedGenesLeft.includes(point.gene) && !selectedGeneData.includes(point.gene)) {
+                                    brushedGenesLeft.push(point.gene);
+                                }
+                            });
+                            console.log("Brushed genes left", brushedGenesLeft)
+                            highlightSelectedGenes(selectedPoints);
+                        } else {
+                            console.log("Brushed genes left", brushedGenesLeft)
+                            // Remove the 'pulse' class from the brushed genes
+                            scatter.selectAll("circle").filter(d => brushedGenesLeft.some(p => p === d.gene))
+                                .each(function (d) {
+                                    console.log(d)
+                                    var selectedElement = d3.select(this);
+                                    var currentFill = selectedElement.style("fill");
+
+                                    // Check if the element is already filled with grey
+                                    if (currentFill === "grey") {
+                                        return; // If grey, do nothing
+                                    }
+
+                                    // Check if the element is already highlighted
+                                    var isHighlighted = selectedElement.classed('pulse');
+
+                                    if (isHighlighted) {
+                                        // If already highlighted, remove the highlighting
+                                        selectedElement.style("fill", d => {
+                                            if (d.logFC >= log_thr_fc && d.pval_adj <= threshold) {
+                                                return "darkred";
+                                            } else if (d.logFC <= -log_thr_fc && d.pval_adj <= threshold) {
+                                                return "royalblue";
+                                            } else {
+                                                return "grey";
+                                            }
+                                        })
+                                            .classed('pulse', false)
+                                            .classed("pulse1", false);
+
+                                        selectedGeneData = selectedGeneData.filter(gene => gene !== d.gene);
+
+                                        // Find and remove the corresponding option from the select element
+                                        var select = document.getElementById("selectButton");
+                                        var options = select.options;
+
+                                        for (var i = 0; i < options.length; i++) {
+                                            if (!selectedGeneData.includes(options[i].value)) {
+                                                select.removeChild(options[i]);
+                                                break; // Exit the loop once the option is removed
+                                            }
+                                        }
+
+                                    }
+                                });
+
+                            heatmap(heatmap_data);
+                            dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
+
+                            brushedGenesLeft = []
+                            leftBrushExtent = null; // Reset if there's no selection
+                        }
+                    }
+
+                    function updateBrushRight() {
+                        const selection = d3.event.selection;  // Access event via d3.event in v4
+                        if (selection) {
+                            var [x0, y0] = selection[0]; // Get coordinates for right brush
+                            var [x1, y1] = selection[1];
+
+                            // Store the selection in data space, including y extents
+                            rightBrushExtent = [
+                                [currentXScale.invert(x0), currentYScale.invert(y0)], // [logFC, -log10(pval_adj)]
+                                [currentXScale.invert(x1), currentYScale.invert(y1)]
+                            ];
+
+                            // Filter selected points based on the stored extents
+                            var selectedPoints = data.filter(d =>
+                                d.logFC >= rightBrushExtent[0][0] && d.logFC <= rightBrushExtent[1][0] &&
+                                -Math.log10(d.pval_adj) <= rightBrushExtent[0][1] && -Math.log10(d.pval_adj) >= rightBrushExtent[1][1] && d.pval_adj < threshold && Math.abs(d.logFC) > (log_thr_fc)
+                            );
+                            // Add genes to brushedGenes if they are not already present
+                            selectedPoints.forEach(point => {
+                                if (!brushedGenesRight.includes(point.gene) && !selectedGeneData.includes(point.gene)) {
+                                    brushedGenesRight.push(point.gene);
+                                }
+                            });
+                            highlightSelectedGenes(selectedPoints);
+                        } else {
+                            // Remove the 'pulse' class from the brushed genes
+                            scatter.selectAll("circle").filter(d => brushedGenesRight.some(p => p === d.gene))
+                                .each(function (d) {
+                                    console.log(d)
+                                    var selectedElement = d3.select(this);
+                                    var currentFill = selectedElement.style("fill");
+
+                                    // Check if the element is already filled with grey
+                                    if (currentFill === "grey") {
+                                        return; // If grey, do nothing
+                                    }
+
+                                    // Check if the element is already highlighted
+                                    var isHighlighted = selectedElement.classed('pulse');
+
+                                    if (isHighlighted) {
+                                        // If already highlighted, remove the highlighting
+                                        selectedElement.style("fill", d => {
+                                            if (d.logFC >= log_thr_fc && d.pval_adj <= threshold) {
+                                                return "darkred";
+                                            } else if (d.logFC <= -log_thr_fc && d.pval_adj <= threshold) {
+                                                return "royalblue";
+                                            } else {
+                                                return "grey";
+                                            }
+                                        })
+                                            .classed('pulse', false)
+                                            .classed("pulse1", false);
+
+                                        selectedGeneData = selectedGeneData.filter(gene => gene !== d.gene);
+
+                                        // Find and remove the corresponding option from the select element
+                                        var select = document.getElementById("selectButton");
+                                        var options = select.options;
+
+                                        for (var i = 0; i < options.length; i++) {
+                                            if (!selectedGeneData.includes(options[i].value)) {
+                                                select.removeChild(options[i]);
+                                                break; // Exit the loop once the option is removed
+                                            }
+                                        }
+
+                                    }
+                                });
+
+                            heatmap(heatmap_data);
+                            dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
+
+                            brushedGenesRight = []
+                            rightBrushExtent = null; // Reset if there's no selection
+                        }
+                    }
 
 
+                    // Function to highlight the selected genes based on the brush
+                    function highlightSelectedGenes(selectedPoints) {
+
+                        // Select all circles and filter only those that are in the selected points
+                        scatter.selectAll("circle").filter(d => selectedPoints.some(p => p.gene === d.gene))
+                            .each(function (d) {
+                                var selectedElement = d3.select(this);
+                                var currentFill = selectedElement.style("fill");
+
+                                // Check if the element is already filled with grey
+                                if (currentFill === "grey") {
+                                    return; // If grey, do nothing
+                                }
+
+                                // Check if the element is already highlighted
+                                var isHighlighted = selectedElement.classed('pulse');
+
+                                if (!isHighlighted) {
+                                    // If not highlighted, apply the highlighting
+                                    selectedElement
+                                        .style("fill", "green")
+                                        .style("stroke-width", 2)
+                                        .classed('pulse', true)
+                                        .classed('pulse1', false)
+                                        .raise();  // Move this element to the top
+
+                                    if (!selectedGeneData.includes(d.gene)) selectedGeneData.push(d.gene);
+
+                                    // Get the select element
+                                    var select = document.getElementById("selectButton");
+
+                                    // Add new options for the genes in selectedGeneData that are not already in the select element
+                                    selectedGeneData.forEach(function (gene) {
+                                        if (!Array.from(select.options).some(option => option.value === gene)) {
+                                            var option = document.createElement("option");
+                                            option.value = gene;
+                                            option.text = gene;
+                                            select.appendChild(option);
+                                        }
+                                    });
+
+                                    synchronizeAnimations(this);
+                                }
+                            });
+
+                        if (selectedPoints.length >= 1) {
+                            heatmap(heatmap_data);
+                            dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
+                        }
+
+                    }
+
+
+
+                    // Attach click event to the toggle zoom button
+                    d3.select("#toggleZoomButton").on("click", function () {
+                        zoomEnabled = !zoomEnabled; // Toggle the zoomEnabled flag
+
+                        if (zoomEnabled) {
+                            document.getElementById("resetButton").style.cursor = "pointer"
+                            document.getElementById("resetButton").style.opacity = 1
+                            document.getElementById("resetButton").disabled = false
+                            document.getElementById("switchButton").style.cursor = "pointer"
+                            document.getElementById("switchButton").style.opacity = 1
+                            document.getElementById("switchButton").disabled = false
+                            document.getElementById("toggleZoomButton").textContent = "Toggle Zoom/Brush Mode"
+                            svg.call(zoom); // Re-enable zooming
+
+                            brushLeftG.remove();
+                            brushRightG.remove();
+                            brushedGenesLeft = []
+                            brushedGenesRight = []
+
+                        } else {
+                            document.getElementById("resetButton").style.cursor = "not-allowed"
+                            document.getElementById("resetButton").style.opacity = 0.6
+                            document.getElementById("resetButton").disabled = true
+                            document.getElementById("switchButton").style.cursor = "not-allowed"
+                            document.getElementById("switchButton").style.opacity = 0.6
+                            document.getElementById("switchButton").disabled = true
+
+                            document.getElementById("toggleZoomButton").textContent = "Toggle Zoom/Save Brushed Genes"
+                            svg.on(".zoom", null); // Disable zooming by removing the zoom event
+
+                            // Remove the brushes from the SVG
+
+                            // Optionally, you can update the brush extents
+                            brushLeft.extent([[0, 0], [currentXScale(0), height]]);
+                            brushRight.extent([[currentXScale(0), 0], [width, height]]);
+
+                            // Redraw brushes to reflect new zoom scale
+                            brushLeftG = svg.append("g")
+                                .attr("class", "brush-left")
+                                .call(brushLeft);
+
+                            brushRightG = svg.append("g")
+                                .attr("class", "brush-right")
+                                .call(brushRight);
+
+                            brushedGenesLeft = []
+                            brushedGenesRight = []
+
+                        }
+                    });
+                    // Updating the chart after zooming
                     function updateChart1() {
-                        // recover the new scale
-                        var newX = d3.event.transform.rescaleX(xScale);
-                        var newY = d3.event.transform.rescaleY(yScale);
+                        if (!zoomEnabled) return; // Prevent zoom updates if zoom is disabled
 
-                        // update axes with these new boundaries
+                        // Recover the new scale
+                        var t = d3.event.transform;
+                        newX = t.rescaleX(xScale);
+                        newY = t.rescaleY(yScale);
+                        currentXScale = newX; // Update the reference
+                        currentYScale = newY; // Update the reference
+
+                        // xScale = newX
+                        // yScale = newY
+
+                        // Update axes with these new boundaries
                         xAxis.call(d3.axisBottom(newX));
                         yAxis.call(d3.axisLeft(newY));
 
-                        xAxis.selectAll("line, path")
-                            .style("stroke", "white");
+                        xAxis.selectAll("line, path").style("stroke", "white");
+                        xAxis.selectAll("text").style("fill", "white");
 
-                        xAxis.selectAll("text")
-                            .style("fill", "white");
+                        yAxis.selectAll("line, path").style("stroke", "white");
+                        yAxis.selectAll("text").style("fill", "white");
 
-                        yAxis.selectAll("line, path")
-                            .style("stroke", "white");
+                        // Update circle position
+                        scatter.selectAll("circle")
+                            .attr('cx', function (d) {
+                                if (d.pval_adj !== null) return newX(d.logFC);
+                            })
+                            .attr('cy', function (d) {
+                                if (d.pval_adj !== null) return newY(-Math.log10(d.pval_adj));
+                            });
 
-                        yAxis.selectAll("text")
-                            .style("fill", "white");
+                        // Update the brush extents
+                        brushLeft.extent([[0, 0], [newX(0), height]]);
+                        brushRight.extent([[newX(0), 0], [width, height]]);
 
-                        // update circle position
-                        scatter
-                            .selectAll("circle")
-                            .attr('cx', function (d) { if (d.pval_adj !== null) { return newX(d.logFC); } })
-                            .attr('cy', function (d) { if (d.pval_adj !== null) { return newY(-Math.log10(d.pval_adj.toExponential(20))); } });
+                        if (!zoomEnabled) {
+                            // Redraw brushes to reflect new zoom scale
+                            brushLeftG.call(brushLeft);
+                            brushRightG.call(brushRight);
+                        }
+
+                    }
+
+                    // Define the resetZoom function
+                    function resetZoom() {
+                        // Reset the zoom transformation
+                        svg.transition()
+                            .duration(750)
+                            .call(zoom.transform, d3.zoomIdentity);
+
+                        // if (leftBrushExtent) {
+                        //     brushLeftG.call(brushLeft.move, [
+                        //         [xScale(leftBrushExtent[0][0]), yScale(leftBrushExtent[0][1])], // Use original x and y extents
+                        //         [xScale(leftBrushExtent[1][0]), yScale(leftBrushExtent[1][1])]
+                        //     ]);
+                        // }
+                        // if (rightBrushExtent) {
+                        //     brushRightG.call(brushRight.move, [
+                        //         [xScale(rightBrushExtent[0][0]), yScale(rightBrushExtent[0][1])], // Use original x and y extents
+                        //         [xScale(rightBrushExtent[1][0]), yScale(rightBrushExtent[1][1])]
+                        //     ]);
+                        // }
                     }
                     xlab.html("")
                     ylab.html("")
@@ -9639,27 +9953,15 @@
                         .duration(750)
                         .call(zoom.transform, d3.zoomIdentity);
 
-                    if (leftBrushExtent) {
-                        brushLeftG.call(brushLeft.move, [
-                            [xScale(leftBrushExtent[0][0]), yScale(leftBrushExtent[0][1])], // Use original x and y extents
-                            [xScale(leftBrushExtent[1][0]), yScale(leftBrushExtent[1][1])]
-                        ]);
-                    }
-                    if (rightBrushExtent) {
-                        brushRightG.call(brushRight.move, [
-                            [xScale(rightBrushExtent[0][0]), yScale(rightBrushExtent[0][1])], // Use original x and y extents
-                            [xScale(rightBrushExtent[1][0]), yScale(rightBrushExtent[1][1])]
-                        ]);
-                    }
                     zoom.on("zoom", updateChart1);
                     svg.call(zoom)
 
-                    if (brushScatterExtent) {
-                        brushScatterG.call(brushScatter.move, [
-                            [xScale(brushScatterExtent[0][0]), yScale(brushScatterExtent[0][1])], // Use original x and y extents
-                            [xScale(brushScatterExtent[1][0]), yScale(brushScatterExtent[1][1])]
-                        ]);
-                    }
+                    // if (brushScatterExtent) {
+                    //     brushScatterG.call(brushScatter.move, [
+                    //         [xScale(brushScatterExtent[0][0]), yScale(brushScatterExtent[0][1])], // Use original x and y extents
+                    //         [xScale(brushScatterExtent[1][0]), yScale(brushScatterExtent[1][1])]
+                    //     ]);
+                    // }
 
 
                     // Transition the axes
@@ -9931,7 +10233,7 @@
                             var selectedPoints = data.filter(d => {
                                 return (
                                     d.Normal >= brushScatterExtent[0][0] && d.Normal <= brushScatterExtent[1][0] &&
-                                    d.Case <= brushScatterExtent[0][1] && d.Case >= brushScatterExtent[1][1]  && d.pval_adj< threshold && Math.abs(d.logFC)>(log_thr_fc)
+                                    d.Case <= brushScatterExtent[0][1] && d.Case >= brushScatterExtent[1][1] && d.pval_adj < threshold && Math.abs(d.logFC) > (log_thr_fc)
                                 );
                             });
                             // Add genes to brushedGenes if they are not already present
@@ -10055,6 +10357,13 @@
                         zoomEnabled = !zoomEnabled; // Toggle the zoomEnabled flag
 
                         if (zoomEnabled) {
+                            document.getElementById("resetButton").style.cursor = "pointer"
+                            document.getElementById("resetButton").style.opacity = 1
+                            document.getElementById("resetButton").disabled = false
+                            document.getElementById("switchButton").style.cursor = "pointer"
+                            document.getElementById("switchButton").style.opacity = 1
+                            document.getElementById("switchButton").disabled = false
+
                             document.getElementById("toggleZoomButton").textContent = "Toggle Zoom/Brush Mode"
                             svg.call(zoom); // Re-enable zooming
 
@@ -10062,6 +10371,13 @@
                             brushedGenesScatter = []
 
                         } else {
+                            document.getElementById("resetButton").style.cursor = "not-allowed"
+                            document.getElementById("resetButton").style.opacity = 0.6
+                            document.getElementById("resetButton").disabled = true
+                            document.getElementById("switchButton").style.cursor = "not-allowed"
+                            document.getElementById("switchButton").style.opacity = 0.6
+                            document.getElementById("switchButton").disabled = true
+
                             document.getElementById("toggleZoomButton").textContent = "Toggle Zoom/Save Brushed Genes"
                             svg.on(".zoom", null); // Disable zooming by removing the zoom event
 
@@ -10088,12 +10404,12 @@
                             .duration(750)
                             .call(zoom.transform, d3.zoomIdentity);
 
-                        if (brushScatterExtent) {
-                            brushScatterG.call(brushScatter.move, [
-                                [xScale(brushScatterExtent[0][0]), yScale(brushScatterExtent[0][1])], // Use original x and y extents
-                                [xScale(brushScatterExtent[1][0]), yScale(brushScatterExtent[1][1])]
-                            ]);
-                        }
+                        // if (brushScatterExtent) {
+                        //     brushScatterG.call(brushScatter.move, [
+                        //         [xScale(brushScatterExtent[0][0]), yScale(brushScatterExtent[0][1])], // Use original x and y extents
+                        //         [xScale(brushScatterExtent[1][0]), yScale(brushScatterExtent[1][1])]
+                        //     ]);
+                        // }
                     }
 
                     function updateChart1() {
@@ -10131,7 +10447,7 @@
 
                         if (!zoomEnabled) {
                             // Redraw brushes to reflect new zoom scale
-                            brushScatterG.call(brushScatter);
+                            // brushScatterG.call(brushScatter);
                         }
 
                     }
@@ -10654,8 +10970,6 @@
             // Variables to store the brush extents in the original data space
             let brushScatterExtent = null; // [ [logFC, -log10(pval_adj)], [logFC, -log10(pval_adj)] ]
 
-            let zoomEnabled = true; // Flag to control zoom functionality
-
             let brushedGenesScatter = [];
 
             // Define brush for the left side (x < 0)
@@ -10686,7 +11000,7 @@
                     var selectedPoints = data.filter(d => {
                         return (
                             d.Normal >= brushScatterExtent[0][0] && d.Normal <= brushScatterExtent[1][0] &&
-                            d.Case <= brushScatterExtent[0][1] && d.Case >= brushScatterExtent[1][1]   && d.pval_adj< threshold && Math.abs(d.logFC)>(log_thr_fc)
+                            d.Case <= brushScatterExtent[0][1] && d.Case >= brushScatterExtent[1][1] && d.pval_adj < threshold && Math.abs(d.logFC) > (log_thr_fc)
                         );
                     });
                     // Add genes to brushedGenes if they are not already present
@@ -10829,6 +11143,13 @@
                 zoomEnabled = !zoomEnabled; // Toggle the zoomEnabled flag
 
                 if (zoomEnabled) {
+                    document.getElementById("resetButton").style.cursor = "pointer"
+                    document.getElementById("resetButton").style.opacity = 1
+                    document.getElementById("resetButton").disabled = false
+                    document.getElementById("switchButton").style.cursor = "pointer"
+                    document.getElementById("switchButton").style.opacity = 1
+                    document.getElementById("switchButton").disabled = false
+
                     document.getElementById("toggleZoomButton").textContent = "Toggle Zoom/Brush Mode"
                     svg.call(zoom); // Re-enable zooming
 
@@ -10836,6 +11157,13 @@
                     brushedGenesScatter = []
 
                 } else {
+                    document.getElementById("resetButton").style.cursor = "not-allowed"
+                    document.getElementById("resetButton").style.opacity = 0.6
+                    document.getElementById("resetButton").disabled = true
+                    document.getElementById("switchButton").style.cursor = "not-allowed"
+                    document.getElementById("switchButton").style.opacity = 0.6
+                    document.getElementById("switchButton").disabled = true
+
                     document.getElementById("toggleZoomButton").textContent = "Toggle Zoom/Save Brushed Genes"
                     svg.on(".zoom", null); // Disable zooming by removing the zoom event
 
@@ -10862,12 +11190,12 @@
                     .duration(750)
                     .call(zoom.transform, d3.zoomIdentity);
 
-                if (brushScatterExtent) {
-                    brushScatterG.call(brushScatter.move, [
-                        [xScale(brushScatterExtent[0][0]), yScale(brushScatterExtent[0][1])], // Use original x and y extents
-                        [xScale(brushScatterExtent[1][0]), yScale(brushScatterExtent[1][1])]
-                    ]);
-                }
+                // if (brushScatterExtent) {
+                //     brushScatterG.call(brushScatter.move, [
+                //         [xScale(brushScatterExtent[0][0]), yScale(brushScatterExtent[0][1])], // Use original x and y extents
+                //         [xScale(brushScatterExtent[1][0]), yScale(brushScatterExtent[1][1])]
+                //     ]);
+                // }
             }
 
             // Attach zoom behavior to the SVG
@@ -10908,7 +11236,7 @@
 
                 if (!zoomEnabled) {
                     // Redraw brushes to reflect new zoom scale
-                    brushScatterG.call(brushScatter);
+                    // brushScatterG.call(brushScatter);
                 }
 
             }
@@ -10985,25 +11313,23 @@
                         .duration(750)
                         .call(zoom.transform, d3.zoomIdentity);
 
+
                     // Variables to store the brush extents in the original data space
                     let leftBrushExtent = null; // [ [logFC, -log10(pval_adj)], [logFC, -log10(pval_adj)] ]
                     let rightBrushExtent = null; // [ [logFC, -log10(pval_adj)], [logFC, -log10(pval_adj)] ]
 
-                    let zoomEnabled = true; // Flag to control zoom functionality
-
-
-                    if (leftBrushExtent) {
-                        brushLeftG.call(brushLeft.move, [
-                            [xScale(leftBrushExtent[0][0]), yScale(leftBrushExtent[0][1])], // Use original x and y extents
-                            [xScale(leftBrushExtent[1][0]), yScale(leftBrushExtent[1][1])]
-                        ]);
-                    }
-                    if (rightBrushExtent) {
-                        brushRightG.call(brushRight.move, [
-                            [xScale(rightBrushExtent[0][0]), yScale(rightBrushExtent[0][1])], // Use original x and y extents
-                            [xScale(rightBrushExtent[1][0]), yScale(rightBrushExtent[1][1])]
-                        ]);
-                    }
+                    // if (leftBrushExtent) {
+                    //     brushLeftG.call(brushLeft.move, [
+                    //         [xScale(leftBrushExtent[0][0]), yScale(leftBrushExtent[0][1])], // Use original x and y extents
+                    //         [xScale(leftBrushExtent[1][0]), yScale(leftBrushExtent[1][1])]
+                    //     ]);
+                    // }
+                    // if (rightBrushExtent) {
+                    //     brushRightG.call(brushRight.move, [
+                    //         [xScale(rightBrushExtent[0][0]), yScale(rightBrushExtent[0][1])], // Use original x and y extents
+                    //         [xScale(rightBrushExtent[1][0]), yScale(rightBrushExtent[1][1])]
+                    //     ]);
+                    // }
 
                     // Attach click event to the reset button
                     d3.select("#resetButton")
@@ -11013,18 +11339,18 @@
                                 .duration(750)
                                 .call(zoom.transform, d3.zoomIdentity);
 
-                            if (leftBrushExtent) {
-                                brushLeftG.call(brushLeft.move, [
-                                    [xScale(leftBrushExtent[0][0]), yScale(leftBrushExtent[0][1])], // Use original x and y extents
-                                    [xScale(leftBrushExtent[1][0]), yScale(leftBrushExtent[1][1])]
-                                ]);
-                            }
-                            if (rightBrushExtent) {
-                                brushRightG.call(brushRight.move, [
-                                    [xScale(rightBrushExtent[0][0]), yScale(rightBrushExtent[0][1])], // Use original x and y extents
-                                    [xScale(rightBrushExtent[1][0]), yScale(rightBrushExtent[1][1])]
-                                ]);
-                            }
+                            // if (leftBrushExtent) {
+                            //     brushLeftG.call(brushLeft.move, [
+                            //         [xScale(leftBrushExtent[0][0]), yScale(leftBrushExtent[0][1])], // Use original x and y extents
+                            //         [xScale(leftBrushExtent[1][0]), yScale(leftBrushExtent[1][1])]
+                            //     ]);
+                            // }
+                            // if (rightBrushExtent) {
+                            //     brushRightG.call(brushRight.move, [
+                            //         [xScale(rightBrushExtent[0][0]), yScale(rightBrushExtent[0][1])], // Use original x and y extents
+                            //         [xScale(rightBrushExtent[1][0]), yScale(rightBrushExtent[1][1])]
+                            //     ]);
+                            // }
 
                         });
 
@@ -11266,7 +11592,7 @@
                                 console.log("Y0<=pval", leftBrushExtent[0][1], "Y0<=pval", leftBrushExtent[1][1])
                                 return (
                                     d.logFC >= leftBrushExtent[0][0] && d.logFC <= leftBrushExtent[1][0] &&
-                                    -Math.log10(d.pval_adj) <= leftBrushExtent[0][1] && -Math.log10(d.pval_adj) >= leftBrushExtent[1][1] && d.pval_adj< threshold && Math.abs(d.logFC)>(log_thr_fc)
+                                    -Math.log10(d.pval_adj) <= leftBrushExtent[0][1] && -Math.log10(d.pval_adj) >= leftBrushExtent[1][1] && d.pval_adj < threshold && Math.abs(d.logFC) > (log_thr_fc)
                                 );
                             });
                             // Add genes to brushedGenes if they are not already present
@@ -11347,7 +11673,7 @@
                             // Filter selected points based on the stored extents
                             var selectedPoints = data.filter(d =>
                                 d.logFC >= rightBrushExtent[0][0] && d.logFC <= rightBrushExtent[1][0] &&
-                                -Math.log10(d.pval_adj) <= rightBrushExtent[0][1] && -Math.log10(d.pval_adj) >= rightBrushExtent[1][1]  && d.pval_adj< threshold && Math.abs(d.logFC)>(log_thr_fc)
+                                -Math.log10(d.pval_adj) <= rightBrushExtent[0][1] && -Math.log10(d.pval_adj) >= rightBrushExtent[1][1] && d.pval_adj < threshold && Math.abs(d.logFC) > (log_thr_fc)
                             );
                             // Add genes to brushedGenes if they are not already present
                             selectedPoints.forEach(point => {
@@ -11470,6 +11796,13 @@
                         zoomEnabled = !zoomEnabled; // Toggle the zoomEnabled flag
 
                         if (zoomEnabled) {
+                            document.getElementById("resetButton").style.cursor = "pointer"
+                            document.getElementById("resetButton").style.opacity = 1
+                            document.getElementById("resetButton").disabled = false
+                            document.getElementById("switchButton").style.cursor = "pointer"
+                            document.getElementById("switchButton").style.opacity = 1
+                            document.getElementById("switchButton").disabled = false
+
                             document.getElementById("toggleZoomButton").textContent = "Toggle Zoom/Brush Mode"
                             svg.call(zoom); // Re-enable zooming
 
@@ -11478,6 +11811,13 @@
                             brushedGenesLeft = []
                             brushedGenesRight = []
                         } else {
+                            document.getElementById("resetButton").style.cursor = "not-allowed"
+                            document.getElementById("resetButton").style.opacity = 0.6
+                            document.getElementById("resetButton").disabled = true
+                            document.getElementById("switchButton").style.cursor = "not-allowed"
+                            document.getElementById("switchButton").style.opacity = 0.6
+                            document.getElementById("switchButton").disabled = true
+
                             document.getElementById("toggleZoomButton").textContent = "Toggle Zoom/Save Brushed Genes"
                             svg.on(".zoom", null); // Disable zooming by removing the zoom event
 
@@ -11620,12 +11960,12 @@
                         .duration(750)
                         .call(zoom.transform, d3.zoomIdentity);
 
-                    if (brushScatterExtent) {
-                        brushScatterG.call(brushScatter.move, [
-                            [xScale(brushScatterExtent[0][0]), yScale(brushScatterExtent[0][1])], // Use original x and y extents
-                            [xScale(brushScatterExtent[1][0]), yScale(brushScatterExtent[1][1])]
-                        ]);
-                    }
+                    // if (brushScatterExtent) {
+                    //     brushScatterG.call(brushScatter.move, [
+                    //         [xScale(brushScatterExtent[0][0]), yScale(brushScatterExtent[0][1])], // Use original x and y extents
+                    //         [xScale(brushScatterExtent[1][0]), yScale(brushScatterExtent[1][1])]
+                    //     ]);
+                    // }
                     zoom.on("zoom", updateChart);
                     svg.call(zoom)
 
@@ -11901,7 +12241,7 @@
                             var selectedPoints = data.filter(d => {
                                 return (
                                     d.Normal >= brushScatterExtent[0][0] && d.Normal <= brushScatterExtent[1][0] &&
-                                    d.Case <= brushScatterExtent[0][1] && d.Case >= brushScatterExtent[1][1]  && d.pval_adj< threshold && Math.abs(d.logFC)>(log_thr_fc) && Math.abs(d.logFC)<Math.log2(log_thr_fc)
+                                    d.Case <= brushScatterExtent[0][1] && d.Case >= brushScatterExtent[1][1] && d.pval_adj < threshold && Math.abs(d.logFC) > (log_thr_fc)
                                 );
                             });
                             // Add genes to brushedGenes if they are not already present
@@ -11969,7 +12309,6 @@
 
                     // Function to highlight the selected genes based on the brush
                     function highlightSelectedGenes(selectedPoints) {
-                        console.log("ciao")
 
                         // Select all circles and filter only those that are in the selected points
                         scatter.selectAll("circle").filter(d => selectedPoints.some(p => p.gene === d.gene))
@@ -12020,37 +12359,50 @@
 
                     }
 
-                    // Attach click event to the toggle zoom button
-                    d3.select("#toggleZoomButton").on("click", function () {
-                        zoomEnabled = !zoomEnabled; // Toggle the zoomEnabled flag
+            // Attach click event to the toggle zoom button
+            d3.select("#toggleZoomButton").on("click", function () {
+                zoomEnabled = !zoomEnabled; // Toggle the zoomEnabled flag
 
-                        if (zoomEnabled) {
-                            document.getElementById("toggleZoomButton").textContent = "Toggle Zoom/Brush Mode"
-                            svg.call(zoom); // Re-enable zooming
+                if (zoomEnabled) {
+                    document.getElementById("resetButton").style.cursor = "pointer"
+                    document.getElementById("resetButton").style.opacity = 1
+                    document.getElementById("resetButton").disabled = false
+                    document.getElementById("switchButton").style.cursor = "pointer"
+                    document.getElementById("switchButton").style.opacity = 1
+                    document.getElementById("switchButton").disabled = false
 
-                            brushScatterG.remove();
-                            brushedGenesScatter = []
+                    document.getElementById("toggleZoomButton").textContent = "Toggle Zoom/Brush Mode"
+                    svg.call(zoom); // Re-enable zooming
 
-                        } else {
-                            document.getElementById("toggleZoomButton").textContent = "Toggle Zoom/Save Brushed Genes"
-                            svg.on(".zoom", null); // Disable zooming by removing the zoom event
+                    brushScatterG.remove();
+                    brushedGenesScatter = []
 
-                            // Remove the brushes from the SVG
+                } else {
+                    document.getElementById("resetButton").style.cursor = "not-allowed"
+                    document.getElementById("resetButton").style.opacity = 0.6
+                    document.getElementById("resetButton").disabled = true
+                    document.getElementById("switchButton").style.cursor = "not-allowed"
+                    document.getElementById("switchButton").style.opacity = 0.6
+                    document.getElementById("switchButton").disabled = true
 
-                            // Optionally, you can update the brush extents
-                            brushScatter.extent([[0, 0], [width, height]]);
+                    document.getElementById("toggleZoomButton").textContent = "Toggle Zoom/Save Brushed Genes"
+                    svg.on(".zoom", null); // Disable zooming by removing the zoom event
 
-                            // Redraw brushes to reflect new zoom scale
-                            brushScatterG = svg.append("g")
-                                .attr("class", "brush-scatter")
-                                .call(brushScatter);
+                    // Remove the brushes from the SVG
+
+                    // Optionally, you can update the brush extents
+                    brushScatter.extent([[0, 0], [width, height]]);
+
+                    // Redraw brushes to reflect new zoom scale
+                    brushScatterG = svg.append("g")
+                        .attr("class", "brush-scatter")
+                        .call(brushScatter);
 
 
-                            brushedGenesScatter = []
+                    brushedGenesScatter = []
 
-                        }
-                    });
-
+                }
+            });
                     // Define the resetZoom function
                     function resetZoom() {
                         // Reset the zoom transformation
@@ -12058,12 +12410,12 @@
                             .duration(750)
                             .call(zoom.transform, d3.zoomIdentity);
 
-                        if (brushScatterExtent) {
-                            brushScatterG.call(brushScatter.move, [
-                                [xScale(brushScatterExtent[0][0]), yScale(brushScatterExtent[0][1])], // Use original x and y extents
-                                [xScale(brushScatterExtent[1][0]), yScale(brushScatterExtent[1][1])]
-                            ]);
-                        }
+                        // if (brushScatterExtent) {
+                        //     brushScatterG.call(brushScatter.move, [
+                        //         [xScale(brushScatterExtent[0][0]), yScale(brushScatterExtent[0][1])], // Use original x and y extents
+                        //         [xScale(brushScatterExtent[1][0]), yScale(brushScatterExtent[1][1])]
+                        //     ]);
+                        // }
                     }
 
                     function updateChart() {
@@ -12101,7 +12453,7 @@
 
                         if (!zoomEnabled) {
                             // Redraw brushes to reflect new zoom scale
-                            brushScatterG.call(brushScatter);
+                            // brushScatterG.call(brushScatter);
                         }
 
                     }
