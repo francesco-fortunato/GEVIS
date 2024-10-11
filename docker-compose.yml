@@ -6,7 +6,7 @@ services:
   node:
     build: .
     expose:
-      - "3000"
+      - "3000"  # Keep it as is, since it's only exposed to Nginx
     depends_on:
       - ocpu
     networks:
@@ -15,16 +15,16 @@ services:
   ocpu:
     image: frafortu/ocpu:v1.0.0
     expose:
-      - "8004"
+      - "11764"  # Expose on 11764 for Nginx
     ports:
-      - "8004:8004"
+      - "11764:8004"  # Map external port 11764 to internal port 11764
     networks:
       - my-network
 
   nginx:
     image: nginx:latest
     ports:
-      - "80:80"
+      - "11765:80"    # Nginx listens on 11765
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf
     depends_on:

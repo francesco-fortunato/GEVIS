@@ -1211,8 +1211,9 @@
     <script>
 
         try {
-            ocpu.seturl("//localhost:8004/ocpu/lib/GEVIS/R");
+            ocpu.seturl("//ocpu:11764/ocpu/lib/GEVIS/R");
         } catch (error) {
+            console.log(error)
             // If an error occurs (e.g., ocpu is not defined), reload the page
             window.location.reload();
         }
@@ -5781,7 +5782,12 @@
                             // geneCountDiv2.innerHTML = `First filtering number of genes: ${first_filter_number_genes}<br>Number of genes after filtering: ${data_copy.length - ind2.length}`;
 
 
+                        }).catch(err => {
+                            console.error("Failed to fetch filtered data:", err);
                         });
+                }).fail(function (error) {
+                    console.error("OpenCPU call failed:", error);
+
 
                 })
             }
@@ -12359,50 +12365,50 @@
 
                     }
 
-            // Attach click event to the toggle zoom button
-            d3.select("#toggleZoomButton").on("click", function () {
-                zoomEnabled = !zoomEnabled; // Toggle the zoomEnabled flag
+                    // Attach click event to the toggle zoom button
+                    d3.select("#toggleZoomButton").on("click", function () {
+                        zoomEnabled = !zoomEnabled; // Toggle the zoomEnabled flag
 
-                if (zoomEnabled) {
-                    document.getElementById("resetButton").style.cursor = "pointer"
-                    document.getElementById("resetButton").style.opacity = 1
-                    document.getElementById("resetButton").disabled = false
-                    document.getElementById("switchButton").style.cursor = "pointer"
-                    document.getElementById("switchButton").style.opacity = 1
-                    document.getElementById("switchButton").disabled = false
+                        if (zoomEnabled) {
+                            document.getElementById("resetButton").style.cursor = "pointer"
+                            document.getElementById("resetButton").style.opacity = 1
+                            document.getElementById("resetButton").disabled = false
+                            document.getElementById("switchButton").style.cursor = "pointer"
+                            document.getElementById("switchButton").style.opacity = 1
+                            document.getElementById("switchButton").disabled = false
 
-                    document.getElementById("toggleZoomButton").textContent = "Toggle Zoom/Brush Mode"
-                    svg.call(zoom); // Re-enable zooming
+                            document.getElementById("toggleZoomButton").textContent = "Toggle Zoom/Brush Mode"
+                            svg.call(zoom); // Re-enable zooming
 
-                    brushScatterG.remove();
-                    brushedGenesScatter = []
+                            brushScatterG.remove();
+                            brushedGenesScatter = []
 
-                } else {
-                    document.getElementById("resetButton").style.cursor = "not-allowed"
-                    document.getElementById("resetButton").style.opacity = 0.6
-                    document.getElementById("resetButton").disabled = true
-                    document.getElementById("switchButton").style.cursor = "not-allowed"
-                    document.getElementById("switchButton").style.opacity = 0.6
-                    document.getElementById("switchButton").disabled = true
+                        } else {
+                            document.getElementById("resetButton").style.cursor = "not-allowed"
+                            document.getElementById("resetButton").style.opacity = 0.6
+                            document.getElementById("resetButton").disabled = true
+                            document.getElementById("switchButton").style.cursor = "not-allowed"
+                            document.getElementById("switchButton").style.opacity = 0.6
+                            document.getElementById("switchButton").disabled = true
 
-                    document.getElementById("toggleZoomButton").textContent = "Toggle Zoom/Save Brushed Genes"
-                    svg.on(".zoom", null); // Disable zooming by removing the zoom event
+                            document.getElementById("toggleZoomButton").textContent = "Toggle Zoom/Save Brushed Genes"
+                            svg.on(".zoom", null); // Disable zooming by removing the zoom event
 
-                    // Remove the brushes from the SVG
+                            // Remove the brushes from the SVG
 
-                    // Optionally, you can update the brush extents
-                    brushScatter.extent([[0, 0], [width, height]]);
+                            // Optionally, you can update the brush extents
+                            brushScatter.extent([[0, 0], [width, height]]);
 
-                    // Redraw brushes to reflect new zoom scale
-                    brushScatterG = svg.append("g")
-                        .attr("class", "brush-scatter")
-                        .call(brushScatter);
+                            // Redraw brushes to reflect new zoom scale
+                            brushScatterG = svg.append("g")
+                                .attr("class", "brush-scatter")
+                                .call(brushScatter);
 
 
-                    brushedGenesScatter = []
+                            brushedGenesScatter = []
 
-                }
-            });
+                        }
+                    });
                     // Define the resetZoom function
                     function resetZoom() {
                         // Reset the zoom transformation
