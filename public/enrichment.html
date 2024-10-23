@@ -193,14 +193,14 @@
 
             <div class="graph-container">
                 <div class="dotplot-container">
-                    <div id="dotplot">
+                    <div id="dotplot" style="height:400px;width:650px;">
                         <div class="loading-spinner" id="loadingMessage"></div>
                     </div>
                     <div id="select_dot"></div>
                 </div>
 
                 <div class="dotplot-container">
-                    <div id="dotplot1">
+                    <div id="dotplot1" style="height:400px;width:650px;">
                         <div class="loading-spinner" id="loadingMessage1"></div>
                     </div>
                     <div id="select_dot1"></div>
@@ -212,7 +212,7 @@
 
     <script>
         try {
-            ocpu.seturl("//ocpu:11764/ocpu/lib/GEVIS/R");
+            ocpu.seturl("http://localhost:11765/ocpu/lib/GEVIS/R");
         } catch (error) {
             // If an error occurs (e.g., ocpu is not defined), reload the page
             window.location.reload();
@@ -415,7 +415,7 @@
 
             var colorScale = d3.scaleLinear()
                 .domain([minValue, maxValue])
-                .range([d3.interpolateViridis(1), d3.interpolateViridis(0)]);
+                .range([d3.interpolateRgb('#193833', '#82F0F5')(1), d3.interpolateRgb('#193833', '#82F0F5')(0)]);
 
             var options = ["DisGenNet", "Bio. Process", "Molecular function", "KEGG"]
 
@@ -623,11 +623,11 @@
             // Add color stops to the linear gradient
             linearGradient.append("stop")
                 .attr("offset", "0%")
-                .attr("stop-color", d3.interpolateViridis(1));
+                .attr("stop-color", d3.interpolateRgb('#193833', '#82F0F5')(1));
 
             linearGradient.append("stop")
                 .attr("offset", "100%")
-                .attr("stop-color", d3.interpolateViridis(0));
+                .attr("stop-color", d3.interpolateRgb('#193833', '#82F0F5')(0));
 
             // Add title for the rectangle legend
             legend.append("text")
@@ -813,7 +813,7 @@
 
                 var colorScale = d3.scaleLinear()
                     .domain([minValue, maxValue])
-                    .range([d3.interpolateViridis(1), d3.interpolateViridis(0)]);
+                    .range([d3.interpolateRgb('#193833', '#82F0F5')(1), d3.interpolateRgb('#193833', '#82F0F5')(0)]);
 
                 // Update x scale
                 var x = d3.scaleLinear()
@@ -1097,7 +1097,7 @@
 
             var colorScale = d3.scaleLinear()
                 .domain([minValue, maxValue])
-                .range([d3.interpolateViridis(1), d3.interpolateViridis(0)]); // Inverted colors: light to dark
+                .range([d3.interpolateRgb('#193833', '#82F0F5')(1), d3.interpolateRgb('#193833', '#82F0F5')(0)]); // Inverted colors: light to dark
 
             var options = ["DisGenNet", "Bio. Process", "Molecular function", "KEGG"]
 
@@ -1310,11 +1310,11 @@
             // Add color stops to the linear gradient
             linearGradient.append("stop")
                 .attr("offset", "0%")
-                .attr("stop-color", d3.interpolateViridis(1));
+                .attr("stop-color", d3.interpolateRgb('#193833', '#82F0F5')(1));
 
             linearGradient.append("stop")
                 .attr("offset", "100%")
-                .attr("stop-color", d3.interpolateViridis(0));
+                .attr("stop-color", d3.interpolateRgb('#193833', '#82F0F5')(0));
 
             // Add title for the rectangle legend
             legend.append("text")
@@ -1499,7 +1499,7 @@
 
                 var colorScale = d3.scaleLinear()
                     .domain([minValue, maxValue])
-                    .range([d3.interpolateViridis(1), d3.interpolateViridis(0)]); // Inverted colors: light to dark
+                    .range([d3.interpolateRgb('#193833', '#82F0F5')(1), d3.interpolateRgb('#193833', '#82F0F5')(0)]); // Inverted colors: light to dark
 
                 // Update x scale
                 var x = d3.scaleLinear()
