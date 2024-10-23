@@ -1,6 +1,4 @@
-version: '3.8'
-
-name: gevis
+version: '3.3'
 
 services:
   node:
@@ -15,18 +13,16 @@ services:
   ocpu:
     image: frafortu/ocpu:v1.0.0
     expose:
-      - "11764"  # Expose on 11764 for Nginx
-    ports:
-      - "11764:8004"  # Map external port 11764 to internal port 11764
+      - "8004"  # Expose on 11764 for Nginx
     networks:
       - my-network
 
   nginx:
     image: nginx:latest
     ports:
-      - "11765:80"    # Nginx listens on 11765
+      - "11765:11765"    # Nginx listens on 11765
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
     depends_on:
       - node
       - ocpu

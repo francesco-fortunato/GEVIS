@@ -3,6 +3,7 @@ npm-debug.log
 GEVIS
 Dockerfile
 sessions
+nginx
 .dockerignore
 .git
 .gitignore
