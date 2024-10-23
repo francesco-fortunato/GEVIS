@@ -416,7 +416,7 @@ deseq2DE <- function(dataC, dataN) {
   return(res_df)
 }
 
-surv <- function (metadata,dataC, gene){
+surv <- function (metadata, dataC, gene) {
   library(survminer)   # Load survminer first
   library(survival)    # Then load survival
 
@@ -440,20 +440,21 @@ surv <- function (metadata,dataC, gene){
 
   print(df)
 
-  medianValue = median(df$counts)
+  # Calculate the median and convert it to character
+  medianValue <- median(df$counts)
+  medianValue_char <- as.character(medianValue)
 
   print(medianValue)
 
-  df$strata = ifelse (df$counts >= medianValue,"HIGH","LOW")
+  df$strata = ifelse(df$counts >= medianValue, "HIGH", "LOW")
 
-  df$event = ifelse(df$case_id == metadata$GSM,  metadata$Event[match(df$case_id, metadata$GSM)], "NA")
+  df$event = ifelse(df$case_id == metadata$GSM, metadata$Event[match(df$case_id, metadata$GSM)], "NA")
 
   df$time = ifelse(df$case_id == metadata$GSM, metadata$Time_to_followUp[match(df$case_id, metadata$GSM)], "NA")
 
-
   print(df)
 
-  df$counts <-(as.numeric(df$counts))
+  df$counts <- as.numeric(df$counts)
   metadata$Event <- as.numeric(as.character(metadata$Event))
   metadata$Time_to_followUp <- as.numeric(as.character(metadata$Time_to_followUp))
 
@@ -461,19 +462,211 @@ surv <- function (metadata,dataC, gene){
 
   print(newDF)
 
-  fit=survfit(Surv(time,event) ~ gene, data = newDF)
+  fit <- survfit(Surv(time, event) ~ gene, data = newDF)
 
-  members <- c("time", "n.risk", "n.event","n.censor","surv","strata")
+  members <- c("time", "n.risk", "n.event", "n.censor", "surv", "strata")
+  last <- list(unclass(fit)[members])
 
-  last = list(unclass(fit)[members])
-
-  ####### UTILE PER CALCOLARE IL PVALUE DEL GENE PASSATO#######
-  obj_pval = surv_pvalue(fit,newDF)
-  members2 = c("pval")
-  pval=list(unclass(obj_pval)[members2])
+  ####### Calculate p-value for the passed gene #######
+  obj_pval <- surv_pvalue(fit, newDF)
+  members2 <- c("pval")
+  pval <- list(unclass(obj_pval)[members2])
   print(pval)
-  #############################################################
+  ####################################################
 
-  return(list (obj = last, pval = pval))
+  # Return the survival object, p-value, and median value (as character)
+  return(list(obj = last, pval = pval, median = medianValue_char))
+}
 
+
+heatmap <- function(data, metadata, field, case, distance, method, show_cols, show_rows, cutreeCols, cutreeRows) {
+  # Ensure necessary libraries are loaded
+  library(pheatmap)
+  library(grid)  # Important for custom text graphics
+  library(gridExtra)  # For grid.arrange
+  library(ggplot2)  # For ggsave
+  library(RColorBrewer)  # For color palettes
+  library(viridis)  # For better color scales
+
+  print(show_cols)
+
+  # Convert data to a data frame and ensure numeric values
+  data <- as.data.frame(data)
+  data[,-ncol(data)] <- lapply(data[,-ncol(data)], as.numeric)
+
+  # Set row names from the last column and remove it
+  rownames(data) <- data[, ncol(data)]
+  data <- data[, -ncol(data)]
+
+  print("Processed Data:")
+  print(data)
+
+  # Transpose the metadata for easier access
+  metadata <- as.data.frame(t(metadata))
+
+  # Set the first row as column names
+  colnames(metadata) <- metadata[1, ]
+  metadata <- metadata[-1, , drop = FALSE]  # Remove the first row now that it's column names
+
+  # Check if the primary field is a valid column in metadata
+  if (!field %in% colnames(metadata)) {
+    stop(paste("Error: The field does not exist in metadata:", field))
+  }
+
+  # Filter metadata fields to exclude those with more than 10 unique values
+  metadata_fields <- metadata[, colnames(metadata), drop = FALSE]  # Extract as a data frame
+  unique_counts <- sapply(metadata_fields, function(col) length(unique(col)))  # Count unique values
+
+  # Keep columns with <= 10 unique values and check numeric fields
+  metadata_filtered <- metadata_fields[, unique_counts <= 10, drop = FALSE]
+
+  # Check fields with > 10 unique values for numeric types and keep them for scaling
+  numeric_metadata <- metadata_fields[, unique_counts > 10, drop = FALSE]
+
+  # Identify numeric columns
+  numeric_cols <- sapply(numeric_metadata, function(col) {
+    is_numeric <- suppressWarnings(!any(is.na(as.numeric(as.character(col)))))  # Check if conversion to numeric is possible
+    return(is_numeric)
+  })
+
+  # Ensure numeric_cols is a logical vector
+  if (length(numeric_cols) == 0) {
+    numeric_cols <- logical(0)  # Handle case where there are no columns
+  } else {
+    numeric_cols <- as.logical(numeric_cols)  # Convert to logical vector
+  }
+
+  # Only keep numeric columns with > 10 unique values
+  if (any(numeric_cols)) {
+    numeric_metadata_filtered <- numeric_metadata[, numeric_cols, drop = FALSE]
+  } else {
+    numeric_metadata_filtered <- data.frame()  # Create an empty data frame if no numeric columns
+  }
+
+  # Check if we have any numeric columns to include
+  if (ncol(numeric_metadata_filtered) > 0) {
+    metadata_final <- cbind(metadata_filtered, numeric_metadata_filtered)
+  } else {
+    metadata_final <- metadata_filtered
+  }
+
+  # Create annotation colors dynamically for categorical fields
+  annotation_colors <- list()
+  for (name in names(metadata_final)) {
+    if (name %in% names(numeric_metadata_filtered)) {
+      next
+    }
+
+    if (name == field) {
+      levels <- unique(metadata_final[[name]])
+      if (case == levels[1]) {
+        annotation_colors[[name]] <- c(RColorBrewer::brewer.pal(3, "Set1")[1], RColorBrewer::brewer.pal(3, "Set1")[3])
+      } else {
+        annotation_colors[[name]] <- c(RColorBrewer::brewer.pal(3, "Set1")[3], RColorBrewer::brewer.pal(3, "Set1")[1])
+      }
+      names(annotation_colors[[name]]) <- levels
+    } else {
+      levels <- unique(metadata_final[[name]])
+      annotation_colors[[name]] <- RColorBrewer::brewer.pal(length(levels), "Set3")[1:length(levels)]
+      names(annotation_colors[[name]]) <- levels
+    }
+  }
+
+  if (ncol(numeric_metadata_filtered) > 0) {
+    for (name in names(numeric_metadata_filtered)) {
+      annotation_colors[[name]] <- colorRampPalette(c("lightblue", "blue"))(100)
+    }
+    metadata_final[names(numeric_metadata_filtered)] <- lapply(metadata_final[names(numeric_metadata_filtered)], as.numeric)
+  }
+
+  # Function to truncate row names
+  truncate_rownames <- function(rownames, max_length) {
+    sapply(rownames, function(name) {
+      if (nchar(name) > max_length) {
+        return(paste0(substr(name, 1, max_length), "..."))
+      } else {
+        return(name)
+      }
+    })
+  }
+
+  max_length <- 15
+  truncated_rownames <- truncate_rownames(rownames(data), max_length)
+  truncated_rownames <- make.unique(truncated_rownames)
+  rownames(data) <- truncated_rownames
+
+  # Determine font size based on number of columns
+  n_cols <- ncol(data)
+  col_font_size <- ifelse(n_cols <= 25, 12,   # If 5 or fewer columns, use font size 12
+                          ifelse(n_cols <= 50, 8,  # If between 26 and 50, use font size 10
+                                 ifelse(n_cols <= 75, 6,  # If between 26 and 50, use font size 10
+                                        ifelse(n_cols <= 120, 4,  # If between 26 and 100, use font size 10
+                                    2))))  # For more than 10 columns, use font size 8
+
+  # Custom function to draw diagonal column names with smaller font size
+  draw_colnames_45 <- function(coln, gaps, ...) {
+    coord = pheatmap:::find_coordinates(length(coln), gaps)
+    x = coord$coord - 0.5 * coord$size
+
+    # Set character size (cex) to make the text smaller
+    res = textGrob(coln, x = x,
+                   y = unit(1, "npc") - unit(4, "bigpts"),  # Adjust y position if needed
+                   vjust = 0.5, hjust = 1,
+                   rot = 90,
+                   gp = gpar(..., lineheight = 1, cex = 1, fontsize = col_font_size, fontfamily = "Arial"))  # Use dynamic font size
+    return(res)
+  }
+
+  n_rows <- nrow(data)
+  row_font_size <- ifelse(n_rows <= 25, 12,   # If 5 or fewer columns, use font size 12
+                          ifelse(n_rows <= 50, 8,  # If between 26 and 50, use font size 10
+                                 ifelse(n_rows <= 120, 5,  # If between 26 and 100, use font size 10
+                                        ifelse(n_rows <= 170, 4,  # If between 26 and 100, use font size 10
+                                               ifelse(n_rows <= 250, 2.6,  # If between 26 and 100, use font size 10
+                                                      ifelse(n_rows <= 350, 2,  # If between 26 and 100, use font size 10
+                                                             1.5))))))  # For more than 10 columns, use font size 8
+
+
+  # Custom function to draw row names with dynamic font size
+  draw_rownames_custom <- function(rown, gaps, ...) {
+    coord = pheatmap:::find_coordinates(length(rown), gaps)
+    y = rev(coord$coord) - 0.5 * rev(coord$size)  # Reverse for correct alignment
+
+    # Set character size (cex) to make the text smaller
+    res = textGrob(rown, x = unit(1, "npc") - unit(4, "bigpts"),  # Adjust x position if needed
+                   y = y,
+                   vjust = 0.5, hjust = 1,
+                   gp = gpar(..., lineheight = 1, cex = 1, fontsize = row_font_size, fontfamily = "Arial"))  # Use dynamic font size
+    return(res)
+  }
+
+
+  # Overwrite default draw_colnames with the custom version
+  assignInNamespace(x = "draw_colnames", value = draw_colnames_45, ns = asNamespace("pheatmap"))
+
+  # Generate the pheatmap plot
+  my_pheatmap <- pheatmap(
+    data,
+    scale = "row",
+    border_color = NA,
+    cluster_cols = TRUE,
+    cluster_rows = TRUE,
+    clustering_distance_rows = distance,
+    clustering_distance_cols = distance,
+    clustering_method = method,
+    annotation_col = metadata_final,
+    color = colorRampPalette(rev(brewer.pal(9, "YlGnBu")))(1000),
+    show_rownames = show_rows,
+    show_colnames = show_cols,
+    cutree_cols = cutreeCols,
+    cutree_rows = cutreeRows,
+    annotation_colors = annotation_colors,
+    fontsize_row = row_font_size
+  )
+
+  # Save the plot as SVG using ggsave
+  ggsave(filename = "heatmap_output.svg", plot = my_pheatmap[[4]], width = 10, height = 10, dpi=72)
+  rm(data)
+  rm(metadata)
+  return(TRUE)
 }
