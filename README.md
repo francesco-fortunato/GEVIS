@@ -6,7 +6,7 @@ GEVIS is a web-based visual analytics platform for conducting differential gene 
 
 - [Introduction](#introduction)
 - [Features](#features)
-- [Download](#download)
+- [Running Locally](#running-locally)
 - [Usage](#usage)
 - [Input File Format](#input-file-format)
   - [Matrix File](#matrix-file)
@@ -67,7 +67,7 @@ Gene expression analysis is among the most important means of uncovering biologi
 
 ---
 
-## Download
+## Running Locally
 
 1. Open your terminal.
 2. Clone the repository to your local machine by running:
@@ -86,7 +86,7 @@ Gene expression analysis is among the most important means of uncovering biologi
 
 ---
 
-## Usage
+## Running Locally
 
 1. **Data Upload:**
    - Upload raw gene expression data along with associated metadata, or select from available example datasets for analysis.
