@@ -86,7 +86,7 @@ Gene expression analysis is among the most important means of uncovering biologi
 
 ---
 
-## Running Locally
+## Usage
 
 1. **Data Upload:**
    - Upload raw gene expression data along with associated metadata, or select from available example datasets for analysis.
