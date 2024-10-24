@@ -82,7 +82,7 @@ Gene expression analysis is among the most important means of uncovering biologi
     ```
     docker-compose up --build
     ```
-5. Go on localhost in your web browser to access the GEVIS dashboard. Utilize the interactive sliders and graphs to explore gene expression data and identify differentially expressed genes.
+5. Go on localhost:11765 in your web browser to access the GEVIS dashboard. Utilize the interactive sliders and graphs to explore gene expression data and identify differentially expressed genes.
 
 ---
 
