@@ -29,10 +29,6 @@
     <link rel="stylesheet" type="text/css" href="css/bootstrap.css">
     <script src="css/bootstrap.js"></script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-color/3.0.0/d3-color.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-interpolate/1.5.0/d3-interpolate.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-scale/3.2.2/d3-scale.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-scale-chromatic/1.6.0/d3-scale-chromatic.min.js"></script>
     <link rel="stylesheet" href="https://cdn.datatables.net/2.0.7/css/dataTables.dataTables.css" />
     <script src="https://cdn.datatables.net/2.0.7/js/dataTables.js"></script>
 
@@ -85,18 +81,6 @@
             /* Minimum width of the table container */
         }
 
-        .dotplot-container {
-            background-color: #1E1E1E;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
-            flex: 0.6;
-            /* Increased width */
-            overflow: hidden;
-            min-width: 500px;
-            /* Minimum width of the plot container */
-        }
-
         .flex1 {
             display: flex;
             justify-content: space-between;
@@ -118,6 +102,7 @@
         }
 
         .dotplot-container {
+            position: relative;
             background-color: #1E1E1E;
             padding: 20px;
             border-radius: 12px;
@@ -205,31 +190,6 @@
             z-index: 10;
         }
 
-        .loading-spinner {
-            border: 8px solid rgba(255, 255, 255, 0.3);
-            /* Light grey background */
-            border-top: 8px solid #FFA726;
-            /* Orange spinner color */
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            animation: spin 1s cubic-bezier(0.25, 0.3, 0.5, 1) infinite;
-            /* Custom easing for variable speed */
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
 
 
         /* Ensure proper layout on smaller screens */
@@ -248,12 +208,143 @@
                 width: 100%;
             }
         }
+
+        .loader {
+            color: #FFA726;
+            font-size: 45px;
+            text-indent: -9999em;
+            overflow: hidden;
+            width: 1em;
+            height: 1em;
+            border-radius: 50%;
+            position: relative;
+            transform: translateZ(0);
+            animation: mltShdSpin 1.7s infinite ease, round 1.7s infinite ease;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&display=swap');
+
+        .loading-text {
+            font-family: 'Open Sans', sans-serif;
+            color: #FFA726;
+            font-size: 1.5em;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            /* Add a bit of space between the dots */
+        }
+
+        .dot {
+            opacity: 0;
+            transform: scale(0.5);
+            /* Start smaller */
+            animation: dot-pulse 1.5s infinite cubic-bezier(0.5, 0, 0.5, 1);
+        }
+
+        .dot:nth-child(1) {
+            animation-delay: 0.2s;
+        }
+
+        .dot:nth-child(2) {
+            animation-delay: 0.4s;
+        }
+
+        .dot:nth-child(3) {
+            animation-delay: 0.6s;
+        }
+
+
+        @keyframes mltShdSpin {
+            0% {
+                box-shadow: 0 -0.83em 0 -0.4em,
+                    0 -0.83em 0 -0.42em, 0 -0.83em 0 -0.44em,
+                    0 -0.83em 0 -0.46em, 0 -0.83em 0 -0.477em;
+            }
+
+            5%,
+            95% {
+                box-shadow: 0 -0.83em 0 -0.4em,
+                    0 -0.83em 0 -0.42em, 0 -0.83em 0 -0.44em,
+                    0 -0.83em 0 -0.46em, 0 -0.83em 0 -0.477em;
+            }
+
+            10%,
+            59% {
+                box-shadow: 0 -0.83em 0 -0.4em,
+                    -0.087em -0.825em 0 -0.42em, -0.173em -0.812em 0 -0.44em,
+                    -0.256em -0.789em 0 -0.46em, -0.297em -0.775em 0 -0.477em;
+            }
+
+            20% {
+                box-shadow: 0 -0.83em 0 -0.4em, -0.338em -0.758em 0 -0.42em,
+                    -0.555em -0.617em 0 -0.44em, -0.671em -0.488em 0 -0.46em,
+                    -0.749em -0.34em 0 -0.477em;
+            }
+
+            38% {
+                box-shadow: 0 -0.83em 0 -0.4em, -0.377em -0.74em 0 -0.42em,
+                    -0.645em -0.522em 0 -0.44em, -0.775em -0.297em 0 -0.46em,
+                    -0.82em -0.09em 0 -0.477em;
+            }
+
+            100% {
+                box-shadow: 0 -0.83em 0 -0.4em, 0 -0.83em 0 -0.42em,
+                    0 -0.83em 0 -0.44em, 0 -0.83em 0 -0.46em, 0 -0.83em 0 -0.477em;
+            }
+        }
+
+        @keyframes round {
+            0% {
+                transform: rotate(0deg)
+            }
+
+            100% {
+                transform: rotate(360deg)
+            }
+        }
+
+        @keyframes dot-pulse {
+            0% {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1);
+                /* Increase size for pulsing effect */
+            }
+
+            100% {
+                opacity: 0;
+                transform: scale(0.5);
+                /* Return to initial size */
+            }
+        }
+
+        #loadingOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            /* Semi-transparent black background */
+            z-index: 9999;
+            /* Ensure the overlay appears above other elements */
+            display: none;
+            /* Initially hidden */
+        }
+
     </style>
 </head>
 
 <body>
+
     <div class="container">
         <h1>GEVIS - Survival Analysis</h1>
+
+
         <div class="flex1">
             <div class="dataTable-container">
                 <table id="geneTable" class="display" style="width:100%">
@@ -270,9 +361,16 @@
                 <button id="submission" type="button" class="btn btn-secondary">Submit</button>
             </div>
             <div class="dotplot-container">
+                <div id="loadingOverlay" style="display: none; justify-content: center; align-items: center;">
+                    <div
+                        style="display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; height: 100%;">
+                        <span class="loader"></span>
+                        <span class="loading-text" style="margin-top: 1em; margin-left: 0.5em;">Loading <span class="dot">.</span><span
+                                class="dot">.</span><span class="dot">.</span></span>
+                    </div>
+                </div>
+            
                 <div id="survival" style="width: 800px; height: 600px; display: flex; justify-content: center; align-items: center;"></div>
-                <div class="loading-spinner" id="loadingMessage" style="display: none;"></div>
-
                 <label for="timeUnit" style="vertical-align: middle;">
                     <span
                         style="margin: 0; padding: 0; color: #ddd; margin-left:30px; margin-top: 28px; display: inline-block; line-height: 2.2rem;">Select
@@ -399,10 +497,11 @@
                     // Create initial DataTable
                     createGeneDataTable(data.old_p_adj);
 
-                    survivalContainer.innerHTML = "<h3 style='color: white;'>Select a gene to start </h3>";
+                    survivalContainer.innerHTML = "<h3 style='color: #FFA726;'>Select a gene to start </h3>";
 
                     // Form submission handler
                     document.getElementById('submission').onclick = function (event) {
+                        survivalContainer.innerHTML = "";
                         event.preventDefault(); // Prevent default form submission
 
                         // Get the selected row data
@@ -418,8 +517,7 @@
                                 survivalplot(cachedData.data, selectedGene, cachedData.pvalue, cachedData.median);
                                 console.log(`Plot for ${selectedGene} retrieved from cache.`);
                             } else {
-                                survivalContainer.innerHTML = "<h3 style='color: white;'>Computing the plot... </h3>";
-                                document.getElementById("loadingMessage").style.display = 'block';
+                                document.getElementById("loadingOverlay").style.display = "block";
                                 // Make the call to generate the plot
                                 survival(data.filteredMetadata, data.dataC_copy_pval, selectedGene);
                             }
@@ -500,7 +598,7 @@
         }
 
         function survivalplot(data, name, pvalue, median) {
-            document.getElementById("loadingMessage").style.display = 'none';
+            document.getElementById("loadingOverlay").style.display = 'none';
             console.log(data);
 
             // Calculate survival probability
@@ -857,7 +955,6 @@
                     .style("opacity", 0)
                     .style("position", "absolute")
                     .style("background-color", "black")
-                    .style("padding", "5px")
                     .style("border-radius", "5px")
                     .style("border", "1px solid gray");
             }
@@ -907,12 +1004,13 @@
                     // Convert mouse coordinates to time and survival probability
                     const time = xSa.invert(mouseX);
                     const survivalProb = y.invert(mouseY);
+                    const svgBounds = d3.select("svg").node().getBoundingClientRect();
 
                     // Show tooltip
                     tooltip.transition().duration(200).style("opacity", 0.9);
                     tooltip.html(`Time: ${time.toFixed(2)} ${selectedUnit}<br>Survival: ${survivalProb.toFixed(2)}`)
-                        .style("left", (d3.event.pageX + 10) + "px")
-                        .style("top", (d3.event.pageY - 28) + "px");
+                        .style("left", (d3.event.pageX - svgBounds.left + 25) + "px")
+                        .style("top", (d3.event.pageY - svgBounds.top - 45) + "px");
                 })
                 .on("mouseleave", function () {
                     crosshairGroup.style("display", "none");

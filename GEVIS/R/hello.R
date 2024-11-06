@@ -1,39 +1,43 @@
-hello <- function(data) {
-  # Save the column of genes before removing the last column
-  genes <- data[, ncol(data)]
-
-  # Assuming data, dataN, and dataC are your matrices
-  data <- data[, -ncol(data)]
-
-
-  N <- 49
-  M <- 58
-  # Now, the last column has been removed from each matrix
-
-  all_equal <- function(x) {
-    return(length(unique(x)) == 1)
-  }
-
-  # Compute p-values with checks for constant data
-  pval <- apply(data, 1, function(x) {
-    if (all_equal(x[1:N]) || all_equal(x[(N+1):(M+N)])) {
-      return(1)
-    } else {
-      return(t.test(x[1:N], x[(N+1):(M+N)], paired = FALSE)$p.value)
-    }
-  })
-
-  # Adjustment p-value
-  pval_adj <- p.adjust(pval, method="fdr")
-
-  # Add the column of genes back to the result
-  result <- data.frame(Gene = genes, pval_adj = pval_adj)
-
-  return(result)
+# Function to get current timestamp in seconds
+current_time <- function() {
+  as.numeric(Sys.time())
 }
 
+# Function to hash rawdata for unique key
+hash <- function(data) {
+  digest::digest(data)
+}
+
+# Define a cache key function
+cacheKey <- function(func_name, data) {
+  data_hash <- hash(data)
+  key <- list(func = func_name, data_hash = data_hash)
+
+  return(key)
+}
+
+# Function to check if cache is expired
+is_cache_expired <- function(timestamp, max_age) {
+  (current_time() - timestamp) > max_age
+}
 
 pval <- function(data, N, M) {
+  library(R.cache)
+  library(digest)
+
+  # Generate a cache key
+  key <- cacheKey("pval", list(data, N, M))
+
+  # Check if the result is already cached
+  cached_result <- loadCache(key)
+
+  # If cache exists, return it
+  if (!is.null(cached_result)) {
+    print("CACHE FOUND")
+    # If cache is still valid, return cached data
+    return(cached_result$data)
+  }
+
   # Save the column of genes before removing the last column
   genes <- data[, ncol(data)]
 
@@ -68,6 +72,9 @@ pval <- function(data, N, M) {
   # Add the column of genes back to the result
   result <- data.frame(Gene = genes, pval_adj = pval_adj_str)
 
+  # Save cache with a timestamp
+  saveCache(list(timestamp = current_time(), data = result), key)
+
   return(result)
 }
 
@@ -76,6 +83,21 @@ pca <- function(data, dataC, dataN) {
   library(FactoMineR)
   library(factoextra)
   library(dplyr)
+  library(R.cache)
+  library(digest)
+
+  # Generate a cache key
+  key <- cacheKey("pca", list(data, dataC, dataN))
+
+  # Check if the result is already cached
+  cached_result <- loadCache(key)
+
+  # If cache exists, return it
+  if (!is.null(cached_result)) {
+    print("CACHE FOUND")
+    # If cache is still valid, return cached data
+    return(cached_result$data)
+  }
 
   data1 <- as.data.frame(data)
 
@@ -166,6 +188,9 @@ pca <- function(data, dataC, dataN) {
 
   # Calculate the proportion of variance explained by each principal component
   explained_variance <- summary(pca)$importance[2, ] * 100  # Multiply by 100 to get percentage
+
+  # Save cache with a timestamp
+  saveCache(list(timestamp = current_time(), data = list(scores_df = scores_df, scores_var = scores_var, explained_variance = explained_variance)), key)
 
 
   # Return the explained variance along with scores_df and scores_var
@@ -298,6 +323,21 @@ enrichment <- function(data, direction) {
 
 variation <- function(rawdata) {
   library(jsonlite)
+  library(R.cache)
+  library(digest)
+
+  # Generate a cache key
+  key <- cacheKey("variation", rawdata)
+
+  # Check if the result is already cached
+  cached_result <- loadCache(key)
+
+  # If cache exists, return it
+  if (!is.null(cached_result)) {
+    print("CACHE FOUND")
+    # If cache is still valid, return cached data
+    return(cached_result$data)
+  }
 
   # Extract gene names
   genes <- rawdata[, ncol(rawdata)]
@@ -311,12 +351,32 @@ variation <- function(rawdata) {
   # Convert data frame to JSON
   json_data <- toJSON(variat_data)
 
+  # Save cache with a timestamp
+  saveCache(list(timestamp = current_time(), data = json_data), key)
+
   # Return JSON data
   return(json_data)
 }
 
 limmaDE <- function(dataC, dataN) {
   library(limma)
+
+  library(R.cache)
+  library(digest)
+
+  # Generate a cache key
+  key <- cacheKey("deseq2DE", list(dataC, dataN))
+
+  # Check if the result is already cached
+  cached_result <- loadCache(key)
+
+  # If cache exists, return it
+  if (!is.null(cached_result)) {
+    print("CACHE FOUND")
+    # If cache is still valid, return cached data
+    return(cached_result$data)
+  }
+
 
   # Convert lists to data frames
   dataC <- as.data.frame(dataC)
@@ -356,6 +416,9 @@ limmaDE <- function(dataC, dataN) {
   # Convert pval_adj column to character
   results$pval_adj <- as.character(results$pval_adj)
 
+  # Save cache with a timestamp
+  saveCache(list(timestamp = current_time(), data = results), key)
+
   return(results)
 }
 
@@ -365,6 +428,22 @@ limmaDE <- function(dataC, dataN) {
 deseq2DE <- function(dataC, dataN) {
   # Load DESeq2 library
   library(DESeq2)
+
+  library(R.cache)
+  library(digest)
+
+  # Generate a cache key
+  key <- cacheKey("deseq2DE", list(dataC, dataN))
+
+  # Check if the result is already cached
+  cached_result <- loadCache(key)
+
+  # If cache exists, return it
+  if (!is.null(cached_result)) {
+    print("CACHE FOUND")
+    # If cache is still valid, return cached data
+    return(cached_result$data)
+  }
 
   # Convert the data from list to data frames if they aren't already
   dataC <- as.data.frame(dataC)
@@ -412,6 +491,9 @@ deseq2DE <- function(dataC, dataN) {
   colnames(res_df) <- c("Gene", "logFC", "lfcSE", "pvalue", "pval_adj")
   res_df$pval_adj <- as.character(res_df$pval_adj)
   res_df$logFC <- as.character(res_df$logFC)
+
+  # Save cache with a timestamp
+  saveCache(list(timestamp = current_time(), data = res_df), key)
 
   return(res_df)
 }
@@ -669,4 +751,180 @@ heatmap <- function(data, metadata, field, case, distance, method, show_cols, sh
   rm(data)
   rm(metadata)
   return(TRUE)
+}
+
+
+heatmap_mod <- function(data, metadata, field, case, distance, method, show_cols, show_rows, cutreeCols, cutreeRows) {
+  # Load necessary libraries
+  library(pheatmap)
+  library(grid)  # Important for custom text graphics
+  library(gridExtra)  # For grid.arrange
+  library(ggplot2)  # For ggsave
+  library(RColorBrewer)  # For color palettes
+  library(viridis)  # For better color scales
+  library(jsonlite)
+
+  # Generate pheatmap to obtain the clustering information
+  #pheat <- pheatmap(data_matrix)
+  # Convert data to a data frame and ensure numeric values
+  data <- as.data.frame(data)
+  data[,-ncol(data)] <- lapply(data[,-ncol(data)], as.numeric)
+
+  # Set row names from the last column and remove it
+  rownames(data) <- data[, ncol(data)]
+  data <- data[, -ncol(data)]
+
+  print("Processed Data:")
+  print(data)
+
+  # Transpose the metadata for easier access
+  metadata <- as.data.frame(t(metadata))
+
+  # Set the first row as column names
+  colnames(metadata) <- metadata[1, ]
+  metadata <- metadata[-1, , drop = FALSE]  # Remove the first row now that it's column names
+
+  # Check if the primary field is a valid column in metadata
+  if (!field %in% colnames(metadata)) {
+    stop(paste("Error: The field does not exist in metadata:", field))
+  }
+
+  # Filter metadata fields to exclude those with more than 10 unique values
+  metadata_fields <- metadata[, colnames(metadata), drop = FALSE]  # Extract as a data frame
+  unique_counts <- sapply(metadata_fields, function(col) length(unique(col)))  # Count unique values
+
+  # Keep columns with <= 10 unique values and check numeric fields
+  metadata_filtered <- metadata_fields[, unique_counts <= 10, drop = FALSE]
+
+  # Check fields with > 10 unique values for numeric types and keep them for scaling
+  numeric_metadata <- metadata_fields[, unique_counts > 10, drop = FALSE]
+
+  # Identify numeric columns
+  numeric_cols <- sapply(numeric_metadata, function(col) {
+    is_numeric <- suppressWarnings(!any(is.na(as.numeric(as.character(col)))))  # Check if conversion to numeric is possible
+    return(is_numeric)
+  })
+
+  # Ensure numeric_cols is a logical vector
+  if (length(numeric_cols) == 0) {
+    numeric_cols <- logical(0)  # Handle case where there are no columns
+  } else {
+    numeric_cols <- as.logical(numeric_cols)  # Convert to logical vector
+  }
+
+  # Only keep numeric columns with > 10 unique values
+  if (any(numeric_cols)) {
+    numeric_metadata_filtered <- numeric_metadata[, numeric_cols, drop = FALSE]
+  } else {
+    numeric_metadata_filtered <- data.frame()  # Create an empty data frame if no numeric columns
+  }
+
+  # Check if we have any numeric columns to include
+  if (ncol(numeric_metadata_filtered) > 0) {
+    metadata_final <- cbind(metadata_filtered, numeric_metadata_filtered)
+  } else {
+    metadata_final <- metadata_filtered
+  }
+
+  # Create annotation colors dynamically for categorical fields
+  annotation_colors <- list()
+  for (name in names(metadata_final)) {
+    if (name %in% names(numeric_metadata_filtered)) {
+      next
+    }
+
+    if (name == field) {
+      levels <- unique(metadata_final[[name]])
+      if (case == levels[1]) {
+        annotation_colors[[name]] <- c(RColorBrewer::brewer.pal(3, "Set1")[1], RColorBrewer::brewer.pal(3, "Set1")[3])
+      } else {
+        annotation_colors[[name]] <- c(RColorBrewer::brewer.pal(3, "Set1")[3], RColorBrewer::brewer.pal(3, "Set1")[1])
+      }
+      names(annotation_colors[[name]]) <- levels
+    } else {
+      levels <- unique(metadata_final[[name]])
+      annotation_colors[[name]] <- RColorBrewer::brewer.pal(length(levels), "Set3")[1:length(levels)]
+      names(annotation_colors[[name]]) <- levels
+    }
+  }
+
+  if (ncol(numeric_metadata_filtered) > 0) {
+    for (name in names(numeric_metadata_filtered)) {
+      annotation_colors[[name]] <- colorRampPalette(c("lightblue", "blue"))(100)
+    }
+    metadata_final[names(numeric_metadata_filtered)] <- lapply(metadata_final[names(numeric_metadata_filtered)], as.numeric)
+  }
+
+  pheat <- pheatmap(
+    data,
+    scale = "row",
+    border_color = NA,
+    cluster_cols = TRUE,
+    cluster_rows = TRUE,
+    clustering_distance_rows = distance,
+    clustering_distance_cols = distance,
+    clustering_method = method,
+    annotation_col = metadata_final,
+    color = colorRampPalette(rev(brewer.pal(9, "YlGnBu")))(1000),
+    show_rownames = show_rows,
+    show_colnames = show_cols,
+    cutree_cols = cutreeCols,
+    cutree_rows = cutreeRows,
+    annotation_colors = annotation_colors
+  )
+
+  # Extract row and column clustering
+  row_clust <- pheat$tree_row
+  col_clust <- pheat$tree_col
+
+  # Helper function to convert dendrogram to a nested list
+  dendrogram_to_list <- function(d) {
+    if (is.leaf(d)) {
+      return(list(name = attr(d, "label")))
+    } else {
+      return(list(
+        children = lapply(d, dendrogram_to_list),
+        height = attr(d, "height")
+      ))
+    }
+  }
+
+  # Convert row and column dendrograms to lists
+  row_dendro_list <- dendrogram_to_list(as.dendrogram(row_clust))
+  col_dendro_list <- dendrogram_to_list(as.dendrogram(col_clust))
+
+  # Prepare the cell data in a JSON-compatible format
+  cell_data_list <- list()
+  for (i in 1:nrow(data)) {
+    for (j in 1:ncol(data)) {
+      cell_data_list[[length(cell_data_list) + 1]] <- list(
+        row = i,
+        col = j,
+        value = data[i, j]
+      )
+    }
+  }
+
+  # Extract cluster assignments
+  row_clusters <- cutree(row_clust, k = cutreeRows)
+  col_clusters <- cutree(col_clust, k = cutreeCols)
+
+  # Convert to data frames
+  row_clusters_df <- data.frame(Row = names(row_clusters), Cluster = row_clusters)
+  col_clusters_df <- data.frame(Col = names(col_clusters), Cluster = col_clusters)
+
+  # Combine all information into a single list
+  heatmap_json <- list(
+    row_dendrogram = row_dendro_list,
+    col_dendrogram = col_dendro_list,
+    cell_data = cell_data_list,
+    row_clusters = row_clusters_df,
+    col_clusters = col_clusters_df
+  )
+
+  # Convert the combined list to JSON
+  heatmap_json_str <- toJSON(heatmap_json)
+
+  # Save the JSON string to a file
+  return(heatmap_json_str)
 }

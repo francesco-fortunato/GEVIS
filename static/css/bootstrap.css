@@ -6133,7 +6133,7 @@ button.bg-danger:focus {
 }
 
 .bg-light {
-  background-color:  rgb(33, 33, 33) !important;
+  background-color:  var(--nav-background-color) !important;
 }
 
 a.bg-light:hover, a.bg-light:focus,
@@ -9027,4 +9027,3 @@ a.text-dark:hover, a.text-dark:focus {
     border-color: #dee2e6;
   }
 }
-/*# sourceMappingURL=bootstrap.css.map */

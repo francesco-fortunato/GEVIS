@@ -30,10 +30,6 @@
     <link rel="stylesheet" type="text/css" href="css/bootstrap.css">
     <script src="css/bootstrap.js"></script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-color/3.0.0/d3-color.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-interpolate/1.5.0/d3-interpolate.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-scale/3.2.2/d3-scale.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-scale-chromatic/1.6.0/d3-scale-chromatic.min.js"></script>
     <link rel="stylesheet" href="https://cdn.datatables.net/2.0.7/css/dataTables.dataTables.css" />
     <script src="https://cdn.datatables.net/2.0.7/js/dataTables.js"></script>
 
@@ -109,38 +105,121 @@
             /* Prevents content overflow */
         }
 
-        .loading-message {
-            text-align: center;
-            font-size: 18px;
-            margin-top: 20px;
+        .loader {
             color: #FFA726;
-        }
-
-        .loading-spinner {
-            border: 8px solid rgba(255, 255, 255, 0.3);
-            /* Light grey background */
-            border-top: 8px solid #FFA726;
-            /* Orange spinner color */
+            font-size: 45px;
+            text-indent: -9999em;
+            overflow: hidden;
+            width: 1em;
+            height: 1em;
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            animation: spin 1s cubic-bezier(0.25, 0.3, 0.5, 1) infinite;
-            /* Custom easing for variable speed */
+            position: relative;
+            transform: translateZ(0);
+            animation: mltShdSpin 1.7s infinite ease, round 1.7s infinite ease;
         }
 
-        @keyframes spin {
+        @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&display=swap');
+
+        .loading-text {
+            font-family: 'Open Sans', sans-serif;
+            color: #FFA726;
+            font-size: 1.5em;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            /* Add a bit of space between the dots */
+        }
+
+        .dot {
+            opacity: 0;
+            transform: scale(0.5);
+            /* Start smaller */
+            animation: dot-pulse 1.5s infinite cubic-bezier(0.5, 0, 0.5, 1);
+        }
+
+        .dot:nth-child(1) {
+            animation-delay: 0.2s;
+        }
+
+        .dot:nth-child(2) {
+            animation-delay: 0.4s;
+        }
+
+        .dot:nth-child(3) {
+            animation-delay: 0.6s;
+        }
+
+
+        @keyframes mltShdSpin {
             0% {
-                transform: rotate(0deg);
+                box-shadow: 0 -0.83em 0 -0.4em,
+                    0 -0.83em 0 -0.42em, 0 -0.83em 0 -0.44em,
+                    0 -0.83em 0 -0.46em, 0 -0.83em 0 -0.477em;
+            }
+
+            5%,
+            95% {
+                box-shadow: 0 -0.83em 0 -0.4em,
+                    0 -0.83em 0 -0.42em, 0 -0.83em 0 -0.44em,
+                    0 -0.83em 0 -0.46em, 0 -0.83em 0 -0.477em;
+            }
+
+            10%,
+            59% {
+                box-shadow: 0 -0.83em 0 -0.4em,
+                    -0.087em -0.825em 0 -0.42em, -0.173em -0.812em 0 -0.44em,
+                    -0.256em -0.789em 0 -0.46em, -0.297em -0.775em 0 -0.477em;
+            }
+
+            20% {
+                box-shadow: 0 -0.83em 0 -0.4em, -0.338em -0.758em 0 -0.42em,
+                    -0.555em -0.617em 0 -0.44em, -0.671em -0.488em 0 -0.46em,
+                    -0.749em -0.34em 0 -0.477em;
+            }
+
+            38% {
+                box-shadow: 0 -0.83em 0 -0.4em, -0.377em -0.74em 0 -0.42em,
+                    -0.645em -0.522em 0 -0.44em, -0.775em -0.297em 0 -0.46em,
+                    -0.82em -0.09em 0 -0.477em;
             }
 
             100% {
-                transform: rotate(360deg);
+                box-shadow: 0 -0.83em 0 -0.4em, 0 -0.83em 0 -0.42em,
+                    0 -0.83em 0 -0.44em, 0 -0.83em 0 -0.46em, 0 -0.83em 0 -0.477em;
             }
         }
+
+        @keyframes round {
+            0% {
+                transform: rotate(0deg)
+            }
+
+            100% {
+                transform: rotate(360deg)
+            }
+        }
+
+        @keyframes dot-pulse {
+            0% {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1);
+                /* Increase size for pulsing effect */
+            }
+
+            100% {
+                opacity: 0;
+                transform: scale(0.5);
+                /* Return to initial size */
+            }
+        }
+
+
 
         table.dataTable {
             width: 100% !important;
@@ -169,12 +248,36 @@
         .axis path {
             stroke: #FFFFFF;
         }
+
+        #loadingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            /* Semi-transparent black background */
+            z-index: 9999;
+            /* Ensure the overlay appears above other elements */
+            display: block;
+            /* Initially hidden */
+        }
+
     </style>
 </head>
 
 <body>
     <div class="container">
         <h1>GEVIS - Enrichment Results</h1>
+        <div id="loadingOverlay" style="display: flex; justify-content: center; align-items: center;">
+            <div
+                style="display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; height: 100%;">
+                <span class="loader"></span>
+                <span class="loading-text" style="margin-top: 1em; margin-left: 0.5em;">Loading <span class="dot">.</span><span
+                        class="dot">.</span><span class="dot">.</span></span>
+            </div>
+        </div>
+    
         <div class="content-wrapper">
             <div class="table-container">
                 <table id="dataTable" class="table table-striped table-bordered">
@@ -194,14 +297,12 @@
             <div class="graph-container">
                 <div class="dotplot-container">
                     <div id="dotplot" style="height:400px;width:650px;">
-                        <div class="loading-spinner" id="loadingMessage"></div>
                     </div>
                     <div id="select_dot"></div>
                 </div>
 
                 <div class="dotplot-container">
                     <div id="dotplot1" style="height:400px;width:650px;">
-                        <div class="loading-spinner" id="loadingMessage1"></div>
                     </div>
                     <div id="select_dot1"></div>
                 </div>
@@ -312,7 +413,7 @@
 
             // Create a Promise for 'UP' direction
             const reqUpPromise = new Promise((resolve, reject) => {
-                ocpu.call("enrichment", { data: list, direction: 'UP' }, function (session) {
+                ocpu.call("enrichment?no_cache=1", { data: list, direction: 'UP' }, function (session) {
                     console.log(session); // Log the session object
                     var filteredDataURL = session.loc + "/R/.val/json"; // Extract JSON data URL
                     d3.json(filteredDataURL, function (data) {
@@ -351,7 +452,7 @@
 
             // Create a Promise for 'DOWN' direction
             const reqDownPromise = new Promise((resolve, reject) => {
-                ocpu.call("enrichment", { data: list, direction: 'DOWN' }, function (session) {
+                ocpu.call("enrichment?no_cache=1", { data: list, direction: 'DOWN' }, function (session) {
                     console.log(session); // Log the session object
                     var filteredDataURL = session.loc + "/R/.val/json"; // Extract JSON data URL
                     d3.json(filteredDataURL, function (data1) {
@@ -406,7 +507,7 @@
         }
 
         function createDotPlot(data) {
-            document.getElementById("loadingMessage").style.display = 'none';
+            document.getElementById("loadingOverlay").style.display = 'none';
 
             data_disgen = data.annotation_top
             var minValue = d3.min(data_disgen, function (d) { return d['Adjusted.P.value']; });
@@ -1088,7 +1189,7 @@
         }
 
         function createDotPlot1(data1) {
-            document.getElementById("loadingMessage1").style.display = 'none';
+            document.getElementById("loadingOverlay").style.display = 'none';
 
             data_disgen = data1.annotation_top
             var minValue = d3.min(data_disgen, function (d) { return d['Adjusted.P.value']; });
