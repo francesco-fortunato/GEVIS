@@ -1,4 +1,4 @@
-# Bioinformatics Analysis Pipeline for Gene Expression Data
+# Differential Gene Expression Analysis Pipeline
 
 ## Workflow Overview
 1. **Data Preprocessing**: Script_evaluation.R
