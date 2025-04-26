@@ -2744,7 +2744,7 @@
             }
         }
 
-        let generateHeatmap = false
+        let generateHeatmap = true
 
         // const resizer = document.querySelector('.resizer');
         // const leftPanel = document.querySelector('#leftPanel');
@@ -23888,7 +23888,7 @@
                 })
                 .style("opacity", function (d) {
                     if (gsmList.length >= 1) {
-                        return gsmList.includes(d) ? "1" : "0.2";
+                        return gsmList.includes(d) ? "1" : "0.1";
                     }
                     else {
                         return "1"
@@ -24311,7 +24311,7 @@
                     })
                     .style("opacity", function (d) {
                         if (gsmList.length >= 1) {
-                            return gsmList.includes(d) ? "1" : "0.2";
+                            return gsmList.includes(d) ? "1" : "0.1";
                         } else {
                             return "1";
                         }
