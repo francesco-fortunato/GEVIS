@@ -18,7 +18,8 @@ GEVIS is a web-based visual analytics platform for conducting differential gene 
 Gene expression analysis is among the most essential means of uncovering the biological mechanisms of diseases and identifying potential biomarkers. Whereas there are many tools to perform DE analyses, particularly within programming environments like R, there is a significant hindrance to overcome given the usually limited programming expertise among researchers. To this end, we propose GEVIS, a user-friendly, web-based visual analytics platform that enables access to advanced gene expression analytical techniques. Methods of integrated DE analysis, like t-tests, limma, DESeq2, and Wilcoxon in one GUI, allow users to do their analysis without prior coding. In this way, researchers, biologists, and doctors will be able to reduce efforts in interpreting the results instead of writing complex code. It enables the investigation of raw and pre-processed gene expression datasets into a rich set of visualizations, such as histograms, volcano plots, scatterplots, and PCA graphs that enable deep insight.
 Furthermore, GEVIS contains filtering and normalization functionalities and enrichment and survival analysis functionalities within one comprehensive analytical workflow. In this respect, for overcoming the limitations often observed in stand-alone tools, GEVIS is designed to enable the user to combine multiple analytical approaches and compare results among diverse computational frameworks. This flexibility is crucial when one wants to ensure robust biological interpretations. 
 
-<img src="pictures\miRVAna UI.png" alt="Dashboard Image" style="max-width: 100%; height: auto;">
+<img src="pictures\GEVIS UI 2.png" alt="Dashboard Image" style="max-width: 100%; height: auto;">
+<img src="pictures\GEVIS UI 1.png" alt="Dashboard Image" style="max-width: 100%; height: auto;">
 
 ---
 
