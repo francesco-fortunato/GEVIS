@@ -1,6 +1,6 @@
-# miRVAna - miRNA Visual ANalytics
+# GEVIS - Gene Expression Visual Analytics
 
-miRVAna is a web-based visual analytics platform for conducting differential gene expression analysis, designed to facilitate interactive visualization and in-depth exploration of gene expression data and miRNA-mRNA interaction. The system supports multiple analysis methods and visualization techniques, providing researchers with a versatile platform for understanding gene expression patterns and identifying key biomarkers across biological conditions.
+GEVIS is a web-based visual analytics platform for conducting differential gene expression analysis. It is designed to facilitate interactive visualization and in-depth exploration of gene expression data and miRNA-mRNA interaction. The system supports multiple analysis methods and visualization techniques, providing researchers with a versatile platform for understanding gene expression patterns and identifying key biomarkers across biological conditions.
 
 # Table of Contents
 
@@ -15,8 +15,8 @@ miRVAna is a web-based visual analytics platform for conducting differential gen
 
 ## Introduction 
 
-Gene expression analysis is among the most essential means of uncovering the biological mechanisms of diseases and identifying potential biomarkers. Whereas there are many tools to perform DE analyses, particularly within programming environments like R, there is a significant hindrance to overcome given the usually limited programming expertise among researchers. To this end, we propose herein miRVAna, a user-friendly, web-based visual analytics platform that enables access to advanced gene expression analytical techniques. Methods of integrated DE analysis, like t-tests, limma, DESeq2, and Wilcoxon in one GUI, allow users to do their analysis without prior coding. In this way, researchers, biologists, and doctors will be able to reduce efforts in interpreting the results instead of writing complex code. It enables the investigation of raw and pre-processed gene expression datasets into a rich set of visualizations, such as histograms, volcano plots, scatterplots, and PCA graphs that enable deep insight.
-Furthermore, miRVAna contains filtering and normalization functionalities and enrichment and survival analysis functionalities within one comprehensive analytical workflow. In this respect, for overcoming the limitations often observed in stand-alone tools, miRVAna is designed to enable the user to combine multiple analytical approaches and compare results among diverse computational frameworks. This flexibility is crucial when one wants to ensure robust biological interpretations. 
+Gene expression analysis is among the most essential means of uncovering the biological mechanisms of diseases and identifying potential biomarkers. Whereas there are many tools to perform DE analyses, particularly within programming environments like R, there is a significant hindrance to overcome given the usually limited programming expertise among researchers. To this end, we propose GEVIS, a user-friendly, web-based visual analytics platform that enables access to advanced gene expression analytical techniques. Methods of integrated DE analysis, like t-tests, limma, DESeq2, and Wilcoxon in one GUI, allow users to do their analysis without prior coding. In this way, researchers, biologists, and doctors will be able to reduce efforts in interpreting the results instead of writing complex code. It enables the investigation of raw and pre-processed gene expression datasets into a rich set of visualizations, such as histograms, volcano plots, scatterplots, and PCA graphs that enable deep insight.
+Furthermore, GEVIS contains filtering and normalization functionalities and enrichment and survival analysis functionalities within one comprehensive analytical workflow. In this respect, for overcoming the limitations often observed in stand-alone tools, GEVIS is designed to enable the user to combine multiple analytical approaches and compare results among diverse computational frameworks. This flexibility is crucial when one wants to ensure robust biological interpretations. 
 
 <img src="pictures\miRVAna UI.png" alt="Dashboard Image" style="max-width: 100%; height: auto;">
 
@@ -71,11 +71,11 @@ Furthermore, miRVAna contains filtering and normalization functionalities and en
 1. Open your terminal.  
 2. Clone the repository to your local machine by running:  
     ```sh
-    git clone https://github.com/francesco-fortunato/miRVAna.git
+    git clone https://github.com/francesco-fortunato/GEVIS.git
     ```  
-3. Navigate to the "miRVAna" directory using the command line:  
+3. Navigate to the "GEVIS" directory using the command line:  
     ```sh
-    cd miRVAna
+    cd GEVIS
     ```  
 4. Install Git LFS (if it is not already installed):  
     ```sh
@@ -90,7 +90,7 @@ Furthermore, miRVAna contains filtering and normalization functionalities and en
     docker-compose pull
     docker-compose up --build
     ```  
-7. Open your web browser and go to [localhost:11765](http://localhost:11765) to access the miRVAna dashboard.  
+7. Open your web browser and go to [localhost:11765](http://localhost:11765) to access the GEVIS dashboard.  
    Use the interactive sliders and graphs to explore gene expression data and identify differentially expressed genes.  
 
 P.S. Examples one and two are too heavy for the heatmap; use example three for a smooth experience. Enjoy :)
