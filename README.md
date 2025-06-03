@@ -1,10 +1,36 @@
-# GEVIS - Gene Expression Visual Analytics
+# GEVIS - Differential Gene Expression Analysis with Visual Analytics
 
-GEVIS is a web-based visual analytics platform for conducting differential gene expression analysis. It is designed to facilitate interactive visualization and in-depth exploration of gene expression data and miRNA-mRNA interaction. The system supports multiple analysis methods and visualization techniques, providing researchers with a versatile platform for understanding gene expression patterns and identifying key biomarkers across biological conditions.
+Differential gene expression (DGE) analysis is one of the most used techniques for RNA-seq data analysis, and it is applied in various medical and biological contexts, including biomarkers for diagnosis and prognosis and evaluation of the effectiveness of specific treatments. The conduction of a DGE analysis typically involves navigating a complex, multi-step pipeline, which usually requires proficiency in programming languages like R. This presents a barrier to researchers like biologists and clinicians, who may have limited or no coding skills, and adds additional overhead even for experienced bioinformaticians. 
+
+To overcome these challenges, we propose **GEVIS**, visual analytics prototype that simplifies DGE analysis, enabling users to perform the analyses without coding expertise.
+
+## Citation
+If you use GEVIS in your research, please cite the following paper:
+
+
+> Differential Gene Expression Analysis with Visual Analytics.
+_Francesco Fortunato, Cristian Santaroni, Graziano Blasilli, Giulia Fiscon, Simone Lenti, Giuseppe Santucci._ In EuroVis 2025 - Posters. The Eurographics Association, 2025. DOI: [10.2312/evp.20251126](https://doi.org/10.2312/evp.20251126).
+```
+@inproceedings{10.2312:evp.20251126,
+  booktitle = {EuroVis 2025 - Posters},
+  editor = {Diehl, Alexandra and Kucher, Kostiantyn and Médoc, Nicolas},
+  title = {{Differential Gene Expression Analysis with Visual Analytics}},
+  author = {Fortunato, Francesco and Santaroni, Cristian and Blasilli, Graziano and Fiscon, Giulia and Lenti, Simone and Santucci, Giuseppe},
+  year = {2025},
+  publisher = {The Eurographics Association},
+  ISBN = {978-3-03868-286-8},
+  DOI = {10.2312/evp.20251126}
+}
+```
+
+<img src="pictures\GEVIS UI 2.png" alt="Dashboard Image" style="max-width: 100%; height: auto;">
+
+
+<img src="pictures\GEVIS UI 1.png" alt="Dashboard Image" style="max-width: 100%; height: auto;">
+
 
 # Table of Contents
 
-- [Introduction](#introduction)
 - [Features](#features)
 - [Running Locally](#running-locally)
 - [Usage](#usage)
@@ -13,13 +39,6 @@ GEVIS is a web-based visual analytics platform for conducting differential gene 
   - [Metadata File](#metadata-file)
 - [License](#license)
 
-## Introduction 
-
-Gene expression analysis is among the most essential means of uncovering the biological mechanisms of diseases and identifying potential biomarkers. Whereas there are many tools to perform DE analyses, particularly within programming environments like R, there is a significant hindrance to overcome given the usually limited programming expertise among researchers. To this end, we propose GEVIS, a user-friendly, web-based visual analytics platform that enables access to advanced gene expression analytical techniques. Methods of integrated DE analysis, like t-tests, limma, DESeq2, and Wilcoxon in one GUI, allow users to do their analysis without prior coding. In this way, researchers, biologists, and doctors will be able to reduce efforts in interpreting the results instead of writing complex code. It enables the investigation of raw and pre-processed gene expression datasets into a rich set of visualizations, such as histograms, volcano plots, scatterplots, and PCA graphs that enable deep insight.
-Furthermore, GEVIS contains filtering and normalization functionalities and enrichment and survival analysis functionalities within one comprehensive analytical workflow. In this respect, for overcoming the limitations often observed in stand-alone tools, GEVIS is designed to enable the user to combine multiple analytical approaches and compare results among diverse computational frameworks. This flexibility is crucial when one wants to ensure robust biological interpretations. 
-
-<img src="pictures\GEVIS UI 2.png" alt="Dashboard Image" style="max-width: 100%; height: auto;">
-<img src="pictures\GEVIS UI 1.png" alt="Dashboard Image" style="max-width: 100%; height: auto;">
 
 ---
 
