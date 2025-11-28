@@ -13,10 +13,16 @@ services:
   ocpu:
     image: frafortu/ocpu:v1.0.0
     expose:
-      - "8004"  
+      - "8004"
     networks:
       - my-network
-    command: /bin/sh -c "service cron start && /usr/lib/rstudio-server/bin/rserver && apachectl -DFOREGROUND & Rscript /home/opencpu/GEVIS/gevis-cache.R"
+    command: >
+      /bin/sh -c "
+        service cron start &&
+        /usr/lib/rstudio-server/bin/rserver &&
+        Rscript /home/opencpu/GEVIS/gevis-cache.R &
+        apachectl -DFOREGROUND
+      "
 
   nginx:
     image: nginx:latest
