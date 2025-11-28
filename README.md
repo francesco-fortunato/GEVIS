@@ -31,58 +31,15 @@ _Francesco Fortunato, Cristian Santaroni, Graziano Blasilli, Giulia Fiscon, Simo
 
 # Table of Contents
 
-- [Features](#features)
+
 - [Running Locally](#running-locally)
 - [Usage](#usage)
 - [Input File Format](#input-file-format)
   - [Matrix File](#matrix-file)
   - [Metadata File](#metadata-file)
+- [Features](#features)
 - [License](#license)
 
-
----
-
-## Features
-
-- **Scatterplot and Volcano Plot Visualization:** 
-  - Easily switch between scatterplot (comparing case expression vs. normal expression) and volcano plot for intuitive visual exploration of differentially expressed genes.
-  - Scatterplot circles represent genes, color-coded based on log fold change (LogFC). Clicking a gene highlights it and adds its axis to the scatterplot.
-  - Volcano plot visualizes gene significance concerning LogFC and p-value, helping identify the most significant genes at a glance.
-
-- **Custom Dataset Input:** 
-  - Users can input raw gene expression data along with metadata, offering flexibility in the types of data analyzed. This feature allows for the integration of user-specific datasets for personalized exploration.
-
-- **Multiple Example Datasets:** 
-  - Choose from multiple preloaded example datasets for quick analysis, enabling comparative studies across different experiments and conditions.
-
-- **Quantile normalization:** 
-  - Perform quantile normalization.
-
-- **Statistical Testing Options:** 
-  - Perform differential gene expression analysis using three statistical methods: t-test, Limma, DESeq2, and Wilcoxon. These options offer flexibility depending on the nature of the dataset and the analysis goals.
-  - Results include p-values and adjusted p-values (False Discovery Rate - FDR) for identifying statistically significant genes.
-
-- **Enrichment Analysis:** 
-  - Conduct enrichment analysis on differentially expressed genes, helping identify pathways, functions, or gene ontologies which are overrepresented in the dataset.
-  
-- **Survival Analysis:** 
-  - Integrate survival data and perform survival analysis based on gene expression levels. This feature is crucial for linking gene expression patterns to patient outcomes.
-
-- **Gene Export:** 
-  - Users can export the list of genes identified as significant during the analysis for downstream processes or reporting.
-
-- **Parallel Coordinates Plot with Custom Color Encoding:** 
-  - Visualize gene expression profiles across samples using an interactive parallel coordinates plot. The user can select metadata axes, reorder axes, and highlight specific samples.
-  - The user can also customize the color encoding of the plot for deeper insights into patterns across different sample groups.
-
-- **Principal Component Analysis (PCA):** 
-  - Perform PCA to explore clustering and variability among samples. This feature helps in identifying patterns of gene expression that contribute to sample separation.
-
-- **Heatmap of PCA Contributions:** 
-  - Visualize the contributions of genes to the principal components through a heatmap, making it easier to understand which genes drive the variability among samples.
-
-- **Boxplot Visualization:** 
-  - Display the distribution of gene expression values across different sample groups using boxplots. This feature allows users to assess variability, outliers, and trends within the data.
 
 ---
 
@@ -175,6 +132,54 @@ The metadata file should be structured as follows:
 | ...                  | ...                  | ...                  | ...                  | ... |
 
 Ensure that both files are formatted correctly to conduct proper analysis within the application.
+
+---
+
+
+
+
+## Features
+
+- **Scatterplot and Volcano Plot Visualization:** 
+  - Easily switch between scatterplot (comparing case expression vs. normal expression) and volcano plot for intuitive visual exploration of differentially expressed genes.
+  - Scatterplot circles represent genes, color-coded based on log fold change (LogFC). Clicking a gene highlights it and adds its axis to the scatterplot.
+  - Volcano plot visualizes gene significance concerning LogFC and p-value, helping identify the most significant genes at a glance.
+
+- **Custom Dataset Input:** 
+  - Users can input raw gene expression data along with metadata, offering flexibility in the types of data analyzed. This feature allows for the integration of user-specific datasets for personalized exploration.
+
+- **Multiple Example Datasets:** 
+  - Choose from multiple preloaded example datasets for quick analysis, enabling comparative studies across different experiments and conditions.
+
+- **Quantile normalization:** 
+  - Perform quantile normalization.
+
+- **Statistical Testing Options:** 
+  - Perform differential gene expression analysis using three statistical methods: t-test, Limma, DESeq2, and Wilcoxon. These options offer flexibility depending on the nature of the dataset and the analysis goals.
+  - Results include p-values and adjusted p-values (False Discovery Rate - FDR) for identifying statistically significant genes.
+
+- **Enrichment Analysis:** 
+  - Conduct enrichment analysis on differentially expressed genes, helping identify pathways, functions, or gene ontologies which are overrepresented in the dataset.
+  
+- **Survival Analysis:** 
+  - Integrate survival data and perform survival analysis based on gene expression levels. This feature is crucial for linking gene expression patterns to patient outcomes.
+
+- **Gene Export:** 
+  - Users can export the list of genes identified as significant during the analysis for downstream processes or reporting.
+
+- **Parallel Coordinates Plot with Custom Color Encoding:** 
+  - Visualize gene expression profiles across samples using an interactive parallel coordinates plot. The user can select metadata axes, reorder axes, and highlight specific samples.
+  - The user can also customize the color encoding of the plot for deeper insights into patterns across different sample groups.
+
+- **Principal Component Analysis (PCA):** 
+  - Perform PCA to explore clustering and variability among samples. This feature helps in identifying patterns of gene expression that contribute to sample separation.
+
+- **Heatmap of PCA Contributions:** 
+  - Visualize the contributions of genes to the principal components through a heatmap, making it easier to understand which genes drive the variability among samples.
+
+- **Boxplot Visualization:** 
+  - Display the distribution of gene expression values across different sample groups using boxplots. This feature allows users to assess variability, outliers, and trends within the data.
+
 ---
 
 ## License
